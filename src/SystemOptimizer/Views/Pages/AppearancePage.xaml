@@ -1,0 +1,55 @@
+<Page x:Class="SystemOptimizer.Views.Pages.AppearancePage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+      xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="AppearancePage">
+
+    <Grid Margin="20,10,20,20" MaxHeight="{Binding Source={x:Static Application.Current}, Path=MainWindow.ActualHeight, Converter={StaticResource MathConverter}, ConverterParameter=-100}" VerticalAlignment="Top">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="Visual" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,10" />
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding AppearanceTweaks}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <ui:Card Margin="0,0,5,5" Padding="12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0" />
+
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" />
+                                    <TextBlock Text="{Binding Description}" Foreground="#666666" FontSize="11" Margin="0,1,0,0" TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <Border Grid.Column="2" Background="Transparent" Padding="8,4" CornerRadius="4" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontWeight="Bold" FontSize="12" />
+                                </Border>
+                            </Grid>
+                        </ui:Card>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <ui:Button Content="Restaurar Seleção" Command="{Binding RevertSelectedCommand}" CommandParameter="Appearance" Appearance="Secondary" Margin="0,0,10,0" Width="150" />
+            <ui:Button Content="Aplicar Seleção" Command="{Binding ApplySelectedCommand}" CommandParameter="Appearance" Appearance="Primary" Width="150" />
+        </StackPanel>
+    </Grid>
+</Page>
