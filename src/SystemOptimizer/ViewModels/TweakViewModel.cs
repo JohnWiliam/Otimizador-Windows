@@ -1,4 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.ComponentModel;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 using SystemOptimizer.Models;
 
@@ -27,16 +30,38 @@ namespace SystemOptimizer.ViewModels
         public TweakViewModel(ITweak tweak)
         {
             _tweak = tweak;
+
+            if (_tweak is INotifyPropertyChanged notifyTweak)
+            {
+                notifyTweak.PropertyChanged += Tweak_PropertyChanged;
+            }
+
+            // Initialize UI with current status
             UpdateStatusUI();
         }
 
+        private void Tweak_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(ITweak.Status))
+            {
+                // Ensure UI update happens on UI thread
+                if (Application.Current?.Dispatcher != null && !Application.Current.Dispatcher.CheckAccess())
+                {
+                    Application.Current.Dispatcher.Invoke(UpdateStatusUI);
+                }
+                else
+                {
+                    UpdateStatusUI();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates the status UI based on the underlying tweak status.
+        /// This method is fast as it only reads the property.
+        /// </summary>
         public void UpdateStatusUI()
         {
-            // _tweak.CheckStatus() is now called during Service Initialization, 
-            // but we can call it again if needed.
-            // However, calling it here on UI thread might be slow if individual check is slow.
-            // For now, assume Status is already populated by Service init.
-            
             switch (_tweak.Status)
             {
                 case TweakStatus.Optimized:
@@ -56,6 +81,17 @@ namespace SystemOptimizer.ViewModels
                     StatusColor = Brushes.Gray;
                     break;
             }
+
+            // Freeze brushes for performance if not already frozen (though we create new ones)
+            if (StatusColor.CanFreeze) StatusColor.Freeze();
+        }
+
+        /// <summary>
+        /// Refreshes the status of the tweak asynchronously.
+        /// </summary>
+        public async Task RefreshStatusAsync()
+        {
+             await Task.Run(() => _tweak.CheckStatus());
         }
     }
 }
