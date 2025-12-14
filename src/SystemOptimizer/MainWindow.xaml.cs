@@ -21,11 +21,7 @@ namespace SystemOptimizer
 
             InitializeComponent();
 
-            // Set the frame for navigation (FluentWindow does not contain a frame by default for NavigationView? 
-            // In Wpf.Ui v3, NavigationView can create its own frame or we assign one. 
-            // Actually NavigationView IS a ContentControl that can host a frame, or we use SetNavigationService logic)
-            
-            // Wpf.Ui v3 Pattern:
+            // Initialize the navigation service with the NavigationView control
             navigationService.SetNavigationControl(RootNavigation);
             snackbarService.SetSnackbarPresenter(SnackbarPresenter);
 
