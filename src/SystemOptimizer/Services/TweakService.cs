@@ -89,15 +89,11 @@ namespace SystemOptimizer.Services
                     return true;
                 },
                 () => {
-                    var v1 = Registry.GetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", -1);
-                    var v2 = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR", -1);
-                    
-                    // Logic fix: AllowGameDVR might not exist (null). If null, it defaults to enabled (usually).
-                    // To be OPTIMIZED, we want explicitly 0.
-                    // v1 (User Config) should be 0.
+                    var v1 = Registry.GetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", null);
+                    var v2 = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR", null);
                     
                     bool userOff = (v1 is int i1 && i1 == 0);
-                    // Policy: If 0 -> Optimized. If missing -> Not optimized (default is on).
+                    // Policy: If 0 -> Optimized. If missing (null) -> Not optimized (default is on).
                     bool policyOff = (v2 is int i2 && i2 == 0);
                     
                     return userOff && policyOff;
