@@ -13,106 +13,107 @@ namespace SystemOptimizer.Services
 
         public async Task RunCleanupAsync()
         {
-            OnLogItem?.Invoke(new CleanupLogItem { Message = "Iniciando varredura e limpeza...", Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
-
-            // 1. Windows Update Cleanup (Smart)
-            await CleanWindowsUpdateAsync();
-
-            // 2. File Cleanup
-            var paths = new Dictionary<string, string>
+            await Task.Run(async () =>
             {
-                { "Arquivos Temp", Path.GetTempPath() },
-                { "Temp Sistema", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp") },
-                { "Prefetch", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch") },
-                { "Shader Cache (DX)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA", "DXCache") },
-                { "Shader Cache (D3D)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache") },
-                { "Relatórios de Erro (WER)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER") },
-                { "CrashDumps", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps") },
-                { "Windows Logs", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs") },
-                { "Cache Chrome", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data", "Default", "Cache", "Cache_Data") }
-            };
+                OnLogItem?.Invoke(new CleanupLogItem { Message = "Iniciando varredura e limpeza...", Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
 
-            long totalBytes = 0;
+                // 1. Windows Update Cleanup (Smart)
+                await CleanWindowsUpdateAsync();
 
-            foreach (var kvp in paths)
-            {
-                if (Directory.Exists(kvp.Value))
+                // 2. File Cleanup
+                var paths = new Dictionary<string, string>
                 {
-                    long categoryBytes = 0;
-                    int skippedCount = 0;
+                    { "Arquivos Temp", Path.GetTempPath() },
+                    { "Temp Sistema", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp") },
+                    { "Prefetch", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch") },
+                    { "Shader Cache (DX)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA", "DXCache") },
+                    { "Shader Cache (D3D)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache") },
+                    { "Relatórios de Erro (WER)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER") },
+                    { "CrashDumps", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps") },
+                    { "Windows Logs", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs") },
+                    { "Cache Chrome", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data", "Default", "Cache", "Cache_Data") }
+                };
 
-                    try
+                long totalBytes = 0;
+
+                foreach (var kvp in paths)
+                {
+                    if (Directory.Exists(kvp.Value))
                     {
-                        var dirInfo = new DirectoryInfo(kvp.Value);
-                        
-                        try {
-                            foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
-                            {
-                                try
+                        long categoryBytes = 0;
+                        int skippedCount = 0;
+
+                        try
+                        {
+                            var dirInfo = new DirectoryInfo(kvp.Value);
+
+                            try {
+                                foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
                                 {
-                                    long size = file.Length;
-                                    file.Delete();
-                                    if (!file.Exists)
+                                    try
                                     {
-                                        categoryBytes += size;
+                                        long size = file.Length;
+                                        file.Delete();
+                                        if (!file.Exists)
+                                        {
+                                            categoryBytes += size;
+                                        }
+                                    }
+                                    catch
+                                    {
+                                        skippedCount++;
                                     }
                                 }
-                                catch 
-                                {
-                                    skippedCount++;
-                                }
-                                // Small delay to keep UI responsive without blocking
-                                if (categoryBytes % 10 == 0) await Task.Delay(1); 
-                            }
-                        } catch { } 
-                        
-                        try {
-                            foreach (var dir in dirInfo.EnumerateDirectories("*", SearchOption.AllDirectories))
-                            {
-                                try { dir.Delete(true); } catch { }
-                            }
-                        } catch { }
-                    }
-                    catch { }
+                            } catch { }
 
-                    if (categoryBytes > 0)
-                    {
-                        double mb = Math.Round(categoryBytes / 1024.0 / 1024.0, 2);
-                        OnLogItem?.Invoke(new CleanupLogItem 
-                        { 
-                            Message = $"{kvp.Key} : {mb} MB removidos" + (skippedCount > 0 ? $" ({skippedCount} ignorados)" : ""), 
-                            Icon = "Checkmark24", 
-                            StatusColor = "Green" 
-                        });
-                        totalBytes += categoryBytes;
-                    }
-                    else
-                    {
-                        OnLogItem?.Invoke(new CleanupLogItem 
-                        { 
-                            Message = $"{kvp.Key} : Limpo (ou ignorado)", 
-                            Icon = "Info24", 
-                            StatusColor = "Gray" 
-                        });
+                            try {
+                                foreach (var dir in dirInfo.EnumerateDirectories("*", SearchOption.AllDirectories))
+                                {
+                                    try { dir.Delete(true); } catch { }
+                                }
+                            } catch { }
+                        }
+                        catch { }
+
+                        if (categoryBytes > 0)
+                        {
+                            double mb = Math.Round(categoryBytes / 1024.0 / 1024.0, 2);
+                            OnLogItem?.Invoke(new CleanupLogItem
+                            {
+                                Message = $"{kvp.Key} : {mb} MB removidos" + (skippedCount > 0 ? $" ({skippedCount} ignorados)" : ""),
+                                Icon = "Checkmark24",
+                                StatusColor = "Green"
+                            });
+                            totalBytes += categoryBytes;
+                        }
+                        else
+                        {
+                            OnLogItem?.Invoke(new CleanupLogItem
+                            {
+                                Message = $"{kvp.Key} : Limpo (ou ignorado)",
+                                Icon = "Info24",
+                                StatusColor = "Gray"
+                            });
+                        }
                     }
                 }
-            }
 
-            // 3. DNS Cache
-            try
-            {
-                Helpers.CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
-                OnLogItem?.Invoke(new CleanupLogItem { Message = "Cache DNS: Limpo", Icon = "Globe24", StatusColor = "Green" });
-            }
-            catch { }
+                // 3. DNS Cache
+                try
+                {
+                    Helpers.CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = "Cache DNS: Limpo", Icon = "Globe24", StatusColor = "Green" });
+                }
+                catch { }
 
-            double totalMb = Math.Round(totalBytes / 1024.0 / 1024.0, 2);
-            OnLogItem?.Invoke(new CleanupLogItem 
-            { 
-                Message = $"LIMPEZA CONCLUÍDA! Liberado: {totalMb} MB", 
-                Icon = "Delete24", 
-                StatusColor = "#0078D4", 
-                IsBold = true 
+                double totalMb = Math.Round(totalBytes / 1024.0 / 1024.0, 2);
+                OnLogItem?.Invoke(new CleanupLogItem
+                {
+                    Message = $"LIMPEZA CONCLUÍDA! Liberado: {totalMb} MB",
+                    Icon = "Delete24",
+                    StatusColor = "#0078D4",
+                    IsBold = true
+                });
             });
         }
 
