@@ -17,13 +17,25 @@ namespace SystemOptimizer.Models
             : base(id, category, title, description)
         {
             // Normalize path
-            if (keyPath.StartsWith("HKLM") || keyPath.StartsWith("HKEY_LOCAL_MACHINE"))
+            if (keyPath.StartsWith("HKLM", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_LOCAL_MACHINE", StringComparison.OrdinalIgnoreCase))
             {
                 _hive = RegistryHive.LocalMachine;
             }
-            else if (keyPath.StartsWith("HKCU") || keyPath.StartsWith("HKEY_CURRENT_USER"))
+            else if (keyPath.StartsWith("HKCU", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
             {
                 _hive = RegistryHive.CurrentUser;
+            }
+            else if (keyPath.StartsWith("HKCR", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
+            {
+                _hive = RegistryHive.ClassesRoot;
+            }
+            else if (keyPath.StartsWith("HKU", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_USERS", StringComparison.OrdinalIgnoreCase))
+            {
+                _hive = RegistryHive.Users;
+            }
+            else if (keyPath.StartsWith("HKCC", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_CURRENT_CONFIG", StringComparison.OrdinalIgnoreCase))
+            {
+                _hive = RegistryHive.CurrentConfig;
             }
             else
             {
