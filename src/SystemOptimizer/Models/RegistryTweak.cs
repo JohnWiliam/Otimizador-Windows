@@ -39,8 +39,7 @@ namespace SystemOptimizer.Models
             }
             else
             {
-                // Default to HKLM if not specified, or throw. Assuming valid input from Service.
-                _hive = RegistryHive.LocalMachine;
+                throw new ArgumentException($"Invalid or unsupported registry hive in path: {keyPath}", nameof(keyPath));
             }
 
             // Strip prefix to get relative path
