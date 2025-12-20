@@ -7,7 +7,7 @@ using System.IO;
 string inputFile = args[0];
 string outputDir = args[1];
 
-int[] sizes = new[] { 16, 32, 48, 64, 256 };
+int[] sizes = new[] { 64, 256, 512 };
 
 if (!Directory.Exists(outputDir)) Directory.CreateDirectory(outputDir);
 
