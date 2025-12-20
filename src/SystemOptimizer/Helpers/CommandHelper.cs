@@ -14,6 +14,7 @@ namespace SystemOptimizer.Helpers
                     FileName = fileName,
                     Arguments = arguments,
                     RedirectStandardOutput = true,
+                    RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
@@ -21,10 +22,18 @@ namespace SystemOptimizer.Helpers
                 using var process = Process.Start(psi);
                 if (process == null) return string.Empty;
                 
-                // Read output BEFORE waiting for exit to avoid deadlock on full buffer
-                string output = process.StandardOutput?.ReadToEnd() ?? string.Empty;
+                // Leitura dos streams antes do WaitForExit para evitar deadlocks
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                
                 process.WaitForExit();
                 
+                // Se houver erro crítico e nenhum output útil, retorna o erro para fins de debug
+                if (!string.IsNullOrEmpty(error) && string.IsNullOrWhiteSpace(output))
+                {
+                    return $"[ERRO CMD] {error}";
+                }
+
                 return output;
             }
             catch
