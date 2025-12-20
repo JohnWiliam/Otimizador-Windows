@@ -3,6 +3,7 @@ using Wpf.Ui.Controls;
 using Wpf.Ui;
 using SystemOptimizer.ViewModels;
 using System;
+using SystemOptimizer.Helpers;
 
 namespace SystemOptimizer
 {
@@ -33,8 +34,11 @@ namespace SystemOptimizer
 
         private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            Logger.Log("MainWindow_Loaded started.");
             await ViewModel.InitializeAsync();
+            Logger.Log("Initializing complete. Navigating to PrivacyPage...");
             RootNavigation.Navigate(typeof(Views.Pages.PrivacyPage));
+            Logger.Log("Navigation call finished.");
         }
 
         public INavigationView GetNavigation() => RootNavigation;
