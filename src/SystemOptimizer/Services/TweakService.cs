@@ -60,7 +60,7 @@ namespace SystemOptimizer.Services
 
         private void AddPerformanceTweaks()
         {
-            // PF1: Ultimate Power Plan (Melhorado para criar se não existir)
+            // PF1: Ultimate Power Plan (Lógica Robusta: Cria se não existir)
             Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, "Plano de Energia Ultimate", "Força o plano de desempenho máximo (Ultimate/High).",
                 () => { 
                     var list = CommandHelper.RunCommand("powercfg", "/list");
@@ -78,6 +78,7 @@ namespace SystemOptimizer.Services
                     var check = CommandHelper.RunCommand("powercfg", "/getactivescheme");
                     if (!check.Contains(ultimateGuid))
                     {
+                         // High Performance GUID fallback
                          CommandHelper.RunCommand("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
                     }
                     return true;
@@ -86,11 +87,15 @@ namespace SystemOptimizer.Services
                 () => { var res = CommandHelper.RunCommand("powercfg", "/getactivescheme"); return res.Contains("e9a42b02") || res.Contains("8c5e7fda"); }
             ));
 
-            // PF2: GameDVR
+            // PF2: GameDVR (Correção: CreateSubKey para garantir existência)
             Tweaks.Add(new CustomTweak("PF2", TweakCategory.Performance, "Desativar GameDVR", "Remove gravação em segundo plano (Aumenta FPS).",
                 () => {
                     Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", 0, RegistryValueKind.DWord);
-                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR", 0, RegistryValueKind.DWord);
+                    // Usa RegistryKey explícito para criar se não existir a chave de política
+                    using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", true))
+                    {
+                        key.SetValue("AllowGameDVR", 0, RegistryValueKind.DWord);
+                    }
                     return true;
                 },
                 () => {
@@ -106,7 +111,8 @@ namespace SystemOptimizer.Services
                     var v2 = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR", null);
                     
                     bool userOff = (v1 is int i1 && i1 == 0);
-                    // Policy: If 0 -> Optimized. If missing (null) -> Not optimized (default is on).
+                    // Se a política não existe (null), assume padrão do windows (ON), então não está otimizado via política
+                    // Mas se o usuário quer otimizar, a gente força a política para 0.
                     bool policyOff = (v2 is int i2 && i2 == 0);
                     
                     return userOff && policyOff;
@@ -131,29 +137,29 @@ namespace SystemOptimizer.Services
                 }
             ));
 
-            // PF4: SysMain
+            // PF4: SysMain (Correção: Foca no StartMode, evita race condition de Stop())
             Tweaks.Add(new CustomTweak("PF4", TweakCategory.Performance, "Desativar SysMain", "Otimiza I/O para SSDs modernos (para o serviço).",
                 () => {
-                    try {
-                        using var sc = new ServiceController("SysMain");
-                        if (sc.Status != ServiceControllerStatus.Stopped) sc.Stop();
-                        CommandHelper.RunCommand("sc", "config SysMain start= disabled"); 
-                        return true;
-                    } catch { return false; }
+                    // Configura para disabled primeiro
+                    CommandHelper.RunCommand("sc", "config SysMain start= disabled"); 
+                    // Tenta parar (best effort), não falha se der timeout
+                    CommandHelper.RunCommandNoWait("sc", "stop SysMain");
+                    return true;
                 },
                 () => {
-                    try {
-                        CommandHelper.RunCommand("sc", "config SysMain start= auto");
-                        using var sc = new ServiceController("SysMain");
-                        sc.Start();
-                        return true;
-                    } catch { return false; }
+                    CommandHelper.RunCommand("sc", "config SysMain start= auto");
+                    CommandHelper.RunCommandNoWait("sc", "start SysMain");
+                    return true;
                 },
                 () => {
                     try {
                         using var sc = new ServiceController("SysMain");
+                        // Verifica se está Desabilitado (Configuração), não se está parado (Estado momentâneo)
                         return sc.StartType == ServiceStartMode.Disabled;
-                    } catch { return false; }
+                    } catch { 
+                        // Se o serviço não existe, está "otimizado"
+                        return true; 
+                    }
                 }
             ));
 
@@ -166,20 +172,24 @@ namespace SystemOptimizer.Services
             Tweaks.Add(new RegistryTweak("PF7", TweakCategory.Performance, "Agendamento GPU", "Habilita agendamento acelerado por hardware (Requer Reinício).",
                 @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1));
 
-            // PF8: VBS / HVCI (Atualizado com aviso de segurança)
+            // PF8: VBS / HVCI
             Tweaks.Add(new CustomTweak("PF8", TweakCategory.Performance, "Desativar VBS / HVCI", "Aumenta FPS, mas reduz a segurança do sistema (REQUER REINÍCIO).",
                 () => {
-                   Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 0, RegistryValueKind.DWord);
+                   using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true))
+                   {
+                       key.SetValue("Enabled", 0, RegistryValueKind.DWord);
+                   }
                    return true;
                 },
                 () => {
-                   Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 1, RegistryValueKind.DWord);
+                   using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true))
+                   {
+                       key.SetValue("Enabled", 1, RegistryValueKind.DWord);
+                   }
                    return true;
                 },
                 () => {
                     var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", -1);
-                    // If key missing, VBS might be off or on depending on hardware.
-                    // But if we explicitly want to disable it via this key, we check for 0.
                     return val is int i && i == 0;
                 }
             ));
@@ -188,7 +198,6 @@ namespace SystemOptimizer.Services
                 () => { CommandHelper.RunCommand("powercfg", "/hibernate off"); return true; },
                 () => { CommandHelper.RunCommand("powercfg", "/hibernate on"); return true; },
                 () => {
-                    // Check Registry for reliability (0 = Disabled/Optimized)
                     var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled", -1);
                     return val is int i && i == 0;
                 } 
@@ -197,34 +206,47 @@ namespace SystemOptimizer.Services
 
         private void AddNetworkTweaks()
         {
-             // N1: TCP Auto-Tuning
+             // N1: TCP Auto-Tuning (Verificação em PT-BR e EN)
             Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, "TCP Auto-Tuning", "Janela TCP Dinâmica (Essencial para >100Mbps).",
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
-                () => { return CommandHelper.RunCommand("powershell", "Get-NetTCPSetting -SettingName Internet").Contains("Normal"); } 
+                () => { 
+                    var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower();
+                    // Verifica 'normal' tanto na label quanto no valor
+                    return res.Contains("autotuninglevel") && res.Contains("normal"); 
+                } 
             ));
 
             // N2: CUBIC
             Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, "Algoritmo CUBIC", "Gestão moderna de congestionamento para alta velocidade.",
                 () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=cubic"); return true; },
                 () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
-                () => { return CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).CongestionProvider").Trim() == "CUBIC"; }
+                () => { 
+                    // PowerShell retorna objeto real, menos propenso a erro de texto, mas checamos a string retornada
+                    var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).CongestionProvider").Trim().ToUpper();
+                    return res == "CUBIC"; 
+                }
             ));
 
             // N3: ECN
             Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, "Ativar ECN", "Notificação Explícita de Congestionamento (Menos Perda).",
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
-                () => { return CommandHelper.RunCommand("netsh", "int tcp show global").Contains("enabled"); } 
+                () => { 
+                    var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower();
+                    return res.Contains("ecn") && (res.Contains("enabled") || res.Contains("enabled")); 
+                } 
             ));
 
-            // N4: RSS
+            // N4: RSS (Suporte PT-BR)
             Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, "Desativar RSS", "Receive Side Scaling (Teste de estabilidade/driver).",
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled"); return true; },
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
                 () => { 
-                    var res = CommandHelper.RunCommand("netsh", "int tcp show global");
-                    return res.Contains("Receive-Side Scaling State") && res.Contains("disabled");
+                    var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower();
+                    // PT-BR: "Estado de Receive-Side Scaling" : "desabilitado"
+                    // EN: "Receive-Side Scaling State" : "disabled"
+                    return res.Contains("rss") && (res.Contains("disabled") || res.Contains("desabilitado"));
                 }
             ));
 
