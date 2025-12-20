@@ -6,7 +6,7 @@ namespace SystemOptimizer.Helpers
 {
     public class MathConverter : IValueConverter
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is double dValue)
             {
@@ -20,14 +20,14 @@ namespace SystemOptimizer.Helpers
             return value;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             double dValue;
-            bool isDouble = value is double;
-
-            if (isDouble)
+            
+            // Pattern matching handles null check automatically
+            if (value is double d)
             {
-                dValue = (double)value;
+                dValue = d;
             }
             else if (!double.TryParse(value?.ToString(), NumberStyles.Any, culture, out dValue) &&
                      !double.TryParse(value?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out dValue))
