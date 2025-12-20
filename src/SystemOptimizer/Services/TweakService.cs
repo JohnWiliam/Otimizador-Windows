@@ -60,13 +60,26 @@ namespace SystemOptimizer.Services
 
         private void AddPerformanceTweaks()
         {
-            // PF1: Ultimate Power Plan
+            // PF1: Ultimate Power Plan (Melhorado para criar se não existir)
             Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, "Plano de Energia Ultimate", "Força o plano de desempenho máximo (Ultimate/High).",
                 () => { 
-                    var p = CommandHelper.RunCommand("powercfg", "/list");
-                    // Check for Ultimate (e9a4...) or High Performance (8c5e...)
-                    string guid = p.Contains("e9a42b02-d5df-448d-aa00-03f14749eb61") ? "e9a42b02-d5df-448d-aa00-03f14749eb61" : "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
-                    CommandHelper.RunCommand("powercfg", "/setactive " + guid);
+                    var list = CommandHelper.RunCommand("powercfg", "/list");
+                    string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
+                    
+                    // Se não encontrar o GUID, tenta duplicar o esquema
+                    if (!list.Contains(ultimateGuid))
+                    {
+                        CommandHelper.RunCommand("powercfg", $"-duplicatescheme {ultimateGuid}");
+                    }
+                    
+                    CommandHelper.RunCommand("powercfg", $"/setactive {ultimateGuid}");
+                    
+                    // Fallback: Verifica se ativou, senão tenta High Performance padrão
+                    var check = CommandHelper.RunCommand("powercfg", "/getactivescheme");
+                    if (!check.Contains(ultimateGuid))
+                    {
+                         CommandHelper.RunCommand("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+                    }
                     return true;
                 },
                 () => { CommandHelper.RunCommand("powercfg", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e"); return true; }, // Balanced
@@ -150,10 +163,11 @@ namespace SystemOptimizer.Services
             Tweaks.Add(new RegistryTweak("PF6", TweakCategory.Performance, "Throttling de Rede", "Remove limite de processamento de pacotes (Index FFFFFF).",
                 @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", "NetworkThrottlingIndex", -1, 10)); 
 
-            Tweaks.Add(new RegistryTweak("PF7", TweakCategory.Performance, "Agendamento GPU", "Habilita agendamento acelerado por hardware (Reboot).",
+            Tweaks.Add(new RegistryTweak("PF7", TweakCategory.Performance, "Agendamento GPU", "Habilita agendamento acelerado por hardware (Requer Reinício).",
                 @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1));
 
-            Tweaks.Add(new CustomTweak("PF8", TweakCategory.Performance, "Desativar VBS / HVCI", "Desativa isolamento de núcleo (Ganho de FPS).",
+            // PF8: VBS / HVCI (Atualizado com aviso de segurança)
+            Tweaks.Add(new CustomTweak("PF8", TweakCategory.Performance, "Desativar VBS / HVCI", "Aumenta FPS, mas reduz a segurança do sistema (REQUER REINÍCIO).",
                 () => {
                    Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", 0, RegistryValueKind.DWord);
                    return true;
