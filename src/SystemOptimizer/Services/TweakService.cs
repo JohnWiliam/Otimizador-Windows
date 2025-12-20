@@ -15,23 +15,36 @@ namespace SystemOptimizer.Services
 
         public void LoadTweaks()
         {
+            Logger.Log("Starting LoadTweaks...");
             Tweaks.Clear();
             AddPrivacyTweaks();
             AddPerformanceTweaks();
             AddNetworkTweaks();
             AddSecurityTweaks();
             AddAppearanceTweaks();
+            Logger.Log($"LoadTweaks finished. Loaded {Tweaks.Count} tweaks.");
         }
 
         public async Task RefreshStatusesAsync()
         {
+            Logger.Log("Starting RefreshStatusesAsync...");
             await Task.Run(() => 
             {
                 Parallel.ForEach(Tweaks, tweak => 
                 {
-                    tweak.CheckStatus();
+                    try
+                    {
+                        Logger.Log($"Checking status for tweak: {tweak.Id}");
+                        tweak.CheckStatus();
+                        Logger.Log($"Finished status for tweak: {tweak.Id} - Status: {tweak.Status}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Error checking status for tweak {tweak.Id}: {ex.Message}", "ERROR");
+                    }
                 });
             });
+            Logger.Log("RefreshStatusesAsync finished.");
         }
 
         private void AddPrivacyTweaks()
