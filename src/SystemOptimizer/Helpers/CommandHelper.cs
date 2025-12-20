@@ -22,11 +22,17 @@ namespace SystemOptimizer.Helpers
                 using var process = Process.Start(psi);
                 if (process == null) return string.Empty;
                 
-                // Leitura dos streams antes do WaitForExit para evitar deadlocks
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
+                // Correção de Deadlock: Ler streams de forma assíncrona para evitar bloqueio do buffer
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                var errorTask = process.StandardError.ReadToEndAsync();
+                
+                // Aguarda ambas as leituras completarem
+                Task.WaitAll(outputTask, errorTask);
                 
                 process.WaitForExit();
+                
+                string output = outputTask.Result;
+                string error = errorTask.Result;
                 
                 // Se houver erro crítico e nenhum output útil, retorna o erro para fins de debug
                 if (!string.IsNullOrEmpty(error) && string.IsNullOrWhiteSpace(output))
