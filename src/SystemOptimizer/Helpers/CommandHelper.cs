@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace SystemOptimizer.Helpers
@@ -16,26 +17,29 @@ namespace SystemOptimizer.Helpers
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
-                    CreateNoWindow = true
+                    CreateNoWindow = true,
+                    // Garante que caracteres especiais (acentos) sejam lidos corretamente
+                    StandardOutputEncoding = Encoding.UTF8, 
+                    StandardErrorEncoding = Encoding.UTF8
                 };
 
                 using var process = Process.Start(psi);
                 if (process == null) return string.Empty;
                 
-                // Correção de Deadlock: Ler streams de forma assíncrona para evitar bloqueio do buffer
+                // Leitura assíncrona para evitar Deadlocks
                 var outputTask = process.StandardOutput.ReadToEndAsync();
                 var errorTask = process.StandardError.ReadToEndAsync();
                 
-                // Aguarda ambas as leituras completarem
+                // Aguarda ambas as streams e a saída do processo
                 Task.WaitAll(outputTask, errorTask);
-                
                 process.WaitForExit();
                 
                 string output = outputTask.Result;
                 string error = errorTask.Result;
-                
-                // Se houver erro crítico e nenhum output útil, retorna o erro para fins de debug
-                if (!string.IsNullOrEmpty(error) && string.IsNullOrWhiteSpace(output))
+
+                // Se houver erro na stream de erro, mas o output estiver vazio, retorna o erro.
+                // Alguns comandos (como netsh) as vezes escrevem avisos no stderr que não são erros fatais.
+                if (!string.IsNullOrWhiteSpace(error) && string.IsNullOrWhiteSpace(output) && process.ExitCode != 0)
                 {
                     return $"[ERRO CMD] {error}";
                 }
