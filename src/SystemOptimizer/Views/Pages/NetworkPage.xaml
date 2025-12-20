@@ -6,23 +6,20 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
+      d:DesignHeight="550" d:DesignWidth="800"
       Title="NetworkPage">
 
-    <Grid Margin="20,10,20,20" MaxHeight="{Binding Source={x:Static Application.Current}, Path=MainWindow.ActualHeight, Converter={StaticResource MathConverter}, ConverterParameter=-100}" VerticalAlignment="Top">
+    <Grid Margin="24,12,24,24">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /> <RowDefinition Height="*" />    <RowDefinition Height="Auto" /> </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Rede" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,10" />
+        <TextBlock Grid.Row="0" Text="Otimizações de Rede" FontSize="26" FontWeight="SemiBold" Margin="0,0,0,16" />
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
             <ItemsControl ItemsSource="{Binding NetworkTweaks}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <ui:Card Margin="0,0,5,5" Padding="12">
+                        <ui:Card Margin="0,0,0,8" Padding="16,12">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
@@ -30,11 +27,11 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
-                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,16,0" />
 
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" />
-                                    <TextBlock Text="{Binding Description}" Foreground="#666666" FontSize="11" Margin="0,1,0,0" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="14" />
+                                    <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap" />
                                 </StackPanel>
 
                                 <Border Grid.Column="2" Background="Transparent" Padding="8,4" CornerRadius="4" VerticalAlignment="Center">
@@ -47,9 +44,9 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <ui:Button Content="Restaurar Seleção" Command="{Binding RevertSelectedCommand}" CommandParameter="Network" Appearance="Secondary" Margin="0,0,10,0" Width="150" />
-            <ui:Button Content="Aplicar Seleção" Command="{Binding ApplySelectedCommand}" CommandParameter="Network" Appearance="Primary" Width="150" />
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <ui:Button Content="Restaurar Padrões" Command="{Binding RevertSelectedCommand}" CommandParameter="Network" Appearance="Secondary" Icon="ArrowUndo24" Margin="0,0,12,0" Width="160" />
+            <ui:Button Content="Aplicar Otimizações" Command="{Binding ApplySelectedCommand}" CommandParameter="Network" Appearance="Primary" Icon="Checkmark24" Width="180" />
         </StackPanel>
     </Grid>
 </Page>
