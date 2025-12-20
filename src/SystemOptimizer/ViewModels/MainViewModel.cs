@@ -49,8 +49,14 @@ namespace SystemOptimizer.ViewModels
         public async Task InitializeAsync()
         {
             IsInitializing = true;
-            _tweakService.LoadTweaks();
+            // Executa o carregamento em background para não travar a UI inicial
+            await Task.Run(() => 
+            {
+                _tweakService.LoadTweaks();
+            });
+            
             PopulateCategories();
+            
             await _tweakService.RefreshStatusesAsync();
             foreach (var tweakVM in GetAllTweakViewModels())
             {
@@ -89,6 +95,20 @@ namespace SystemOptimizer.ViewModels
             }
         }
 
+        // Verifica IDs que sabidamente requerem reboot
+        private bool IsRebootRequired(string tweakId)
+        {
+            var rebootIds = new HashSet<string> 
+            { 
+                "PF4", // SysMain
+                "PF7", // GPU Scheduling
+                "PF8", // VBS/HVCI
+                "A1",  // Transparência (as vezes requer relogin)
+                "P1",  // Telemetria (políticas)
+            };
+            return rebootIds.Contains(tweakId);
+        }
+
         [RelayCommand]
         private async Task ApplySelected(string category)
         {
@@ -108,11 +128,14 @@ namespace SystemOptimizer.ViewModels
             int successCount = 0;
             int failCount = 0;
             string lastError = "";
+            bool rebootNeeded = false;
 
             await Task.Run(() =>
             {
                 foreach (var item in list.Where(x => x.IsSelected))
                 {
+                    if (IsRebootRequired(item.Id)) rebootNeeded = true;
+
                     var result = item.Tweak.Apply();
                     if (result.Success) successCount++;
                     else 
@@ -138,7 +161,15 @@ namespace SystemOptimizer.ViewModels
             }
             else if (successCount > 0)
             {
-                await _dialogService.ShowMessageAsync("Sucesso", "Todas as otimizações selecionadas foram aplicadas com sucesso.");
+                if (rebootNeeded)
+                {
+                    await _dialogService.ShowMessageAsync("Sucesso - Reinicialização Necessária", 
+                        "Todas as otimizações foram aplicadas.\n\nATENÇÃO: Algumas alterações (como VBS, GPU ou Serviços) requerem que você REINICIE o computador para surtir efeito completo.");
+                }
+                else
+                {
+                    await _dialogService.ShowMessageAsync("Sucesso", "Todas as otimizações selecionadas foram aplicadas com sucesso.");
+                }
             }
         }
 
@@ -161,11 +192,14 @@ namespace SystemOptimizer.ViewModels
             int successCount = 0;
             int failCount = 0;
             string lastError = "";
+            bool rebootNeeded = false;
 
             await Task.Run(() =>
             {
                 foreach (var item in list.Where(x => x.IsSelected))
                 {
+                    if (IsRebootRequired(item.Id)) rebootNeeded = true;
+
                     var result = item.Tweak.Revert();
                     if (result.Success) successCount++;
                     else 
@@ -191,7 +225,15 @@ namespace SystemOptimizer.ViewModels
             }
             else if (successCount > 0)
             {
-                await _dialogService.ShowMessageAsync("Sucesso", "Todas as otimizações selecionadas foram restauradas para o padrão.");
+                if (rebootNeeded)
+                {
+                    await _dialogService.ShowMessageAsync("Sucesso - Reinicialização Necessária", 
+                        "As configurações foram restauradas.\n\nPor favor, REINICIE o computador para garantir que as alterações no sistema sejam efetivadas.");
+                }
+                else
+                {
+                    await _dialogService.ShowMessageAsync("Sucesso", "Todas as otimizações selecionadas foram restauradas para o padrão.");
+                }
             }
         }
 
