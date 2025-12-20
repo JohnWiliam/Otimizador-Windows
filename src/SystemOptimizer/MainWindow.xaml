@@ -7,13 +7,14 @@
         xmlns:local="clr-namespace:SystemOptimizer"
         xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
         xmlns:pages="clr-namespace:SystemOptimizer.Views.Pages"
+        xmlns:helpers="clr-namespace:SystemOptimizer.Helpers"
         mc:Ignorable="d"
-        Title="Otimizador de Sistema - Criado por John Wiliam &amp; IA" Height="650" Width="950"
-        MinWidth="600" MinHeight="450"
+        Title="Otimizador de Sistema" Height="700" Width="1000"
+        MinWidth="700" MinHeight="500"
         WindowStartupLocation="CenterScreen"
         ExtendsContentIntoTitleBar="True"
         WindowBackdropType="Mica"
-        FontSize="16"
+        FontSize="14"
         Icon="pack://application:,,,/Assets/icon.ico">
 
     <Grid>
@@ -22,58 +23,86 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         
-        <ui:TitleBar Grid.Row="0" Title="Otimizador de Sistema - Criado por John Wiliam &amp; IA" />
+        <ui:TitleBar Grid.Row="0" Title="Otimizador de Sistema - John Wiliam &amp; IA" />
 
         <ui:NavigationView x:Name="RootNavigation"
                            Grid.Row="1"
                            PaneDisplayMode="Left"
                            IsPaneOpen="True"
-                           OpenPaneLength="250"
+                           OpenPaneLength="220"
                            ScrollViewer.VerticalScrollBarVisibility="Disabled">
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="Privacidade" TargetPageType="{x:Type pages:PrivacyPage}" FontSize="16">
+                <ui:NavigationViewItem Content="Privacidade" TargetPageType="{x:Type pages:PrivacyPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Shield24" FontSize="28" />
+                        <ui:SymbolIcon Symbol="Shield24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 
-                <ui:NavigationViewItem Content="Performance" TargetPageType="{x:Type pages:PerformancePage}" FontSize="16">
+                <ui:NavigationViewItem Content="Performance" TargetPageType="{x:Type pages:PerformancePage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Gauge24" FontSize="28" />
+                        <ui:SymbolIcon Symbol="Gauge24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 
-                <ui:NavigationViewItem Content="Rede" TargetPageType="{x:Type pages:NetworkPage}" FontSize="16">
+                <ui:NavigationViewItem Content="Rede" TargetPageType="{x:Type pages:NetworkPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Globe24" FontSize="28" />
+                        <ui:SymbolIcon Symbol="Globe24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 
-                <ui:NavigationViewItem Content="Segurança" TargetPageType="{x:Type pages:SecurityPage}" FontSize="16">
+                <ui:NavigationViewItem Content="Segurança" TargetPageType="{x:Type pages:SecurityPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="LockClosed24" FontSize="28" />
+                        <ui:SymbolIcon Symbol="LockClosed24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 
-                <ui:NavigationViewItem Content="Visual" TargetPageType="{x:Type pages:AppearancePage}" FontSize="16">
+                <ui:NavigationViewItem Content="Visual" TargetPageType="{x:Type pages:AppearancePage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="PaintBrush24" FontSize="28" />
+                        <ui:SymbolIcon Symbol="PaintBrush24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 
-                <ui:NavigationViewItem Content="Limpeza" TargetPageType="{x:Type pages:CleanupPage}" FontSize="16">
+                <ui:NavigationViewItem Content="Limpeza" TargetPageType="{x:Type pages:CleanupPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="Broom24" FontSize="28" />
+                        <ui:SymbolIcon Symbol="Broom24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
 
             <ui:NavigationView.ContentOverlay>
                  <Grid>
-                    <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
+                     <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
                  </Grid>
             </ui:NavigationView.ContentOverlay>
-
         </ui:NavigationView>
+
+        <Grid Grid.Row="0" Grid.RowSpan="2" 
+              Background="#99000000" 
+              Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
+              d:Visibility="Collapsed">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:ProgressRing IsIndeterminate="True" Width="60" Height="60" />
+                <TextBlock Text="Aplicando alterações..." 
+                           Foreground="White" 
+                           FontSize="16" 
+                           FontWeight="SemiBold" 
+                           Margin="0,20,0,0" 
+                           HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+        
+        <Grid Grid.Row="0" Grid.RowSpan="2" 
+              Background="{DynamicResource ApplicationBackgroundBrush}"
+              Visibility="{Binding IsInitializing, Converter={StaticResource BooleanToVisibilityConverter}}"
+              d:Visibility="Collapsed">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <ui:ProgressRing IsIndeterminate="True" Width="50" Height="50" />
+                <TextBlock Text="Carregando estado do sistema..." 
+                           Margin="0,15,0,0" 
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            </StackPanel>
+        </Grid>
+
     </Grid>
 </ui:FluentWindow>
