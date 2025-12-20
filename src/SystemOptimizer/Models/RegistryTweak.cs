@@ -8,7 +8,7 @@ namespace SystemOptimizer.Models
         private readonly string _keyPath;
         private readonly string _valueName;
         private readonly object _optimizedValue;
-        private readonly object? _defaultValue; // Null if DELETE
+        private readonly object? _defaultValue; // Null if DELETE is expected/default
         private readonly RegistryValueKind _valueKind;
         private readonly RegistryHive _hive;
 
@@ -16,42 +16,23 @@ namespace SystemOptimizer.Models
                              string keyPath, string valueName, object optimizedValue, object? defaultValue, RegistryValueKind kind = RegistryValueKind.DWord)
             : base(id, category, title, description)
         {
-            // Normalize path
+            // Identificação do Hive
             if (keyPath.StartsWith("HKLM", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_LOCAL_MACHINE", StringComparison.OrdinalIgnoreCase))
-            {
                 _hive = RegistryHive.LocalMachine;
-            }
             else if (keyPath.StartsWith("HKCU", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
-            {
                 _hive = RegistryHive.CurrentUser;
-            }
             else if (keyPath.StartsWith("HKCR", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
-            {
                 _hive = RegistryHive.ClassesRoot;
-            }
             else if (keyPath.StartsWith("HKU", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_USERS", StringComparison.OrdinalIgnoreCase))
-            {
                 _hive = RegistryHive.Users;
-            }
             else if (keyPath.StartsWith("HKCC", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_CURRENT_CONFIG", StringComparison.OrdinalIgnoreCase))
-            {
                 _hive = RegistryHive.CurrentConfig;
-            }
             else
-            {
-                throw new ArgumentException($"Invalid or unsupported registry hive in path: {keyPath}", nameof(keyPath));
-            }
+                throw new ArgumentException($"Hive de registro desconhecida ou inválida: {keyPath}", nameof(keyPath));
 
-            // Strip prefix to get relative path
+            // Remove o prefixo para obter o caminho relativo
             int firstSlash = keyPath.IndexOf('\\');
-            if (firstSlash >= 0)
-            {
-                _keyPath = keyPath.Substring(firstSlash + 1);
-            }
-            else
-            {
-                _keyPath = keyPath; // Fallback
-            }
+            _keyPath = firstSlash >= 0 ? keyPath.Substring(firstSlash + 1) : keyPath;
 
             _valueName = valueName;
             _optimizedValue = optimizedValue;
@@ -64,6 +45,7 @@ namespace SystemOptimizer.Models
             try
             {
                 using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
+                // CreateSubKey garante a criação de toda a árvore se não existir
                 using var key = baseKey.CreateSubKey(_keyPath, true);
                 
                 if (_optimizedValue.ToString() == "DELETE")
@@ -80,7 +62,7 @@ namespace SystemOptimizer.Models
                 
                 if (IsOptimized) return (true, "Tweak aplicado com sucesso.");
                 
-                return (false, "Valor gravado, mas verificação falhou (Status inconsistente).");
+                return (false, "Comando enviado, mas a verificação de status falhou.");
             }
             catch (Exception ex)
             {
@@ -93,6 +75,7 @@ namespace SystemOptimizer.Models
             try
             {
                 using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
+                // CreateSubKey aqui também, pois a chave pode ter sido deletada manualmente
                 using var key = baseKey.CreateSubKey(_keyPath, true);
 
                 if (_defaultValue == null || _defaultValue.ToString() == "DELETE")
@@ -122,16 +105,19 @@ namespace SystemOptimizer.Models
                 using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
                 using var key = baseKey.OpenSubKey(_keyPath, false);
 
+                // Cenário 1: A chave (pasta) não existe
                 if (key == null)
                 {
+                    // Se o objetivo era DELETAR, então está otimizado (ou padrão se o padrão era não existir)
                     if (_optimizedValue.ToString() == "DELETE") Status = TweakStatus.Optimized;
                     else if (_defaultValue == null || _defaultValue.ToString() == "DELETE") Status = TweakStatus.Default;
-                    else Status = TweakStatus.Unknown;
+                    else Status = TweakStatus.Unknown; // Deveria existir um valor, mas a chave sumiu
                     return;
                 }
 
                 var val = key.GetValue(_valueName);
 
+                // Cenário 2: A chave existe, mas o valor não
                 if (val == null)
                 {
                     if (_optimizedValue.ToString() == "DELETE") Status = TweakStatus.Optimized;
@@ -140,7 +126,7 @@ namespace SystemOptimizer.Models
                 }
                 else
                 {
-                    // Comparação robusta (String Invariante) para evitar erro de tipos (Int vs String)
+                    // Cenário 3: Valor existe. Comparação string-to-string robusta.
                     string valStr = val.ToString() ?? "";
                     string optStr = _optimizedValue.ToString() ?? "";
                     string defStr = _defaultValue?.ToString() ?? "";
