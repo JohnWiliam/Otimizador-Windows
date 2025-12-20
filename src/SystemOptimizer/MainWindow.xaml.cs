@@ -18,7 +18,7 @@ namespace SystemOptimizer
             ISnackbarService snackbarService)
         {
             ViewModel = viewModel;
-            DataContext = this;
+            DataContext = ViewModel;
 
             InitializeComponent();
 
