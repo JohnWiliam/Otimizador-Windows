@@ -7,6 +7,8 @@ using System.Windows;
 using SystemOptimizer.Models;
 using SystemOptimizer.Services;
 using System.Collections.Generic;
+using System;
+using SystemOptimizer.Helpers;
 
 namespace SystemOptimizer.ViewModels
 {
@@ -48,21 +50,34 @@ namespace SystemOptimizer.ViewModels
 
         public async Task InitializeAsync()
         {
+            Logger.Log("MainViewModel.InitializeAsync started.");
             IsInitializing = true;
-            // Executa o carregamento em background para não travar a UI inicial
-            await Task.Run(() => 
+            try
             {
-                _tweakService.LoadTweaks();
-            });
-            
-            PopulateCategories();
-            
-            await _tweakService.RefreshStatusesAsync();
-            foreach (var tweakVM in GetAllTweakViewModels())
-            {
-                tweakVM.UpdateStatusUI();
+                // Executa o carregamento em background para não travar a UI inicial
+                await Task.Run(() =>
+                {
+                    _tweakService.LoadTweaks();
+                });
+
+                PopulateCategories();
+
+                await _tweakService.RefreshStatusesAsync();
+                foreach (var tweakVM in GetAllTweakViewModels())
+                {
+                    tweakVM.UpdateStatusUI();
+                }
             }
-            IsInitializing = false;
+            catch (Exception ex)
+            {
+                Logger.Log($"Error during initialization: {ex.Message}", "CRITICAL");
+                await _dialogService.ShowMessageAsync("Erro na Inicialização", $"Ocorreu um erro ao carregar o estado do sistema: {ex.Message}");
+            }
+            finally
+            {
+                IsInitializing = false;
+                Logger.Log("MainViewModel.InitializeAsync finished.");
+            }
         }
 
         private IEnumerable<TweakViewModel> GetAllTweakViewModels()
