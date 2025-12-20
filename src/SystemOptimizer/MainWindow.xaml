@@ -30,7 +30,7 @@
                            PaneDisplayMode="Left"
                            IsPaneOpen="True"
                            OpenPaneLength="220"
-                           ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                           ScrollViewer.VerticalScrollBarVisibility="Auto">
             <ui:NavigationView.MenuItems>
                 <ui:NavigationViewItem Content="Privacidade" TargetPageType="{x:Type pages:PrivacyPage}">
                     <ui:NavigationViewItem.Icon>
@@ -71,7 +71,7 @@
 
             <ui:NavigationView.ContentOverlay>
                  <Grid>
-                     <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
+                    <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
                  </Grid>
             </ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
