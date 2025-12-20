@@ -63,7 +63,6 @@ namespace SystemOptimizer.Models
         {
             try
             {
-                // Use Registry64 to ensure we touch the correct keys on x64 systems
                 using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
                 using var key = baseKey.CreateSubKey(_keyPath, true);
                 
@@ -79,10 +78,9 @@ namespace SystemOptimizer.Models
                 
                 CheckStatus();
                 
-                // Allow a slight leniency in verification for complex types, but strict for DWord
                 if (IsOptimized) return (true, "Tweak aplicado com sucesso.");
                 
-                return (false, "O valor foi gravado, mas a verificação de status falhou. Reinicie para confirmar.");
+                return (false, "Valor gravado, mas verificação falhou (Status inconsistente).");
             }
             catch (Exception ex)
             {
@@ -109,7 +107,7 @@ namespace SystemOptimizer.Models
                 
                 CheckStatus();
                 if (Status == TweakStatus.Default) return (true, "Tweak restaurado com sucesso.");
-                return (false, "Valor restaurado, mas status inconsistente.");
+                return (false, "Restaurado, mas status inconsistente.");
             }
             catch (Exception ex)
             {
@@ -126,13 +124,9 @@ namespace SystemOptimizer.Models
 
                 if (key == null)
                 {
-                    // If key doesn't exist:
-                    // If Optimized is DELETE, it's Optimized.
-                    // If Default is DELETE, it's Default.
-                    // Otherwise Unknown.
                     if (_optimizedValue.ToString() == "DELETE") Status = TweakStatus.Optimized;
                     else if (_defaultValue == null || _defaultValue.ToString() == "DELETE") Status = TweakStatus.Default;
-                    else Status = TweakStatus.Unknown; // Should exist but doesn't
+                    else Status = TweakStatus.Unknown;
                     return;
                 }
 
@@ -140,24 +134,22 @@ namespace SystemOptimizer.Models
 
                 if (val == null)
                 {
-                    // Value doesn't exist
                     if (_optimizedValue.ToString() == "DELETE") Status = TweakStatus.Optimized;
                     else if (_defaultValue == null || _defaultValue.ToString() == "DELETE") Status = TweakStatus.Default;
                     else Status = TweakStatus.Modified; 
                 }
                 else
                 {
-                    // Value exists
-                    // Handle string vs int comparisons carefully
+                    // Comparação robusta (String Invariante) para evitar erro de tipos (Int vs String)
                     string valStr = val.ToString() ?? "";
                     string optStr = _optimizedValue.ToString() ?? "";
                     string defStr = _defaultValue?.ToString() ?? "";
 
-                    if (val.Equals(_optimizedValue) || valStr.Equals(optStr, StringComparison.OrdinalIgnoreCase)) 
+                    if (string.Equals(valStr, optStr, StringComparison.InvariantCultureIgnoreCase))
                     {
                         Status = TweakStatus.Optimized;
                     }
-                    else if (_defaultValue != null && (val.Equals(_defaultValue) || valStr.Equals(defStr, StringComparison.OrdinalIgnoreCase))) 
+                    else if (_defaultValue != null && string.Equals(valStr, defStr, StringComparison.InvariantCultureIgnoreCase))
                     {
                         Status = TweakStatus.Default;
                     }
