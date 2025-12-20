@@ -1,5 +1,5 @@
 # System Optimizer Build Script
-# This script publishes the application as a single self-contained executable.
+# Compiles the icon generator, creates the icon, and publishes the main app.
 
 $ErrorActionPreference = "Stop"
 
@@ -12,31 +12,56 @@ if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
 $dotnetVersion = dotnet --version
 Write-Host "Using .NET SDK version: $dotnetVersion"
 
-$projectPath = Join-Path $PSScriptRoot "src\SystemOptimizer\SystemOptimizer.csproj"
-$outputDir = Join-Path $PSScriptRoot "Build"
+# --- paths ---
+$root = $PSScriptRoot
+$iconResizerProj = Join-Path $root "src\IconResizer\IconResizer.csproj"
+$mainProj = Join-Path $root "src\SystemOptimizer\SystemOptimizer.csproj"
+$outputDir = Join-Path $root "Build"
+$assetsDir = Join-Path $root "src\SystemOptimizer\Assets"
+$sourceLogo = Join-Path $assetsDir "logo.png"
+$targetIcon = Join-Path $assetsDir "icon.ico"
+
+# --- Step 1: Build Icon Resizer Tool ---
+Write-Host "`n[1/3] Building Internal Tools (IconResizer)..."
+dotnet build $iconResizerProj -c Release -v q
+
+# Locate the compiled tool
+$resizerExe = Join-Path $root "src\IconResizer\bin\Release\net8.0-windows\IconResizer.exe"
+
+if (-not (Test-Path $resizerExe)) {
+    Write-Error "Failed to build IconResizer tool."
+    exit 1
+}
+
+# --- Step 2: Generate High-Res Icon ---
+Write-Host "`n[2/3] Generating High-Resolution Icon..."
+if (Test-Path $sourceLogo) {
+    # Run the tool: IconResizer.exe <input> <output>
+    & $resizerExe $sourceLogo $targetIcon
+} else {
+    Write-Warning "logo.png not found in Assets. Skipping icon generation."
+}
+
+# --- Step 3: Build Main Application ---
+Write-Host "`n[3/3] Building and Publishing SystemOptimizer..."
 
 if (Test-Path $outputDir) {
     Remove-Item $outputDir -Recurse -Force
 }
 
-Write-Host "Restoring dependencies for win-x64..."
-# We must restore for the specific runtime because we use --no-restore in the publish step (or implied by some environments).
-dotnet restore $projectPath -r win-x64
+# We restore specifically for win-x64
+Write-Host "Restoring dependencies..."
+dotnet restore $mainProj -r win-x64
 
-Write-Host "Building and Publishing Single File Executable..."
-# -r win-x64: Target Windows 64-bit
-# --self-contained: Bundle .NET runtime (Portable)
-# -p:PublishSingleFile=true: Merge into one .exe
-# -p:IncludeNativeLibrariesForSelfExtract=true: Ensure native libs are included
-# -c Release: Release configuration
-# --no-restore: Use the assets we just restored
-
-dotnet publish $projectPath -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --no-restore -o $outputDir
+Write-Host "Publishing Single File Executable..."
+# -p:PublishSingleFile=true: Merges everything into one EXE
+# --self-contained: Includes .NET runtime
+dotnet publish $mainProj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --no-restore -o $outputDir
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nBuild Successful!" -ForegroundColor Green
     Write-Host "Executable is located at: $outputDir\SystemOptimizer.exe" -ForegroundColor Green
-    Write-Host "You can zip this file or the entire Build folder."
+    Write-Host "Note: If the icon looks blurry in Explorer, try moving the .exe to a new folder (Explorer caches thumbnails)."
 } else {
     Write-Error "Build failed."
 }
