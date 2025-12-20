@@ -20,7 +20,7 @@ namespace SystemOptimizer.Services
                 // 1. Windows Update Cleanup (Smart)
                 await CleanWindowsUpdateAsync();
 
-                // 2. File Cleanup
+                // 2. File Cleanup Genérico
                 var paths = new Dictionary<string, string>
                 {
                     { "Arquivos Temp", Path.GetTempPath() },
@@ -30,8 +30,7 @@ namespace SystemOptimizer.Services
                     { "Shader Cache (D3D)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache") },
                     { "Relatórios de Erro (WER)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER") },
                     { "CrashDumps", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps") },
-                    { "Windows Logs", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs") },
-                    { "Cache Chrome", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data", "Default", "Cache", "Cache_Data") }
+                    { "Windows Logs", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs") }
                 };
 
                 long totalBytes = 0;
@@ -40,65 +39,31 @@ namespace SystemOptimizer.Services
                 {
                     if (Directory.Exists(kvp.Value))
                     {
-                        long categoryBytes = 0;
-                        int skippedCount = 0;
-
-                        try
-                        {
-                            var dirInfo = new DirectoryInfo(kvp.Value);
-
-                            try {
-                                foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
-                                {
-                                    try
-                                    {
-                                        long size = file.Length;
-                                        file.Delete();
-                                        if (!file.Exists)
-                                        {
-                                            categoryBytes += size;
-                                        }
-                                    }
-                                    catch
-                                    {
-                                        skippedCount++;
-                                    }
-                                }
-                            } catch { }
-
-                            try {
-                                foreach (var dir in dirInfo.EnumerateDirectories("*", SearchOption.AllDirectories))
-                                {
-                                    try { dir.Delete(true); } catch { }
-                                }
-                            } catch { }
-                        }
-                        catch { }
-
-                        if (categoryBytes > 0)
-                        {
-                            double mb = Math.Round(categoryBytes / 1024.0 / 1024.0, 2);
-                            OnLogItem?.Invoke(new CleanupLogItem
-                            {
-                                Message = $"{kvp.Key} : {mb} MB removidos" + (skippedCount > 0 ? $" ({skippedCount} ignorados)" : ""),
-                                Icon = "Checkmark24",
-                                StatusColor = "Green"
-                            });
-                            totalBytes += categoryBytes;
-                        }
-                        else
-                        {
-                            OnLogItem?.Invoke(new CleanupLogItem
-                            {
-                                Message = $"{kvp.Key} : Limpo (ou ignorado)",
-                                Icon = "Info24",
-                                StatusColor = "Gray"
-                            });
-                        }
+                        totalBytes += CleanDirectory(kvp.Value, kvp.Key);
                     }
                 }
 
-                // 3. DNS Cache
+                // 3. Limpeza Especial: Chrome (Suporte a múltiplos perfis)
+                string chromeUserData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data");
+                if (Directory.Exists(chromeUserData))
+                {
+                    try 
+                    {
+                        foreach (var dir in Directory.GetDirectories(chromeUserData))
+                        {
+                            // Verifica se é uma pasta de perfil válida (contendo Cache)
+                            string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
+                            if (Directory.Exists(cachePath))
+                            {
+                                string profileName = new DirectoryInfo(dir).Name;
+                                totalBytes += CleanDirectory(cachePath, $"Chrome Cache ({profileName})");
+                            }
+                        }
+                    }
+                    catch { }
+                }
+
+                // 4. DNS Cache
                 try
                 {
                     Helpers.CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
@@ -117,6 +82,49 @@ namespace SystemOptimizer.Services
             });
         }
 
+        private long CleanDirectory(string path, string label)
+        {
+            long categoryBytes = 0;
+            int skippedCount = 0;
+            var dirInfo = new DirectoryInfo(path);
+
+            try {
+                foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        long size = file.Length;
+                        file.Delete();
+                        if (!file.Exists) categoryBytes += size;
+                    }
+                    catch { skippedCount++; }
+                }
+            } catch { }
+
+            try {
+                foreach (var dir in dirInfo.EnumerateDirectories("*", SearchOption.AllDirectories))
+                {
+                    try { dir.Delete(true); } catch { }
+                }
+            } catch { }
+
+            if (categoryBytes > 0)
+            {
+                double mb = Math.Round(categoryBytes / 1024.0 / 1024.0, 2);
+                OnLogItem?.Invoke(new CleanupLogItem
+                {
+                    Message = $"{label} : {mb} MB removidos" + (skippedCount > 0 ? $" ({skippedCount} ignorados)" : ""),
+                    Icon = "Checkmark24",
+                    StatusColor = "Green"
+                });
+            }
+            else
+            {
+                OnLogItem?.Invoke(new CleanupLogItem { Message = $"{label} : Limpo", Icon = "Info24", StatusColor = "Gray" });
+            }
+            return categoryBytes;
+        }
+
         private async Task CleanWindowsUpdateAsync()
         {
             string wuPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download");
@@ -127,40 +135,26 @@ namespace SystemOptimizer.Services
 
             if (stopped)
             {
-                OnLogItem?.Invoke(new CleanupLogItem { Message = "Serviços Windows Update: Parados para limpeza.", Icon = "Pause24", StatusColor = "#CA5010" });
+                OnLogItem?.Invoke(new CleanupLogItem { Message = "Serviços WU: Parados. Aguardando liberação...", Icon = "Pause24", StatusColor = "#CA5010" });
                 
-                // Clean
+                // DELAY CRÍTICO: Garante que o Windows soltou os arquivos antes de tentar deletar
+                await Task.Delay(2500);
+
                 try
                 {
-                    long bytes = 0;
-                    var dir = new DirectoryInfo(wuPath);
-                    foreach (var file in dir.EnumerateFiles("*", SearchOption.AllDirectories))
-                    {
-                        try { 
-                            long s = file.Length; 
-                            file.Delete(); 
-                            bytes += s; 
-                        } catch { }
-                    }
-                    foreach (var d in dir.EnumerateDirectories("*", SearchOption.AllDirectories))
-                    {
-                        try { d.Delete(true); } catch { }
-                    }
-                    
-                    double mb = Math.Round(bytes / 1024.0 / 1024.0, 2);
-                    OnLogItem?.Invoke(new CleanupLogItem { Message = $"Windows Update : {mb} MB removidos", Icon = "Checkmark24", StatusColor = "Green" });
+                    long bytes = CleanDirectory(wuPath, "Windows Update");
                 }
                 catch
                 {
-                    OnLogItem?.Invoke(new CleanupLogItem { Message = "Windows Update : Falha ao acessar arquivos.", Icon = "ErrorCircle24", StatusColor = "Red" });
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = "Windows Update : Falha crítica ao limpar.", Icon = "ErrorCircle24", StatusColor = "Red" });
                 }
 
                 await ToggleServicesAsync(services, true);
-                OnLogItem?.Invoke(new CleanupLogItem { Message = "Serviços Windows Update: Reiniciados.", Icon = "Play24", StatusColor = "Green" });
+                OnLogItem?.Invoke(new CleanupLogItem { Message = "Serviços WU: Reiniciados.", Icon = "Play24", StatusColor = "Green" });
             }
             else
             {
-                OnLogItem?.Invoke(new CleanupLogItem { Message = "Windows Update : Não foi possível parar serviços. Pulando.", Icon = "Warning24", StatusColor = "Orange" });
+                OnLogItem?.Invoke(new CleanupLogItem { Message = "Windows Update : Não foi possível parar serviços.", Icon = "Warning24", StatusColor = "Orange" });
             }
         }
 
