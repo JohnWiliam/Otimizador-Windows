@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Text;
 using System.Threading.Tasks;
@@ -6,8 +7,9 @@ namespace SystemOptimizer.Helpers
 {
     public static class CommandHelper
     {
-        public static string RunCommand(string fileName, string arguments)
+        public static string RunCommand(string fileName, string arguments, int timeoutMs = 5000)
         {
+            Logger.Log($"Executing command: {fileName} {arguments}", "CMD_START");
             try
             {
                 var psi = new ProcessStartInfo
@@ -24,36 +26,57 @@ namespace SystemOptimizer.Helpers
                 };
 
                 using var process = Process.Start(psi);
-                if (process == null) return string.Empty;
+                if (process == null)
+                {
+                    Logger.Log($"Failed to start process: {fileName}", "CMD_ERROR");
+                    return string.Empty;
+                }
                 
                 // Leitura assíncrona para evitar Deadlocks
                 var outputTask = process.StandardOutput.ReadToEndAsync();
                 var errorTask = process.StandardError.ReadToEndAsync();
                 
-                // Aguarda ambas as streams e a saída do processo
+                // Aguarda a saída do processo com timeout
+                if (!process.WaitForExit(timeoutMs))
+                {
+                    Logger.Log($"Command timed out ({timeoutMs}ms): {fileName} {arguments}", "CMD_TIMEOUT");
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch (Exception kEx)
+                    {
+                        Logger.Log($"Failed to kill timed out process: {kEx.Message}", "CMD_ERROR");
+                    }
+                    return string.Empty;
+                }
+
+                // Se o processo terminou, aguardamos as tarefas de leitura terminarem
                 Task.WaitAll(outputTask, errorTask);
-                process.WaitForExit();
                 
                 string output = outputTask.Result;
                 string error = errorTask.Result;
 
-                // Se houver erro na stream de erro, mas o output estiver vazio, retorna o erro.
-                // Alguns comandos (como netsh) as vezes escrevem avisos no stderr que não são erros fatais.
+                Logger.Log($"Command finished. ExitCode: {process.ExitCode}. OutputLen: {output.Length}. ErrorLen: {error.Length}", "CMD_END");
+
                 if (!string.IsNullOrWhiteSpace(error) && string.IsNullOrWhiteSpace(output) && process.ExitCode != 0)
                 {
+                    Logger.Log($"Command returned error: {error}", "CMD_STDERR");
                     return $"[ERRO CMD] {error}";
                 }
 
                 return output;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Log($"Exception running command {fileName}: {ex.Message}", "CMD_EXCEPTION");
                 return string.Empty;
             }
         }
         
         public static void RunCommandNoWait(string fileName, string arguments)
         {
+            Logger.Log($"Executing (NoWait): {fileName} {arguments}", "CMD_ASYNC");
             try
             {
                 var psi = new ProcessStartInfo
@@ -66,7 +89,10 @@ namespace SystemOptimizer.Helpers
                 };
                 Process.Start(psi);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Logger.Log($"Exception in RunCommandNoWait: {ex.Message}", "CMD_ASYNC_ERROR");
+            }
         }
     }
 }
