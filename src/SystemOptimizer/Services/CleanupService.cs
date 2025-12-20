@@ -17,7 +17,7 @@ namespace SystemOptimizer.Services
             {
                 OnLogItem?.Invoke(new CleanupLogItem { Message = "Iniciando varredura e limpeza...", Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
 
-                // 1. Windows Update Cleanup (Smart)
+                // 1. Windows Update Cleanup (Smart com Retry)
                 await CleanWindowsUpdateAsync();
 
                 // 2. File Cleanup Genérico
@@ -51,12 +51,15 @@ namespace SystemOptimizer.Services
                     {
                         foreach (var dir in Directory.GetDirectories(chromeUserData))
                         {
-                            // Verifica se é uma pasta de perfil válida (contendo Cache)
-                            string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
-                            if (Directory.Exists(cachePath))
+                            // Validação Extra: Verifica se parece um perfil real para evitar deletar pastas de sistema do Chrome
+                            if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
                             {
-                                string profileName = new DirectoryInfo(dir).Name;
-                                totalBytes += CleanDirectory(cachePath, $"Chrome Cache ({profileName})");
+                                string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
+                                if (Directory.Exists(cachePath))
+                                {
+                                    string profileName = new DirectoryInfo(dir).Name;
+                                    totalBytes += CleanDirectory(cachePath, $"Chrome Cache ({profileName})");
+                                }
                             }
                         }
                     }
@@ -135,18 +138,28 @@ namespace SystemOptimizer.Services
 
             if (stopped)
             {
-                OnLogItem?.Invoke(new CleanupLogItem { Message = "Serviços WU: Parados. Aguardando liberação...", Icon = "Pause24", StatusColor = "#CA5010" });
+                OnLogItem?.Invoke(new CleanupLogItem { Message = "Serviços WU: Parados. Tentando limpeza...", Icon = "Pause24", StatusColor = "#CA5010" });
                 
-                // DELAY CRÍTICO: Garante que o Windows soltou os arquivos antes de tentar deletar
-                await Task.Delay(2500);
-
-                try
+                // CORREÇÃO: Retry Pattern ao invés de Delay fixo
+                bool success = false;
+                int attempts = 0;
+                while (!success && attempts < 5)
                 {
-                    long bytes = CleanDirectory(wuPath, "Windows Update");
+                    try
+                    {
+                        CleanDirectory(wuPath, "Windows Update");
+                        success = true; 
+                    }
+                    catch 
+                    {
+                        attempts++;
+                        await Task.Delay(500); // Espera 500ms entre tentativas
+                    }
                 }
-                catch
+
+                if (!success)
                 {
-                    OnLogItem?.Invoke(new CleanupLogItem { Message = "Windows Update : Falha crítica ao limpar.", Icon = "ErrorCircle24", StatusColor = "Red" });
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = "Windows Update : Alguns arquivos estavam em uso.", Icon = "Warning24", StatusColor = "Orange" });
                 }
 
                 await ToggleServicesAsync(services, true);
