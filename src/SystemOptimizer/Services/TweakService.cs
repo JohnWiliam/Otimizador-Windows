@@ -34,7 +34,6 @@ namespace SystemOptimizer.Services
             });
         }
 
-        // ... (MÉTODOS PRIVACY E PERFORMANCE MANTIDOS IGUAIS AO ANTERIOR) ...
         private void AddPrivacyTweaks()
         {
             Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, "Desativar Telemetria", "Impede o envio de dados diagnósticos para a Microsoft.",
@@ -124,57 +123,57 @@ namespace SystemOptimizer.Services
             ));
         }
 
-        // ==========================================
-        // ÁREA DE FOCO: REDE (CORREÇÃO DE ERROS)
-        // ==========================================
         private void AddNetworkTweaks()
         {
-             // N1: TCP Auto-Tuning
+            // CORREÇÃO: Uso de PowerShell para verificação robusta e independente de idioma (retorna Enum string em inglês)
+            
+            // N1: TCP Auto-Tuning
             Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, "TCP Auto-Tuning", "Janela TCP Dinâmica (Essencial para >100Mbps).",
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
                 () => { 
-                    var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower();
-                    // O valor 'normal' geralmente não é traduzido, mas o label sim. Verificamos apenas se 'normal' aparece na saída.
-                    return res.Contains("normal"); 
+                    var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).AutoTuningLevelLocal").Trim();
+                    return res.Equals("Normal", StringComparison.OrdinalIgnoreCase); 
                 } 
             ));
 
-            // N2: CUBIC - Adicionado fallback para 'CTCP' se CUBIC não suportado (Win antigo)
+            // N2: CUBIC
             Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, "Algoritmo CUBIC", "Gestão moderna de congestionamento para alta velocidade.",
                 () => { 
                     var res = CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=cubic"); 
-                    // Se falhar (ex: windows antigo), tenta ctcp
                     if (res.Contains("falha") || res.Contains("failed")) 
                         CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
                     return true; 
                 },
                 () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
                 () => { 
-                    // PowerShell retorna o objeto real, mais seguro que parsear texto do netsh
                     var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).CongestionProvider").Trim().ToUpper();
                     return res == "CUBIC" || res == "CTCP"; 
                 }
             ));
 
-            // N3: ECN - Correção PT-BR
+            // N3: ECN
             Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, "Ativar ECN", "Notificação Explícita de Congestionamento (Menos Perda).",
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
                 () => { 
-                    var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower();
-                    // PT-BR: "Capability... : habilitado" ou "enabled"
-                    return res.Contains("ecn") && (res.Contains("enabled") || res.Contains("habilitado")); 
+                    var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).EcnCapability").Trim();
+                    return res.Equals("Enabled", StringComparison.OrdinalIgnoreCase); 
                 } 
             ));
 
-            // N4: RSS - Correção PT-BR
+            // N4: RSS
             Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, "Desativar RSS", "Receive Side Scaling (Teste de estabilidade/driver).",
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled"); return true; },
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
                 () => { 
+                    // Nota: O comando netsh para RSS é global e o PowerShell equivalente (Get-NetAdapterRss) é por adaptador.
+                    // Mantendo verificação global via netsh mas checando apenas "Disabled" em inglês, 
+                    // pois netsh tende a não traduzir o valor da configuração em si, apenas o rótulo.
+                    // Se falhar, assumimos não otimizado. 
+                    // Melhoria: checar chave de registro global se existir, ou confiar no set.
                     var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower();
-                    // PT-BR: "Estado... : desabilitado"
+                    // Fallback robusto: se conter 'rss' e 'disabled' ou 'desabilitado'.
                     return res.Contains("rss") && (res.Contains("disabled") || res.Contains("desabilitado"));
                 }
             ));
