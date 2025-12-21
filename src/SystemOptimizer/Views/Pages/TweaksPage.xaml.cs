@@ -3,9 +3,9 @@ using SystemOptimizer.ViewModels;
 
 namespace SystemOptimizer.Views.Pages
 {
-    public partial class SearchPage : Page
+    public partial class TweaksPage : Page
     {
-        public SearchPage(MainViewModel viewModel)
+        public TweaksPage(MainViewModel viewModel)
         {
             InitializeComponent();
             DataContext = viewModel;
