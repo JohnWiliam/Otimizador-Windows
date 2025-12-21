@@ -1,3 +1,31 @@
+🚀 Otimizador de Sistema v1.1.1
+
+Esta atualização traz um refinamento visual significativo para as ferramentas de limpeza e consolida a gestão de ajustes do sistema.
+
+✨ O Que Há de Novo?
+🧹 Página de Limpeza Aprimorada (Visual Log 2.0)
+
+A interface de limpeza foi reescrita para fornecer feedback visual instantâneo e detalhado (baseado no código em `CleanupPage.xaml.cs`).
+
+* **Sistema de Cores Inteligente (Smart Pastel):** O log de execução agora utiliza uma codificação de cores intuitiva para facilitar a leitura:
+    * 🟢 **Verde Pastel:** Atualizações do Windows e Serviços.
+    * 🟠 **Pêssego:** Remoção de arquivos temporários, lixeira e cache.
+    * 🟡 **Creme:** Limpeza de navegadores e histórico de internet.
+    * 🟣 **Lavanda:** Ajustes de rede e sistema.
+    * 🔴 **Salmão:** Erros ou falhas de permissão.
+* **Ícones Dinâmicos:** Cada linha de log agora é acompanhada por um ícone contextual (`SymbolIcon`) que representa o tipo de ação (vassoura, check, alerta), tornando o acompanhamento do processo muito mais visual.
+* **RichTextBox Integration:** Migração para um componente de texto rico que permite formatação avançada e melhor legibilidade.
+
+🛠️ Criação da Aba Tweaks
+
+Implementação da interface gráfica dedicada para a aplicação de ajustes (Tweaks), conforme visualizado em `TweaksPage.xaml`.
+
+* **Interface de Seleção:** Nova UI baseada em `Cards` que permite selecionar múltiplos tweaks via checkboxes.
+* **Ações em Lote:** Botões dedicados para "Aplicar Seleção" e "Restaurar Seleção", facilitando o gerenciamento em massa das otimizações.
+* **Feedback de Status:** Visualização clara do estado atual e descrição detalhada de cada ajuste disponível no sistema.
+
+---
+
 🚀 Otimizador de Sistema v1.1.0
 
 Apresentamos a versão 1.1.0, trazendo uma nova categoria poderosa e funcionalidades focadas na longevidade do teu hardware.
