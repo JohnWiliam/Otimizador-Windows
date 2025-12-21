@@ -193,15 +193,36 @@ namespace SystemOptimizer.Services
                     if (string.IsNullOrEmpty(exePath)) return false;
                     string cmd = $"/create /tn \"{taskName}\" /tr \"\\\"{exePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
                     var res = CommandHelper.RunCommand("schtasks", cmd);
-                    return res.Contains("SUCESSO") || res.Contains("SUCCESS") || res.Contains("êxito");
+                    
+                    // Lógica resiliente a encoding (não depende de acentos)
+                    bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
+                                  res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
+                                  res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase) ||
+                                  res.Contains("ACESSO NEGADO", StringComparison.OrdinalIgnoreCase);
+
+                    // Retorna true se a string não for vazia e não parecer um erro
+                    return !string.IsNullOrWhiteSpace(res) && !failed;
                 },
                 () => { 
                     var res = CommandHelper.RunCommand("schtasks", $"/delete /tn \"{taskName}\" /f");
-                    return res.Contains("SUCESSO") || res.Contains("SUCCESS") || res.Contains("êxito");
+                    
+                    // Mesma lógica simplificada para o Revert
+                    bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
+                                  res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
+                                  res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase);
+                                  
+                    return !failed;
                 },
                 () => { 
                     var res = CommandHelper.RunCommand("schtasks", $"/query /tn \"{taskName}\"");
-                    return !res.Contains("ERRO") && !res.Contains("ERROR");
+                    
+                    // Verifica se a tarefa existe checando se NÃO houve erro de "não encontrado"
+                    bool notFound = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
+                                    res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) || 
+                                    res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase) ||
+                                    res.Contains("could not be found", StringComparison.OrdinalIgnoreCase);
+                                    
+                    return !notFound;
                 }
             ));
         }
