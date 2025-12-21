@@ -1,50 +1,96 @@
 using System;
+using System.IO;
 using System.Windows;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using SystemOptimizer.Services;
+using SystemOptimizer.ViewModels;
 using SystemOptimizer.Helpers;
+using SystemOptimizer.Views.Pages;
+using Wpf.Ui; 
 
 namespace SystemOptimizer
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : Application
     {
+        public IServiceProvider? Services { get; private set; }
+
+        public void ConfigureServices()
+        {
+            var services = new ServiceCollection();
+
+            // 1. ViewModels
+            services.AddSingleton<MainViewModel>();
+            services.AddTransient<TweakViewModel>();
+
+            // 2. Core Services
+            services.AddSingleton<TweakService>();
+            services.AddSingleton<CleanupService>();
+
+            // 3. UI Services
+            services.AddSingleton<IPageService, PageService>();
+            services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton<IDialogService, DialogService>();
+            services.AddSingleton<ISnackbarService, SnackbarService>();
+            services.AddSingleton<IContentDialogService, ContentDialogService>();
+
+            // 4. Windows & Pages
+            services.AddSingleton<MainWindow>();
+            services.AddTransient<TweaksPage>();
+            services.AddTransient<PerformancePage>();
+            services.AddTransient<PrivacyPage>();
+            services.AddTransient<NetworkPage>();
+            services.AddTransient<SecurityPage>();
+            services.AddTransient<CleanupPage>();
+            services.AddTransient<AppearancePage>();
+
+            Services = services.BuildServiceProvider();
+        }
+
         protected override void OnStartup(StartupEventArgs e)
         {
+            // Configura tratamento global de erros para evitar fechamento repentino
+            this.DispatcherUnhandledException += OnDispatcherUnhandledException;
+
             base.OnStartup(e);
 
-            // Verifica se o argumento --silent foi passado (usado pelo Agendador de Tarefas)
+            if (Services == null) ConfigureServices();
+
             if (e.Args.Contains("--silent"))
             {
                 RunSilentMode();
             }
             else
             {
-                // Modo Normal: Abre a interface gráfica
-                MainWindow mainWindow = new MainWindow();
-                mainWindow.Show();
+                if (Services != null)
+                {
+                    var mainWindow = Services.GetRequiredService<MainWindow>();
+                    mainWindow.Show();
+                }
             }
+        }
+
+        private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            // Captura erros que acontecerem na UI (ex: clique de botão que falha)
+            string errorMsg = $"Ocorreu um erro inesperado: {e.Exception.Message}";
+            Logger.Log(errorMsg, "ERROR");
+            MessageBox.Show(errorMsg, "Erro do Sistema", MessageBoxButton.OK, MessageBoxImage.Error);
+            e.Handled = true; // Impede o crash total se possível
         }
 
         private void RunSilentMode()
         {
             try
             {
-                Logger.Log("Iniciando em Modo Silencioso (Verificacao de Persistencia)...");
+                Logger.Log("Iniciando Modo Silencioso...");
+                if (Services == null) return;
 
-                // Inicializa o serviço de tweaks
-                var tweakService = new TweakService();
+                var tweakService = Services.GetRequiredService<TweakService>();
                 tweakService.LoadTweaks();
-
-                // LÓGICA DE EXECUÇÃO SILENCIOSA:
-                // Como o objetivo é apenas manter a persistência ativa e reaplicar o necessário.
-                // Futuramente, você pode implementar um sistema de "Carregar Perfil" aqui
-                // para reaplicar automaticamente os tweaks que o usuário salvou.
                 
-                // Por enquanto, apenas registramos que rodou com sucesso.
-                Logger.Log("Tarefas de inicialização silenciosa concluídas.");
+                // Lógica adicional de persistência se necessário
+                Logger.Log("Modo Silencioso Concluído.");
             }
             catch (Exception ex)
             {
@@ -52,7 +98,6 @@ namespace SystemOptimizer
             }
             finally
             {
-                // Garante que o processo seja encerrado imediatamente para não consumir memória
                 Shutdown();
             }
         }

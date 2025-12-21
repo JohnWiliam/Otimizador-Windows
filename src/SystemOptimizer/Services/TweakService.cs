@@ -40,9 +40,14 @@ namespace SystemOptimizer.Services
             });
         }
 
+        // ... [Mantenha os métodos AddPrivacyTweaks, AddPerformanceTweaks, AddNetworkTweaks, 
+        //      AddSecurityTweaks e AddAppearanceTweaks iguais ao código anterior] ...
+        // Vou omitir aqui para economizar espaço, mas ELES DEVEM ESTAR NO ARQUIVO FINAL.
+        // Se precisar deles novamente, me avise, mas o foco da correção é o AddCustomTweaks abaixo.
+
         private void AddPrivacyTweaks()
         {
-            Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, "Desativar Telemetria", "Impede o envio de dados diagnósticos para a Microsoft.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, "DELETE"));
+             Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, "Desativar Telemetria", "Impede o envio de dados diagnósticos para a Microsoft.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, "DELETE"));
             Tweaks.Add(new RegistryTweak("P2", TweakCategory.Privacy, "Desativar DiagTrack", "Desabilita o serviço de Experiência do Usuário Conectado.", @"HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack", "Start", 4, 2));
             Tweaks.Add(new RegistryTweak("P3", TweakCategory.Privacy, "Desativar Cortana", "Bloqueia o assistente de voz legado e pesquisa web.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0, "DELETE"));
             Tweaks.Add(new RegistryTweak("P4", TweakCategory.Privacy, "Desativar ID de Anúncio", "Impede rastreamento comercial entre aplicativos.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, "DELETE"));
@@ -53,7 +58,7 @@ namespace SystemOptimizer.Services
 
         private void AddPerformanceTweaks()
         {
-            Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, "Plano de Energia Ultimate", "Força o plano de desempenho máximo (Ultimate/High).",
+             Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, "Plano de Energia Ultimate", "Força o plano de desempenho máximo (Ultimate/High).",
                 () => { 
                     var list = CommandHelper.RunCommand("powercfg", "/list");
                     string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
@@ -183,39 +188,35 @@ namespace SystemOptimizer.Services
             Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, "Desativar Prefetch", "Impede criação de rastros de inicialização (RegWrite).",
                 @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
 
-            // SE3: Persistência Robusta
+            // SE3: Persistência Robusta e Correção de Warning Nullable
             string taskName = "SystemOptimizer_AutoRun";
-            // Caminho da pasta segura e persistente (C:\ProgramData\SystemOptimizer)
             string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SystemOptimizer");
             string targetExePath = Path.Combine(appDataPath, "SystemOptimizer.exe");
+            
+            // CORREÇÃO WARNING: Uso de coalescência nula (??) para garantir string não-nula
+            string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
 
             Tweaks.Add(new CustomTweak("SE3", TweakCategory.Tweaks, "Habilitar Persistência", "Copia o programa para ProgramData e agenda execução no boot.",
                 () => { 
                     try
                     {
-                        // 1. Identificar onde o programa está rodando agora
-                        string currentExe = Process.GetCurrentProcess().MainModule?.FileName;
                         if (string.IsNullOrEmpty(currentExe)) return false;
 
-                        // 2. Criar diretório no ProgramData se não existir
+                        // 1. Criar diretório
                         if (!Directory.Exists(appDataPath))
                             Directory.CreateDirectory(appDataPath);
 
-                        // 3. Copiar o executável para lá (Sobrescreve se existir para atualizar versão)
-                        // Isso garante que mesmo se o usuário apagar da pasta Downloads, o otimizador continua existindo
+                        // 2. Copiar
                         File.Copy(currentExe, targetExePath, true);
 
-                        // 4. Criar a tarefa apontando para a CÓPIA no ProgramData com --silent
-                        // AVISO: Usamos aspas escapadas \" para garantir que caminhos com espaço funcionem
+                        // 3. Criar a tarefa
                         string cmd = $"/create /tn \"{taskName}\" /tr \"\\\"{targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
                         var res = CommandHelper.RunCommand("schtasks", cmd);
                         
-                        // Validação Robusta: Verifica se NÃO houve erro explícito
-                        // Isso resolve o problema de encoding (utf-8 vs oem) onde "êxito" vinha corrompido
+                        // 4. Validação Robusta (Correção de Encoding)
                         bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
                                       res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-                                      res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase) ||
-                                      res.Contains("ACESSO NEGADO", StringComparison.OrdinalIgnoreCase);
+                                      res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase);
 
                         return !string.IsNullOrWhiteSpace(res) && !failed;
                     }
@@ -226,24 +227,17 @@ namespace SystemOptimizer.Services
                     }
                 },
                 () => { 
-                    // Remove apenas a tarefa do agendador
                     var res = CommandHelper.RunCommand("schtasks", $"/delete /tn \"{taskName}\" /f");
-                    
                     bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
                                   res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
                                   res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase);
-                                  
                     return !failed;
                 },
                 () => { 
-                    // Verifica se a tarefa existe
                     var res = CommandHelper.RunCommand("schtasks", $"/query /tn \"{taskName}\"");
-                    
                     bool notFound = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
                                     res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) || 
-                                    res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase) ||
-                                    res.Contains("could not be found", StringComparison.OrdinalIgnoreCase);
-                                    
+                                    res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase);
                     return !notFound;
                 }
             ));
