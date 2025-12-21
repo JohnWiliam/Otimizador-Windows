@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ServiceProcess;
 using System.Linq;
@@ -5,8 +6,8 @@ using System.Threading.Tasks;
 using SystemOptimizer.Models;
 using SystemOptimizer.Helpers;
 using Microsoft.Win32;
-using System;
 using System.Diagnostics;
+using System.IO;
 
 namespace SystemOptimizer.Services
 {
@@ -23,7 +24,7 @@ namespace SystemOptimizer.Services
             AddNetworkTweaks();
             AddSecurityTweaks();
             AddAppearanceTweaks();
-            AddCustomTweaks(); // Renomeado
+            AddCustomTweaks();
             Logger.Log($"LoadTweaks finished. Loaded {Tweaks.Count} tweaks.");
         }
 
@@ -60,7 +61,7 @@ namespace SystemOptimizer.Services
                     CommandHelper.RunCommand("powercfg", $"/setactive {ultimateGuid}");
                     var check = CommandHelper.RunCommand("powercfg", "/getactivescheme");
                     if (!check.Contains(ultimateGuid)) CommandHelper.RunCommand("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
-                    return true;
+                    return true; 
                 },
                 () => { CommandHelper.RunCommand("powercfg", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e"); return true; },
                 () => { var res = CommandHelper.RunCommand("powercfg", "/getactivescheme"); return res.Contains("e9a42b02") || res.Contains("8c5e7fda"); }
@@ -94,8 +95,6 @@ namespace SystemOptimizer.Services
                 () => { Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", "1", RegistryValueKind.String); return true; },
                 () => { var val = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", null); return val != null && val.ToString() == "0"; }
             ));
-
-            // PF4 (SysMain) REMOVIDO DAQUI - Agora reside apenas na aba 'Tweaks' como SE1
 
             Tweaks.Add(new RegistryTweak("PF5", TweakCategory.Performance, "Prioridade de CPU", "Ajusta prioridade para Programas vs Serviços (26 hex).",
                 @"HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl", "Win32PrioritySeparation", 38, 2));
@@ -184,29 +183,52 @@ namespace SystemOptimizer.Services
             Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, "Desativar Prefetch", "Impede criação de rastros de inicialização (RegWrite).",
                 @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
 
-            // SE3: Persistência
+            // SE3: Persistência Robusta
             string taskName = "SystemOptimizer_AutoRun";
-            string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
-            
-            Tweaks.Add(new CustomTweak("SE3", TweakCategory.Tweaks, "Habilitar Persistência", "Cria tarefa agendada para reaplicar otimizações no boot.",
-                () => { 
-                    if (string.IsNullOrEmpty(exePath)) return false;
-                    string cmd = $"/create /tn \"{taskName}\" /tr \"\\\"{exePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
-                    var res = CommandHelper.RunCommand("schtasks", cmd);
-                    
-                    // Lógica resiliente a encoding (não depende de acentos)
-                    bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
-                                  res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-                                  res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase) ||
-                                  res.Contains("ACESSO NEGADO", StringComparison.OrdinalIgnoreCase);
+            // Caminho da pasta segura e persistente (C:\ProgramData\SystemOptimizer)
+            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SystemOptimizer");
+            string targetExePath = Path.Combine(appDataPath, "SystemOptimizer.exe");
 
-                    // Retorna true se a string não for vazia e não parecer um erro
-                    return !string.IsNullOrWhiteSpace(res) && !failed;
+            Tweaks.Add(new CustomTweak("SE3", TweakCategory.Tweaks, "Habilitar Persistência", "Copia o programa para ProgramData e agenda execução no boot.",
+                () => { 
+                    try
+                    {
+                        // 1. Identificar onde o programa está rodando agora
+                        string currentExe = Process.GetCurrentProcess().MainModule?.FileName;
+                        if (string.IsNullOrEmpty(currentExe)) return false;
+
+                        // 2. Criar diretório no ProgramData se não existir
+                        if (!Directory.Exists(appDataPath))
+                            Directory.CreateDirectory(appDataPath);
+
+                        // 3. Copiar o executável para lá (Sobrescreve se existir para atualizar versão)
+                        // Isso garante que mesmo se o usuário apagar da pasta Downloads, o otimizador continua existindo
+                        File.Copy(currentExe, targetExePath, true);
+
+                        // 4. Criar a tarefa apontando para a CÓPIA no ProgramData com --silent
+                        // AVISO: Usamos aspas escapadas \" para garantir que caminhos com espaço funcionem
+                        string cmd = $"/create /tn \"{taskName}\" /tr \"\\\"{targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
+                        var res = CommandHelper.RunCommand("schtasks", cmd);
+                        
+                        // Validação Robusta: Verifica se NÃO houve erro explícito
+                        // Isso resolve o problema de encoding (utf-8 vs oem) onde "êxito" vinha corrompido
+                        bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
+                                      res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
+                                      res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase) ||
+                                      res.Contains("ACESSO NEGADO", StringComparison.OrdinalIgnoreCase);
+
+                        return !string.IsNullOrWhiteSpace(res) && !failed;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Erro ao habilitar persistência: {ex.Message}", "ERROR");
+                        return false;
+                    }
                 },
                 () => { 
+                    // Remove apenas a tarefa do agendador
                     var res = CommandHelper.RunCommand("schtasks", $"/delete /tn \"{taskName}\" /f");
                     
-                    // Mesma lógica simplificada para o Revert
                     bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
                                   res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
                                   res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase);
@@ -214,9 +236,9 @@ namespace SystemOptimizer.Services
                     return !failed;
                 },
                 () => { 
+                    // Verifica se a tarefa existe
                     var res = CommandHelper.RunCommand("schtasks", $"/query /tn \"{taskName}\"");
                     
-                    // Verifica se a tarefa existe checando se NÃO houve erro de "não encontrado"
                     bool notFound = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
                                     res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) || 
                                     res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase) ||
