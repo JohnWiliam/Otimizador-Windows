@@ -18,7 +18,8 @@ namespace SystemOptimizer
             Services = ConfigureServices();
         }
 
-        private static IServiceProvider ConfigureServices()
+        // Alterado de private para public para acesso no Program.cs
+        public static IServiceProvider ConfigureServices()
         {
             var services = new ServiceCollection();
 
@@ -40,6 +41,7 @@ namespace SystemOptimizer
             services.AddSingleton<SecurityPage>();
             services.AddSingleton<AppearancePage>();
             services.AddSingleton<CleanupPage>();
+            services.AddSingleton<SearchPage>(); // Nova Página Registrada
 
             // Windows
             services.AddSingleton<MainWindow>();
