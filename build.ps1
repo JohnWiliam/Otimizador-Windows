@@ -5,7 +5,9 @@ $ErrorActionPreference = "Stop"
 
 Write-Host "Checking for .NET SDK..."
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    Write-Error "The .NET SDK is not found. Please install .NET 8 SDK or later."
+    Write-Host "The .NET SDK is not found. Please install .NET 8 SDK or later." -ForegroundColor Red
+    Write-Host "Pressione Enter para sair..."
+    Read-Host
     exit 1
 }
 
@@ -29,7 +31,9 @@ dotnet build $iconResizerProj -c Release -v q
 $resizerExe = Join-Path $root "src\IconResizer\bin\Release\net8.0-windows\IconResizer.exe"
 
 if (-not (Test-Path $resizerExe)) {
-    Write-Error "Failed to build IconResizer tool."
+    Write-Host "Failed to build IconResizer tool." -ForegroundColor Red
+    Write-Host "Pressione Enter para sair..."
+    Read-Host
     exit 1
 }
 
@@ -93,8 +97,12 @@ if ($LASTEXITCODE -eq 0) {
         Write-Host "Final Size: $sizeFormatted" -ForegroundColor Cyan
         Write-Host "Note: This is a portable, self-contained executable."
     } else {
-        Write-Error "Build finished but executable not found."
+        Write-Host "Build finished but executable not found." -ForegroundColor Red
     }
 } else {
-    Write-Error "Build failed."
+    Write-Host "Build failed." -ForegroundColor Red
 }
+
+# --- PAUSA FINAL ---
+Write-Host "`nProcesso finalizado. Pressione Enter para fechar..." -ForegroundColor Yellow
+Read-Host
