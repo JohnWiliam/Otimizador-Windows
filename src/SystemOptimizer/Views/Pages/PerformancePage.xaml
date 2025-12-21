@@ -9,69 +9,46 @@
       d:DesignHeight="450" d:DesignWidth="800"
       Title="PerformancePage">
 
-    <Grid>
+    <Grid Margin="20,10,20,20">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" /> <RowDefinition Height="*" />    <RowDefinition Height="Auto" /> </Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" 
-                   Text="Performance" 
-                   FontSize="24" 
-                   FontWeight="SemiBold" 
-                   Margin="20,20,20,10" />
+        <TextBlock Grid.Row="0" Text="Performance" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,10" />
 
-        <ScrollViewer Grid.Row="1" 
-                      VerticalScrollBarVisibility="Auto" 
-                      Padding="20,0,20,10">
-            
-            <ItemsControl ItemsSource="{Binding PerformanceTweaks}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ui:Card Margin="0,0,0,8" Padding="12">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
+        <ItemsControl Grid.Row="1" ItemsSource="{Binding PerformanceTweaks}">
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <ui:Card Margin="0,0,5,5" Padding="12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
 
-                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                            <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0" />
 
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" />
-                                    <TextBlock Text="{Binding Description}" Foreground="#666666" FontSize="11" Margin="0,1,0,0" TextWrapping="Wrap" />
-                                </StackPanel>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" />
+                                <TextBlock Text="{Binding Description}" Foreground="#666666" FontSize="11" Margin="0,1,0,0" TextWrapping="Wrap" />
+                            </StackPanel>
 
-                                <Border Grid.Column="2" Background="Transparent" Padding="8,4" CornerRadius="4" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontWeight="Bold" FontSize="12" />
-                                </Border>
-                            </Grid>
-                        </ui:Card>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                            <Border Grid.Column="2" Background="Transparent" Padding="8,4" CornerRadius="4" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontWeight="Bold" FontSize="12" />
+                            </Border>
+                        </Grid>
+                    </ui:Card>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
-        <Border Grid.Row="2" 
-                Padding="20,15,20,20" 
-                Background="{DynamicResource ApplicationBackgroundBrush}"
-                BorderBrush="{DynamicResource SurfaceStrokeColorDefaultBrush}"
-                BorderThickness="0,1,0,0">
-            
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <ui:Button Content="Restaurar Seleção" 
-                           Command="{Binding RevertSelectedCommand}" 
-                           CommandParameter="Performance" 
-                           Appearance="Secondary" 
-                           Margin="0,0,10,0" 
-                           Width="150" />
-                
-                <ui:Button Content="Aplicar Seleção" 
-                           Command="{Binding ApplySelectedCommand}" 
-                           CommandParameter="Performance" 
-                           Appearance="Primary" 
-                           Width="150" />
-            </StackPanel>
-        </Border>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <ui:Button Content="Restaurar Seleção" Command="{Binding RevertSelectedCommand}" CommandParameter="Performance" Appearance="Secondary" Margin="0,0,10,0" Width="150" />
+            <ui:Button Content="Aplicar Seleção" Command="{Binding ApplySelectedCommand}" CommandParameter="Performance" Appearance="Primary" Width="150" />
+        </StackPanel>
     
     </Grid>
 </Page>
