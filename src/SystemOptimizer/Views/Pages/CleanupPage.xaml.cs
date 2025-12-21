@@ -38,13 +38,14 @@ namespace SystemOptimizer.Views.Pages
         {
             var paragraph = new Paragraph();
             
-            // Mantendo a formatação de sucesso anterior
             paragraph.FontFamily = new FontFamily("Segoe UI");
             paragraph.TextAlignment = TextAlignment.Left;
-            paragraph.Margin = new Thickness(0, 0, 0, 4); 
-            paragraph.LineHeight = 22; // Um pouco mais de "ar" entre as linhas
+            // Margem reduzida para ficar mais compacto
+            paragraph.Margin = new Thickness(0, 0, 0, 2); 
+            // Altura de linha menor para visual "subtil"
+            paragraph.LineHeight = 18; 
 
-            // --- 1. Determinar a Cor Pastel ---
+            // --- 1. Determinar a Cor Pastel (Lógica Reforçada) ---
             Brush statusBrush = GetPastelBrush(item.StatusColor);
 
             // --- 2. Ícone ---
@@ -57,9 +58,9 @@ namespace SystemOptimizer.Views.Pages
             var icon = new SymbolIcon
             {
                 Symbol = symbol,
-                FontSize = 16,
+                FontSize = 14, // Ícone ligeiramente menor
                 VerticalAlignment = VerticalAlignment.Center,
-                Foreground = statusBrush // Aplica a cor pastel ao ícone
+                Foreground = statusBrush
             };
 
             var iconContainer = new InlineUIContainer(icon)
@@ -73,21 +74,18 @@ namespace SystemOptimizer.Views.Pages
             var run = new Run(item.Message)
             {
                 BaselineAlignment = BaselineAlignment.Center,
-                FontFamily = new FontFamily("Segoe UI") 
+                FontFamily = new FontFamily("Segoe UI"),
+                FontSize = 12 // Fonte subtil tamanho 12
             };
 
-            // Se for um erro ou sucesso explícito, podemos colorir o texto também,
-            // ou manter o texto padrão para leitura e colorir só o ícone.
-            // Aqui, vou aplicar a cor pastel ao texto se for Bold (títulos), 
-            // caso contrário, uso a cor padrão do tema para leitura fácil.
             if (item.IsBold)
             {
                 run.FontWeight = FontWeights.SemiBold;
-                run.Foreground = statusBrush; // Títulos ganham a cor
+                run.Foreground = statusBrush; // Títulos coloridos
             }
             else
             {
-                // Texto normal usa a cor do tema (branco/preto) para melhor contraste
+                // Texto normal usa a cor do tema para legibilidade
                 run.Foreground = (Brush)FindResource("TextFillColorPrimaryBrush");
             }
 
@@ -97,33 +95,42 @@ namespace SystemOptimizer.Views.Pages
             LogOutput.ScrollToEnd();
         }
 
-        // --- MÁGICA DAS CORES PASTEL ---
+        // --- MÁGICA DAS CORES PASTEL (ATUALIZADA) ---
         private Brush GetPastelBrush(string originalColorName)
         {
-            // Normaliza a string para evitar erros de maiúsculas/minúsculas
-            string key = originalColorName?.ToLower()?.Trim() ?? "";
+            if (string.IsNullOrWhiteSpace(originalColorName))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#85C1E9")); // Default Azul
 
-            // Paleta Pastel (Hex codes manuais para tons modernos)
-            if (key.Contains("green") || key.Contains("success"))
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#76D7C4")); // Verde Menta Suave
-            
-            if (key.Contains("red") || key.Contains("error") || key.Contains("fail"))
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1948A")); // Vermelho Salmão Suave
-            
-            if (key.Contains("blue") || key.Contains("info"))
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#85C1E9")); // Azul Céu Suave
-            
-            if (key.Contains("yellow") || key.Contains("orange") || key.Contains("warn"))
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F7DC6F")); // Amarelo Creme
+            string key = originalColorName.ToLower().Trim();
 
-            // Se não reconhecer a cor, tenta converter (fallback) ou devolve cinza claro
+            // 1. Verdes (Sucesso)
+            // Deteta: "green", "verde", "success", "sucesso", "ok"
+            if (key.Contains("green") || key.Contains("verde") || key.Contains("success") || key.Contains("sucesso") || key.Contains("ok"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#76D7C4")); // Pastel Mint
+            
+            // 2. Vermelhos (Erro)
+            // Deteta: "red", "vermelho", "error", "erro", "fail", "falha"
+            if (key.Contains("red") || key.Contains("vermelho") || key.Contains("error") || key.Contains("erro") || key.Contains("fail"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1948A")); // Pastel Salmon
+            
+            // 3. Amarelos (Aviso)
+            // Deteta: "yellow", "amarelo", "warn", "aviso", "orange", "laranja"
+            if (key.Contains("yellow") || key.Contains("amarelo") || key.Contains("warn") || key.Contains("aviso") || key.Contains("orange"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F7DC6F")); // Pastel Cream
+
+            // 4. Azuis (Info/Default)
+            // Deteta: "blue", "azul", "info"
+            if (key.Contains("blue") || key.Contains("azul") || key.Contains("info"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#85C1E9")); // Pastel Blue
+
+            // Fallback: Se for um código HEX que não apanhámos acima, tenta usar, senão devolve azul padrão
             try
             {
                 return new SolidColorBrush((Color)ColorConverter.ConvertFromString(originalColorName));
             }
             catch
             {
-                return new SolidColorBrush(Colors.LightGray);
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#85C1E9")); // Default Pastel Blue
             }
         }
     }
