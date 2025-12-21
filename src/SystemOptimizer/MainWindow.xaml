@@ -23,7 +23,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         
-        <ui:TitleBar Grid.Row="0" Title="Otimizador de Sistema - John Wiliam & IA" />
+        <ui:TitleBar Grid.Row="0" Title="Otimizador de Sistema - John Wiliam &amp; IA" />
 
         <ui:NavigationView x:Name="RootNavigation"
                            Grid.Row="1"
