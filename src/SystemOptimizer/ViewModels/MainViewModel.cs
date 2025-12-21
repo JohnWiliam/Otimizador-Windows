@@ -26,6 +26,7 @@ namespace SystemOptimizer.ViewModels
         public ObservableCollection<TweakViewModel> NetworkTweaks { get; } = new();
         public ObservableCollection<TweakViewModel> SecurityTweaks { get; } = new();
         public ObservableCollection<TweakViewModel> AppearanceTweaks { get; } = new();
+        public ObservableCollection<TweakViewModel> SearchTweaks { get; } = new(); // Adicionado
 
         public ObservableCollection<CleanupLogItem> CleanupLogs { get; } = new();
 
@@ -54,7 +55,6 @@ namespace SystemOptimizer.ViewModels
             IsInitializing = true;
             try
             {
-                // Executa o carregamento em background para não travar a UI inicial
                 await Task.Run(() =>
                 {
                     _tweakService.LoadTweaks();
@@ -85,7 +85,8 @@ namespace SystemOptimizer.ViewModels
             return PrivacyTweaks.Concat(PerformanceTweaks)
                                 .Concat(NetworkTweaks)
                                 .Concat(SecurityTweaks)
-                                .Concat(AppearanceTweaks);
+                                .Concat(AppearanceTweaks)
+                                .Concat(SearchTweaks); // Adicionado
         }
 
         private void PopulateCategories()
@@ -95,6 +96,7 @@ namespace SystemOptimizer.ViewModels
             NetworkTweaks.Clear();
             SecurityTweaks.Clear();
             AppearanceTweaks.Clear();
+            SearchTweaks.Clear(); // Adicionado
 
             foreach (var tweak in _tweakService.Tweaks)
             {
@@ -106,20 +108,17 @@ namespace SystemOptimizer.ViewModels
                     case TweakCategory.Network: NetworkTweaks.Add(vm); break;
                     case TweakCategory.Security: SecurityTweaks.Add(vm); break;
                     case TweakCategory.Appearance: AppearanceTweaks.Add(vm); break;
+                    case TweakCategory.Search: SearchTweaks.Add(vm); break; // Adicionado
                 }
             }
         }
 
-        // Verifica IDs que sabidamente requerem reboot
         private bool IsRebootRequired(string tweakId)
         {
             var rebootIds = new HashSet<string> 
             { 
-                "PF4", // SysMain
-                "PF7", // GPU Scheduling
-                "PF8", // VBS/HVCI
-                "A1",  // Transparência (as vezes requer relogin)
-                "P1",  // Telemetria (políticas)
+                "PF4", "PF7", "PF8", "A1", "P1",
+                "SE1" // SysMain geralmente beneficia de reboot
             };
             return rebootIds.Contains(tweakId);
         }
@@ -137,6 +136,7 @@ namespace SystemOptimizer.ViewModels
                 "Network" => NetworkTweaks,
                 "Security" => SecurityTweaks,
                 "Appearance" => AppearanceTweaks,
+                "Search" => SearchTweaks, // Adicionado
                 _ => Enumerable.Empty<TweakViewModel>()
             };
 
@@ -179,7 +179,7 @@ namespace SystemOptimizer.ViewModels
                 if (rebootNeeded)
                 {
                     await _dialogService.ShowMessageAsync("Sucesso - Reinicialização Necessária", 
-                        "Todas as otimizações foram aplicadas.\n\nATENÇÃO: Algumas alterações (como VBS, GPU ou Serviços) requerem que você REINICIE o computador para surtir efeito completo.");
+                        "Todas as otimizações foram aplicadas.\n\nATENÇÃO: Algumas alterações requerem que você REINICIE o computador.");
                 }
                 else
                 {
@@ -201,6 +201,7 @@ namespace SystemOptimizer.ViewModels
                 "Network" => NetworkTweaks,
                 "Security" => SecurityTweaks,
                 "Appearance" => AppearanceTweaks,
+                "Search" => SearchTweaks, // Adicionado
                 _ => Enumerable.Empty<TweakViewModel>()
             };
 
@@ -243,7 +244,7 @@ namespace SystemOptimizer.ViewModels
                 if (rebootNeeded)
                 {
                     await _dialogService.ShowMessageAsync("Sucesso - Reinicialização Necessária", 
-                        "As configurações foram restauradas.\n\nPor favor, REINICIE o computador para garantir que as alterações no sistema sejam efetivadas.");
+                        "As configurações foram restauradas.\n\nPor favor, REINICIE o computador.");
                 }
                 else
                 {
