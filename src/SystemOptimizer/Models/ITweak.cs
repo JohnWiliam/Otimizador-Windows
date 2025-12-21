@@ -6,7 +6,8 @@ namespace SystemOptimizer.Models
         Performance,
         Network,
         Security,
-        Appearance
+        Appearance,
+        Tweaks // Renomeado de Search para Tweaks
     }
 
     public enum TweakStatus

@@ -18,14 +18,18 @@ namespace SystemOptimizer.ViewModels
         private readonly CleanupService _cleanupService;
         private readonly IDialogService _dialogService;
 
+        // Título Atualizado para v1.1.0
         [ObservableProperty]
-        private string _applicationTitle = "Otimizador de Sistema - Criado por John Wiliam & IA";
+        private string _applicationTitle = "Otimizador de Sistema - John Wiliam & IA v1.1.0";
 
         public ObservableCollection<TweakViewModel> PrivacyTweaks { get; } = new();
         public ObservableCollection<TweakViewModel> PerformanceTweaks { get; } = new();
         public ObservableCollection<TweakViewModel> NetworkTweaks { get; } = new();
         public ObservableCollection<TweakViewModel> SecurityTweaks { get; } = new();
         public ObservableCollection<TweakViewModel> AppearanceTweaks { get; } = new();
+        
+        // Coleção renomeada para a nova aba "Tweaks"
+        public ObservableCollection<TweakViewModel> TweaksPageItems { get; } = new(); 
 
         public ObservableCollection<CleanupLogItem> CleanupLogs { get; } = new();
 
@@ -35,7 +39,6 @@ namespace SystemOptimizer.ViewModels
         [ObservableProperty]
         private bool _isInitializing = true;
 
-        // Constructor for DI
         public MainViewModel(TweakService tweakService, CleanupService cleanupService, IDialogService dialogService)
         {
             _tweakService = tweakService;
@@ -50,33 +53,22 @@ namespace SystemOptimizer.ViewModels
 
         public async Task InitializeAsync()
         {
-            Logger.Log("MainViewModel.InitializeAsync started.");
             IsInitializing = true;
             try
             {
-                // Executa o carregamento em background para não travar a UI inicial
-                await Task.Run(() =>
-                {
-                    _tweakService.LoadTweaks();
-                });
-
+                await Task.Run(() => { _tweakService.LoadTweaks(); });
                 PopulateCategories();
-
                 await _tweakService.RefreshStatusesAsync();
-                foreach (var tweakVM in GetAllTweakViewModels())
-                {
-                    tweakVM.UpdateStatusUI();
-                }
+                foreach (var tweakVM in GetAllTweakViewModels()) { tweakVM.UpdateStatusUI(); }
             }
             catch (Exception ex)
             {
                 Logger.Log($"Error during initialization: {ex.Message}", "CRITICAL");
-                await _dialogService.ShowMessageAsync("Erro na Inicialização", $"Ocorreu um erro ao carregar o estado do sistema: {ex.Message}");
+                await _dialogService.ShowMessageAsync("Erro", $"Falha ao iniciar: {ex.Message}");
             }
             finally
             {
                 IsInitializing = false;
-                Logger.Log("MainViewModel.InitializeAsync finished.");
             }
         }
 
@@ -85,7 +77,8 @@ namespace SystemOptimizer.ViewModels
             return PrivacyTweaks.Concat(PerformanceTweaks)
                                 .Concat(NetworkTweaks)
                                 .Concat(SecurityTweaks)
-                                .Concat(AppearanceTweaks);
+                                .Concat(AppearanceTweaks)
+                                .Concat(TweaksPageItems); // Atualizado
         }
 
         private void PopulateCategories()
@@ -95,6 +88,7 @@ namespace SystemOptimizer.ViewModels
             NetworkTweaks.Clear();
             SecurityTweaks.Clear();
             AppearanceTweaks.Clear();
+            TweaksPageItems.Clear(); // Atualizado
 
             foreach (var tweak in _tweakService.Tweaks)
             {
@@ -106,21 +100,14 @@ namespace SystemOptimizer.ViewModels
                     case TweakCategory.Network: NetworkTweaks.Add(vm); break;
                     case TweakCategory.Security: SecurityTweaks.Add(vm); break;
                     case TweakCategory.Appearance: AppearanceTweaks.Add(vm); break;
+                    case TweakCategory.Tweaks: TweaksPageItems.Add(vm); break; // Nova categoria
                 }
             }
         }
 
-        // Verifica IDs que sabidamente requerem reboot
         private bool IsRebootRequired(string tweakId)
         {
-            var rebootIds = new HashSet<string> 
-            { 
-                "PF4", // SysMain
-                "PF7", // GPU Scheduling
-                "PF8", // VBS/HVCI
-                "A1",  // Transparência (as vezes requer relogin)
-                "P1",  // Telemetria (políticas)
-            };
+            var rebootIds = new HashSet<string> { "PF4", "PF7", "PF8", "A1", "P1", "SE1" };
             return rebootIds.Contains(tweakId);
         }
 
@@ -137,55 +124,12 @@ namespace SystemOptimizer.ViewModels
                 "Network" => NetworkTweaks,
                 "Security" => SecurityTweaks,
                 "Appearance" => AppearanceTweaks,
+                "Tweaks" => TweaksPageItems, // Atualizado
                 _ => Enumerable.Empty<TweakViewModel>()
             };
 
-            int successCount = 0;
-            int failCount = 0;
-            string lastError = "";
-            bool rebootNeeded = false;
-
-            await Task.Run(() =>
-            {
-                foreach (var item in list.Where(x => x.IsSelected))
-                {
-                    if (IsRebootRequired(item.Id)) rebootNeeded = true;
-
-                    var result = item.Tweak.Apply();
-                    if (result.Success) successCount++;
-                    else 
-                    {
-                        failCount++;
-                        lastError = result.Message;
-                    }
-                }
-            });
-
-            foreach (var item in list)
-            {
-                item.IsSelected = false;
-                item.UpdateStatusUI();
-            }
-
+            await ProcessTweaks(list, true);
             IsBusy = false;
-
-            if (failCount > 0)
-            {
-                await _dialogService.ShowMessageAsync("Resultado da Aplicação", 
-                    $"Concluído com erros.\nSucessos: {successCount}\nFalhas: {failCount}\nÚltimo erro: {lastError}");
-            }
-            else if (successCount > 0)
-            {
-                if (rebootNeeded)
-                {
-                    await _dialogService.ShowMessageAsync("Sucesso - Reinicialização Necessária", 
-                        "Todas as otimizações foram aplicadas.\n\nATENÇÃO: Algumas alterações (como VBS, GPU ou Serviços) requerem que você REINICIE o computador para surtir efeito completo.");
-                }
-                else
-                {
-                    await _dialogService.ShowMessageAsync("Sucesso", "Todas as otimizações selecionadas foram aplicadas com sucesso.");
-                }
-            }
         }
 
         [RelayCommand]
@@ -201,9 +145,16 @@ namespace SystemOptimizer.ViewModels
                 "Network" => NetworkTweaks,
                 "Security" => SecurityTweaks,
                 "Appearance" => AppearanceTweaks,
+                "Tweaks" => TweaksPageItems, // Atualizado
                 _ => Enumerable.Empty<TweakViewModel>()
             };
 
+            await ProcessTweaks(list, false);
+            IsBusy = false;
+        }
+
+        private async Task ProcessTweaks(IEnumerable<TweakViewModel> list, bool applying)
+        {
             int successCount = 0;
             int failCount = 0;
             string lastError = "";
@@ -214,41 +165,23 @@ namespace SystemOptimizer.ViewModels
                 foreach (var item in list.Where(x => x.IsSelected))
                 {
                     if (IsRebootRequired(item.Id)) rebootNeeded = true;
-
-                    var result = item.Tweak.Revert();
+                    var result = applying ? item.Tweak.Apply() : item.Tweak.Revert();
                     if (result.Success) successCount++;
-                    else 
-                    {
-                        failCount++;
-                        lastError = result.Message;
-                    }
+                    else { failCount++; lastError = result.Message; }
                 }
             });
 
-            foreach (var item in list)
-            {
-                item.IsSelected = false;
-                item.UpdateStatusUI();
-            }
-
-            IsBusy = false;
+            foreach (var item in list) { item.IsSelected = false; item.UpdateStatusUI(); }
 
             if (failCount > 0)
             {
-                await _dialogService.ShowMessageAsync("Resultado da Restauração", 
-                    $"Concluído com erros.\nSucessos: {successCount}\nFalhas: {failCount}\nÚltimo erro: {lastError}");
+                await _dialogService.ShowMessageAsync("Resultado", $"Concluído com erros.\nSucessos: {successCount}\nFalhas: {failCount}\nErro: {lastError}");
             }
             else if (successCount > 0)
             {
-                if (rebootNeeded)
-                {
-                    await _dialogService.ShowMessageAsync("Sucesso - Reinicialização Necessária", 
-                        "As configurações foram restauradas.\n\nPor favor, REINICIE o computador para garantir que as alterações no sistema sejam efetivadas.");
-                }
-                else
-                {
-                    await _dialogService.ShowMessageAsync("Sucesso", "Todas as otimizações selecionadas foram restauradas para o padrão.");
-                }
+                string msg = applying ? "Otimizações aplicadas." : "Configurações restauradas.";
+                if (rebootNeeded) msg += "\n\nREINICIE o computador.";
+                await _dialogService.ShowMessageAsync("Sucesso", msg);
             }
         }
 
