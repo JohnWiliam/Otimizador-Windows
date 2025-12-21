@@ -1,5 +1,5 @@
 # System Optimizer Build Script
-# Compiles the icon generator, creates the icon, and publishes the main app.
+# Compila o gerador de ícones, cria o ícone e publica o app principal com otimização máxima.
 
 $ErrorActionPreference = "Stop"
 
@@ -42,26 +42,63 @@ if (Test-Path $sourceLogo) {
     Write-Warning "logo.png not found in Assets. Skipping icon generation."
 }
 
-# --- Step 3: Build Main Application ---
-Write-Host "`n[3/3] Building and Publishing SystemOptimizer..."
+# --- Step 3: Build Main Application (Optimized) ---
+Write-Host "`n[3/3] Building and Publishing SystemOptimizer (Trimmed & SingleFile)..."
 
 if (Test-Path $outputDir) {
     Remove-Item $outputDir -Recurse -Force
 }
 
-# We restore specifically for win-x64
+# Restaura especificamente para win-x64 antes do publish
 Write-Host "Restoring dependencies..."
 dotnet restore $mainProj -r win-x64
 
-Write-Host "Publishing Single File Executable..."
-# -p:PublishSingleFile=true: Merges everything into one EXE
-# --self-contained: Includes .NET runtime
-dotnet publish $mainProj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --no-restore -o $outputDir
+Write-Host "Publishing..."
+# Flags explicadas:
+# -p:PublishSingleFile=true            : Gera um único EXE.
+# -p:PublishTrimmed=true               : Remove código .NET não utilizado (reduz tamanho).
+# -p:TrimMode=partial                  : Modo seguro para WPF (evita quebrar a UI).
+# -p:PublishReadyToRun=false           : Desativa pré-compilação nativa (reduz tamanho, boot levemente mais lento na 1ª vez).
+# -p:EnableCompressionInSingleFile=true : Comprime o conteúdo dentro do EXE.
+# -p:IncludeNativeLibrariesForSelfExtract=true : Inclui libs nativas necessárias.
 
+dotnet publish $mainProj -c Release -r win-x64 --self-contained `
+    -p:PublishSingleFile=true `
+    -p:IncludeNativeLibrariesForSelfExtract=true `
+    -p:EnableCompressionInSingleFile=true `
+    -p:PublishTrimmed=true `
+    -p:TrimMode=partial `
+    -p:PublishReadyToRun=false `
+    --no-restore `
+    -o $outputDir
+
+# --- Optional Step: UPX Compression ---
+# Se o upx.exe estiver disponível no PATH ou na pasta, aplica compressão extra.
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "`nBuild Successful!" -ForegroundColor Green
-    Write-Host "Executable is located at: $outputDir\SystemOptimizer.exe" -ForegroundColor Green
-    Write-Host "Note: If the icon looks blurry in Explorer, try moving the .exe to a new folder (Explorer caches thumbnails)."
+    $exePath = Join-Path $outputDir "SystemOptimizer.exe"
+    
+    # Verifica se o comando 'upx' existe no sistema
+    if (Get-Command upx -ErrorAction SilentlyContinue) {
+        Write-Host "`n[Bonus] UPX detected! Applying ultra compression..." -ForegroundColor Cyan
+        # --best: melhor compressão
+        # --lzma: algoritmo mais eficiente
+        upx --best --lzma "$exePath"
+    } else {
+        Write-Host "`n[Info] UPX not found. Skipping extra compression (Optional)." -ForegroundColor Gray
+    }
+
+    # Relatório Final
+    if (Test-Path $exePath) {
+        $size = (Get-Item $exePath).Length / 1MB
+        $sizeFormatted = "{0:N2} MB" -f $size
+
+        Write-Host "`nBuild Successful!" -ForegroundColor Green
+        Write-Host "Executable created at: $exePath" -ForegroundColor Green
+        Write-Host "Final Size: $sizeFormatted" -ForegroundColor Cyan
+        Write-Host "Note: This is a portable, self-contained executable."
+    } else {
+        Write-Error "Build finished but executable not found."
+    }
 } else {
     Write-Error "Build failed."
 }
