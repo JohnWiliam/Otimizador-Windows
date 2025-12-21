@@ -1,5 +1,5 @@
 # System Optimizer Build Script
-# Compila o gerador de ícones, cria o ícone e publica o app principal com otimização máxima.
+# Compila o gerador de ícones, cria o ícone e publica o app principal com otimização segura.
 
 $ErrorActionPreference = "Stop"
 
@@ -43,7 +43,7 @@ if (Test-Path $sourceLogo) {
 }
 
 # --- Step 3: Build Main Application (Optimized) ---
-Write-Host "`n[3/3] Building and Publishing SystemOptimizer (Trimmed & SingleFile)..."
+Write-Host "`n[3/3] Building and Publishing SystemOptimizer (SingleFile Compressed)..."
 
 if (Test-Path $outputDir) {
     Remove-Item $outputDir -Recurse -Force
@@ -54,20 +54,16 @@ Write-Host "Restoring dependencies..."
 dotnet restore $mainProj -r win-x64
 
 Write-Host "Publishing..."
-# Flags explicadas:
+# Flags explicadas (Correção: Removemos PublishTrimmed para compatibilidade com WPF):
 # -p:PublishSingleFile=true            : Gera um único EXE.
-# -p:PublishTrimmed=true               : Remove código .NET não utilizado (reduz tamanho).
-# -p:TrimMode=partial                  : Modo seguro para WPF (evita quebrar a UI).
-# -p:PublishReadyToRun=false           : Desativa pré-compilação nativa (reduz tamanho, boot levemente mais lento na 1ª vez).
-# -p:EnableCompressionInSingleFile=true : Comprime o conteúdo dentro do EXE.
+# -p:EnableCompressionInSingleFile=true : Comprime o conteúdo dentro do EXE (Reduz tamanho).
+# -p:PublishReadyToRun=false           : Desativa pré-compilação nativa (Reduz tamanho significativamente).
 # -p:IncludeNativeLibrariesForSelfExtract=true : Inclui libs nativas necessárias.
 
 dotnet publish $mainProj -c Release -r win-x64 --self-contained `
     -p:PublishSingleFile=true `
     -p:IncludeNativeLibrariesForSelfExtract=true `
     -p:EnableCompressionInSingleFile=true `
-    -p:PublishTrimmed=true `
-    -p:TrimMode=partial `
     -p:PublishReadyToRun=false `
     --no-restore `
     -o $outputDir
