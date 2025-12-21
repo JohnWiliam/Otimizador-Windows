@@ -40,17 +40,25 @@ namespace SystemOptimizer.Views.Pages
             
             paragraph.FontFamily = new FontFamily("Segoe UI");
             paragraph.TextAlignment = TextAlignment.Left;
-            // Margem reduzida para ficar mais compacto
             paragraph.Margin = new Thickness(0, 0, 0, 2); 
-            // Altura de linha menor para visual "subtil"
             paragraph.LineHeight = 18; 
 
-            // --- 1. Determinar a Cor Pastel (Lógica Reforçada) ---
-            Brush statusBrush = GetPastelBrush(item.StatusColor);
+            // --- 1. Lógica Inteligente de Cores (Baseada na mensagem e status) ---
+            Brush statusBrush = GetSmartPastelBrush(item.StatusColor, item.Message);
 
             // --- 2. Ícone ---
             SymbolRegular symbol = SymbolRegular.Info24;
-            if (Enum.TryParse(item.Icon, out SymbolRegular parsedSymbol))
+            // Tenta obter ícone do item, ou define ícones baseados no contexto
+            if (!Enum.TryParse(item.Icon, out SymbolRegular parsedSymbol))
+            {
+                // Ícones automáticos se o sistema não enviar um específico
+                string msgLower = item.Message.ToLower();
+                if (msgLower.Contains("concluída") || msgLower.Contains("sucesso")) symbol = SymbolRegular.CheckmarkCircle24;
+                else if (msgLower.Contains("erro") || msgLower.Contains("falha")) symbol = SymbolRegular.ErrorCircle24;
+                else if (msgLower.Contains("lixeira") || msgLower.Contains("temp")) symbol = SymbolRegular.Delete24;
+                else symbol = SymbolRegular.Info24;
+            }
+            else
             {
                 symbol = parsedSymbol;
             }
@@ -58,9 +66,9 @@ namespace SystemOptimizer.Views.Pages
             var icon = new SymbolIcon
             {
                 Symbol = symbol,
-                FontSize = 14, // Ícone ligeiramente menor
+                FontSize = 14,
                 VerticalAlignment = VerticalAlignment.Center,
-                Foreground = statusBrush
+                Foreground = statusBrush // Ícone colorido
             };
 
             var iconContainer = new InlineUIContainer(icon)
@@ -75,18 +83,16 @@ namespace SystemOptimizer.Views.Pages
             {
                 BaselineAlignment = BaselineAlignment.Center,
                 FontFamily = new FontFamily("Segoe UI"),
-                FontSize = 12 // Fonte subtil tamanho 12
+                FontSize = 12 
             };
+
+            // Aplica a cor pastel ao texto também (para ficar tudo coeso e suave)
+            // Se preferires o texto branco, muda para: run.Foreground = (Brush)FindResource("TextFillColorPrimaryBrush");
+            run.Foreground = statusBrush; 
 
             if (item.IsBold)
             {
                 run.FontWeight = FontWeights.SemiBold;
-                run.Foreground = statusBrush; // Títulos coloridos
-            }
-            else
-            {
-                // Texto normal usa a cor do tema para legibilidade
-                run.Foreground = (Brush)FindResource("TextFillColorPrimaryBrush");
             }
 
             paragraph.Inlines.Add(run);
@@ -95,43 +101,56 @@ namespace SystemOptimizer.Views.Pages
             LogOutput.ScrollToEnd();
         }
 
-        // --- MÁGICA DAS CORES PASTEL (ATUALIZADA) ---
-        private Brush GetPastelBrush(string originalColorName)
+        // --- SISTEMA DE CORES INTUITIVAS ---
+        private Brush GetSmartPastelBrush(string originalColorName, string message)
         {
-            if (string.IsNullOrWhiteSpace(originalColorName))
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#85C1E9")); // Default Azul
+            string msg = message?.ToLower() ?? "";
+            string colorKey = originalColorName?.ToLower() ?? "";
 
-            string key = originalColorName.ToLower().Trim();
-
-            // 1. Verdes (Sucesso)
-            // Deteta: "green", "verde", "success", "sucesso", "ok"
-            if (key.Contains("green") || key.Contains("verde") || key.Contains("success") || key.Contains("sucesso") || key.Contains("ok"))
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#76D7C4")); // Pastel Mint
-            
-            // 2. Vermelhos (Erro)
-            // Deteta: "red", "vermelho", "error", "erro", "fail", "falha"
-            if (key.Contains("red") || key.Contains("vermelho") || key.Contains("error") || key.Contains("erro") || key.Contains("fail"))
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1948A")); // Pastel Salmon
-            
-            // 3. Amarelos (Aviso)
-            // Deteta: "yellow", "amarelo", "warn", "aviso", "orange", "laranja"
-            if (key.Contains("yellow") || key.Contains("amarelo") || key.Contains("warn") || key.Contains("aviso") || key.Contains("orange"))
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F7DC6F")); // Pastel Cream
-
-            // 4. Azuis (Info/Default)
-            // Deteta: "blue", "azul", "info"
-            if (key.Contains("blue") || key.Contains("azul") || key.Contains("info"))
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#85C1E9")); // Pastel Blue
-
-            // Fallback: Se for um código HEX que não apanhámos acima, tenta usar, senão devolve azul padrão
-            try
+            // 1. Prioridade: Windows Update / Serviços (VERDE)
+            if (msg.Contains("update") || msg.Contains("wu") || msg.Contains("serviço") || msg.Contains("service"))
             {
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString(originalColorName));
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#A9DFBF")); // Verde Pastel Suave
             }
-            catch
+
+            // 2. Prioridade: Limpeza / Temporários / Lixeira (LARANJA/PÊSSEGO)
+            // Tons quentes para indicar "remoção" ou "arquivos de lixo"
+            if (msg.Contains("temp") || msg.Contains("tmp") || msg.Contains("lixeira") || 
+                msg.Contains("trash") || msg.Contains("cache") || msg.Contains("prefetch") || 
+                msg.Contains("log") || msg.Contains("old"))
             {
-                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#85C1E9")); // Default Pastel Blue
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EDBB99")); // Pêssego Pastel
             }
+
+            // 3. Prioridade: Navegadores / Internet (AMARELO/CREME)
+            if (msg.Contains("chrome") || msg.Contains("edge") || msg.Contains("firefox") || 
+                msg.Contains("browser") || msg.Contains("navegador") || msg.Contains("cookie") || msg.Contains("histórico"))
+            {
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F9E79F")); // Amarelo Creme Pastel
+            }
+
+            // 4. Prioridade: Rede / Sistema / Explorer (ROXO/LAVANDA)
+            if (msg.Contains("dns") || msg.Contains("ip") || msg.Contains("rede") || 
+                msg.Contains("explorer") || msg.Contains("sistema") || msg.Contains("system"))
+            {
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D7BDE2")); // Lavanda Pastel
+            }
+
+            // 5. Prioridade: Sucesso / Conclusão (VERDE BRILHANTE)
+            if (msg.Contains("concluída") || msg.Contains("sucesso") || colorKey.Contains("green"))
+            {
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#82E0AA")); // Verde Primavera
+            }
+
+            // 6. Prioridade: Erro / Falha (VERMELHO SUAVE)
+            if (msg.Contains("erro") || msg.Contains("falha") || msg.Contains("negado") || colorKey.Contains("red"))
+            {
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1948A")); // Vermelho Salmão
+            }
+
+            // 7. Padrão (AZUL GELO / CINZA AZULADO)
+            // Usado para "Iniciando...", linhas pontilhadas ou info genérica
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AED6F1")); 
         }
     }
 }
