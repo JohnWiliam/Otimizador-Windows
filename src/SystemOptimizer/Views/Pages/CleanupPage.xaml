@@ -6,53 +6,71 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
-      Title="CleanupPage">
-
-    <Grid Margin="20">
+      d:DesignHeight="550" d:DesignWidth="800"
+      Title="CleanupPage"
+      FontFamily="Segoe UI"> <Grid Margin="24">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+            <RowDefinition Height="Auto" /> <RowDefinition Height="Auto" /> <RowDefinition Height="*" />    </Grid.RowDefinitions>
 
-        <TextBlock Text="Limpeza do Sistema" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,20" />
+        <TextBlock Grid.Row="0" Text="Limpeza do Sistema" FontSize="26" FontWeight="SemiBold" Margin="0,0,0,16" />
 
-        <ui:Button Grid.Row="1" Content="EXECUTAR LIMPEZA TOTAL" 
-                   Command="{Binding RunCleanupCommand}"
-                   IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
-                   Appearance="Primary" Height="45" Width="250" HorizontalAlignment="Left" Margin="0,0,0,20" />
+        <ui:Card Grid.Row="1" Margin="0,0,0,16" Padding="20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-        <ListView Grid.Row="2" ItemsSource="{Binding CleanupLogs}" 
-                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                  SelectionMode="Single">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <Grid Margin="0,5">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        
-                        <ui:SymbolIcon Symbol="{Binding Icon}" FontSize="20" Margin="0,0,10,0" Foreground="{Binding StatusColor}" VerticalAlignment="Center"/>
-                        
-                        <TextBlock Grid.Column="1" Text="{Binding Message}" 
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
-                                   VerticalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsBold}" Value="True">
-                                            <Setter Property="FontWeight" Value="Bold"/>
-                                            <Setter Property="FontSize" Value="14"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Arquivos Temporários e Cache" FontSize="15" FontWeight="Medium" />
+                    <TextBlock Text="Libere espaço em disco removendo arquivos desnecessários." 
+                               FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <ui:Button Grid.Column="1" 
+                           Command="{Binding RunCleanupCommand}"
+                           IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                           Appearance="Primary" 
+                           Icon="Broom24"
+                           Content="Executar Limpeza"
+                           Height="40" Padding="15,0" Margin="16,0,0,0"/>
+            </Grid>
+        </ui:Card>
+
+        <ui:Card Grid.Row="2" 
+                 Padding="0" 
+                 VerticalAlignment="Stretch" 
+                 VerticalContentAlignment="Stretch">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/> <RowDefinition Height="*"/>    </Grid.RowDefinitions>
+                
+                <Border Grid.Row="0" 
+                        Padding="16,12" 
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                        BorderThickness="0,0,0,1"
+                        CornerRadius="4,4,0,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="CodeText20" Margin="0,0,10,0" FontSize="18"/>
+                        <TextBlock Text="Log de Execução" FontWeight="Medium" FontSize="13" />
+                    </StackPanel>
+                </Border>
+
+                <RichTextBox Grid.Row="1" x:Name="LogOutput" 
+                             IsReadOnly="True" 
+                             Background="Transparent" 
+                             BorderThickness="0" 
+                             Padding="16"
+                             VerticalScrollBarVisibility="Auto"
+                             VerticalContentAlignment="Top"
+                             FontFamily="Segoe UI" 
+                             FontSize="14">
+                    
+                    <FlowDocument PagePadding="0" TextAlignment="Left" FontFamily="Segoe UI">
+                        </FlowDocument>
+                </RichTextBox>
+            </Grid>
+        </ui:Card>
     </Grid>
 </Page>
