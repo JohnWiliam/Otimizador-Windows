@@ -38,14 +38,16 @@ namespace SystemOptimizer.Views.Pages
         {
             var paragraph = new Paragraph();
             
-            // CONFIGURAÇÃO FORÇADA DE FONTE E ALINHAMENTO
-            // Isto garante que a fonte seja moderna e o texto fique à esquerda
+            // Mantendo a formatação de sucesso anterior
             paragraph.FontFamily = new FontFamily("Segoe UI");
             paragraph.TextAlignment = TextAlignment.Left;
             paragraph.Margin = new Thickness(0, 0, 0, 4); 
-            paragraph.LineHeight = 20; // Espaçamento entre linhas confortável
+            paragraph.LineHeight = 22; // Um pouco mais de "ar" entre as linhas
 
-            // 1. Ícone
+            // --- 1. Determinar a Cor Pastel ---
+            Brush statusBrush = GetPastelBrush(item.StatusColor);
+
+            // --- 2. Ícone ---
             SymbolRegular symbol = SymbolRegular.Info24;
             if (Enum.TryParse(item.Icon, out SymbolRegular parsedSymbol))
             {
@@ -56,19 +58,9 @@ namespace SystemOptimizer.Views.Pages
             {
                 Symbol = symbol,
                 FontSize = 16,
-                VerticalAlignment = VerticalAlignment.Center
+                VerticalAlignment = VerticalAlignment.Center,
+                Foreground = statusBrush // Aplica a cor pastel ao ícone
             };
-
-            // Cor do ícone
-            try
-            {
-                var color = (Color)ColorConverter.ConvertFromString(item.StatusColor);
-                icon.Foreground = new SolidColorBrush(color);
-            }
-            catch
-            {
-                icon.Foreground = Brushes.Gray;
-            }
 
             var iconContainer = new InlineUIContainer(icon)
             {
@@ -77,25 +69,62 @@ namespace SystemOptimizer.Views.Pages
             paragraph.Inlines.Add(iconContainer);
             paragraph.Inlines.Add(new Run("  ")); 
 
-            // 2. Texto
+            // --- 3. Texto da Mensagem ---
             var run = new Run(item.Message)
             {
                 BaselineAlignment = BaselineAlignment.Center,
-                // Reforça a fonte no texto também
                 FontFamily = new FontFamily("Segoe UI") 
             };
 
-            run.Foreground = (Brush)FindResource("TextFillColorPrimaryBrush");
-
+            // Se for um erro ou sucesso explícito, podemos colorir o texto também,
+            // ou manter o texto padrão para leitura e colorir só o ícone.
+            // Aqui, vou aplicar a cor pastel ao texto se for Bold (títulos), 
+            // caso contrário, uso a cor padrão do tema para leitura fácil.
             if (item.IsBold)
             {
                 run.FontWeight = FontWeights.SemiBold;
+                run.Foreground = statusBrush; // Títulos ganham a cor
+            }
+            else
+            {
+                // Texto normal usa a cor do tema (branco/preto) para melhor contraste
+                run.Foreground = (Brush)FindResource("TextFillColorPrimaryBrush");
             }
 
             paragraph.Inlines.Add(run);
 
             LogOutput.Document.Blocks.Add(paragraph);
             LogOutput.ScrollToEnd();
+        }
+
+        // --- MÁGICA DAS CORES PASTEL ---
+        private Brush GetPastelBrush(string originalColorName)
+        {
+            // Normaliza a string para evitar erros de maiúsculas/minúsculas
+            string key = originalColorName?.ToLower()?.Trim() ?? "";
+
+            // Paleta Pastel (Hex codes manuais para tons modernos)
+            if (key.Contains("green") || key.Contains("success"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#76D7C4")); // Verde Menta Suave
+            
+            if (key.Contains("red") || key.Contains("error") || key.Contains("fail"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1948A")); // Vermelho Salmão Suave
+            
+            if (key.Contains("blue") || key.Contains("info"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#85C1E9")); // Azul Céu Suave
+            
+            if (key.Contains("yellow") || key.Contains("orange") || key.Contains("warn"))
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F7DC6F")); // Amarelo Creme
+
+            // Se não reconhecer a cor, tenta converter (fallback) ou devolve cinza claro
+            try
+            {
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString(originalColorName));
+            }
+            catch
+            {
+                return new SolidColorBrush(Colors.LightGray);
+            }
         }
     }
 }
