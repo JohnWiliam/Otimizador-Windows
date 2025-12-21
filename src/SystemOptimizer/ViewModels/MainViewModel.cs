@@ -20,7 +20,7 @@ namespace SystemOptimizer.ViewModels
 
         // Título Atualizado para v1.1.0
         [ObservableProperty]
-        private string _applicationTitle = "Otimizador de Sistema - John Wiliam & IA v1.1.0";
+        private string _applicationTitle = "Otimizador de Sistema - John Wiliam & IA v1.1.1";
 
         public ObservableCollection<TweakViewModel> PrivacyTweaks { get; } = new();
         public ObservableCollection<TweakViewModel> PerformanceTweaks { get; } = new();
