@@ -6,6 +6,7 @@ using SystemOptimizer.Models;
 using SystemOptimizer.Helpers;
 using Microsoft.Win32;
 using System;
+using System.Diagnostics;
 
 namespace SystemOptimizer.Services
 {
@@ -22,6 +23,7 @@ namespace SystemOptimizer.Services
             AddNetworkTweaks();
             AddSecurityTweaks();
             AddAppearanceTweaks();
+            AddSearchTweaks(); // Adicionado
             Logger.Log($"LoadTweaks finished. Loaded {Tweaks.Count} tweaks.");
         }
 
@@ -138,8 +140,6 @@ namespace SystemOptimizer.Services
 
         private void AddNetworkTweaks()
         {
-            // CORREÇÃO: Uso de PowerShell para verificação robusta e independente de idioma (retorna Enum string em inglês)
-            
             // N1: TCP Auto-Tuning
             Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, "TCP Auto-Tuning", "Janela TCP Dinâmica (Essencial para >100Mbps).",
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
@@ -180,13 +180,7 @@ namespace SystemOptimizer.Services
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled"); return true; },
                 () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
                 () => { 
-                    // Nota: O comando netsh para RSS é global e o PowerShell equivalente (Get-NetAdapterRss) é por adaptador.
-                    // Mantendo verificação global via netsh mas checando apenas "Disabled" em inglês, 
-                    // pois netsh tende a não traduzir o valor da configuração em si, apenas o rótulo.
-                    // Se falhar, assumimos não otimizado. 
-                    // Melhoria: checar chave de registro global se existir, ou confiar no set.
                     var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower();
-                    // Fallback robusto: se conter 'rss' e 'disabled' ou 'desabilitado'.
                     return res.Contains("rss") && (res.Contains("disabled") || res.Contains("desabilitado"));
                 }
             ));
@@ -211,6 +205,50 @@ namespace SystemOptimizer.Services
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0, 1));
             Tweaks.Add(new RegistryTweak("A3", TweakCategory.Appearance, "Efeitos Visuais", "Ajusta para 'Melhor Desempenho' (Parcial).",
                 @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting", 2, 3));
+        }
+
+        private void AddSearchTweaks()
+        {
+            // SE1: SysMain
+            Tweaks.Add(new CustomTweak("SE1", TweakCategory.Search, "Desativar SysMain", "Otimiza uso de disco para SSDs (Superfetch).",
+                () => { 
+                    CommandHelper.RunCommand("sc", "config SysMain start= disabled"); 
+                    CommandHelper.RunCommandNoWait("sc", "stop SysMain"); 
+                    return true; 
+                },
+                () => { 
+                    CommandHelper.RunCommand("sc", "config SysMain start= auto"); 
+                    CommandHelper.RunCommandNoWait("sc", "start SysMain"); 
+                    return true; 
+                },
+                () => { try { using var sc = new ServiceController("SysMain"); return sc.StartType == ServiceStartMode.Disabled; } catch { return false; } }
+            ));
+
+            // SE2: Prefetch
+            Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Search, "Desativar Prefetch", "Impede criação de rastros de inicialização (RegWrite).",
+                @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
+
+            // SE3: Persistência
+            string taskName = "SystemOptimizer_AutoRun";
+            string exePath = Process.GetCurrentProcess().MainModule?.FileName ?? "";
+            
+            Tweaks.Add(new CustomTweak("SE3", TweakCategory.Search, "Habilitar Persistência", "Cria tarefa agendada para reaplicar otimizações no boot.",
+                () => { // Apply
+                    if (string.IsNullOrEmpty(exePath)) return false;
+                    // Comando: schtasks /create /tn "Name" /tr "path --silent" /sc onlogon /rl HIGHEST /f
+                    string cmd = $"/create /tn \"{taskName}\" /tr \"\\\"{exePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
+                    var res = CommandHelper.RunCommand("schtasks", cmd);
+                    return res.Contains("SUCESSO") || res.Contains("SUCCESS") || res.Contains("êxito");
+                },
+                () => { // Revert
+                    var res = CommandHelper.RunCommand("schtasks", $"/delete /tn \"{taskName}\" /f");
+                    return res.Contains("SUCESSO") || res.Contains("SUCCESS") || res.Contains("êxito");
+                },
+                () => { // Check
+                    var res = CommandHelper.RunCommand("schtasks", $"/query /tn \"{taskName}\"");
+                    return !res.Contains("ERRO") && !res.Contains("ERROR");
+                }
+            ));
         }
     }
 }
