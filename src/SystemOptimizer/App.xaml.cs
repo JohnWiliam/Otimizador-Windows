@@ -1,52 +1,60 @@
 using System;
-using System.IO;
 using System.Windows;
-using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
 using SystemOptimizer.Services;
-using SystemOptimizer.ViewModels;
-using SystemOptimizer.Views.Pages;
+using SystemOptimizer.Helpers;
 
 namespace SystemOptimizer
 {
+    /// <summary>
+    /// Interaction logic for App.xaml
+    /// </summary>
     public partial class App : Application
     {
-        public static IServiceProvider Services { get; private set; } = null!;
-
-        public App()
+        protected override void OnStartup(StartupEventArgs e)
         {
-            DispatcherUnhandledException += App_DispatcherUnhandledException;
-            Services = ConfigureServices();
+            base.OnStartup(e);
+
+            // Verifica se o argumento --silent foi passado (usado pelo Agendador de Tarefas)
+            if (e.Args.Contains("--silent"))
+            {
+                RunSilentMode();
+            }
+            else
+            {
+                // Modo Normal: Abre a interface gráfica
+                MainWindow mainWindow = new MainWindow();
+                mainWindow.Show();
+            }
         }
 
-        public static IServiceProvider ConfigureServices()
+        private void RunSilentMode()
         {
-            var services = new ServiceCollection();
+            try
+            {
+                Logger.Log("Iniciando em Modo Silencioso (Verificacao de Persistencia)...");
 
-            services.AddSingleton<TweakService>();
-            services.AddSingleton<CleanupService>();
-            services.AddSingleton<Wpf.Ui.IPageService, SystemOptimizer.Services.PageService>();
-            services.AddSingleton<Wpf.Ui.INavigationService, Wpf.Ui.NavigationService>();
-            services.AddSingleton<Wpf.Ui.ISnackbarService, Wpf.Ui.SnackbarService>();
-            services.AddSingleton<IDialogService, DialogService>();
-            services.AddSingleton<MainViewModel>();
+                // Inicializa o serviço de tweaks
+                var tweakService = new TweakService();
+                tweakService.LoadTweaks();
 
-            services.AddSingleton<PrivacyPage>();
-            services.AddSingleton<PerformancePage>();
-            services.AddSingleton<NetworkPage>();
-            services.AddSingleton<SecurityPage>();
-            services.AddSingleton<AppearancePage>();
-            services.AddSingleton<CleanupPage>();
-            services.AddSingleton<TweaksPage>(); // Registrado como TweaksPage
-
-            services.AddSingleton<MainWindow>();
-
-            return services.BuildServiceProvider();
-        }
-
-        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
-        {
-            MessageBox.Show($"Ocorreu uma exceção: {e.Exception.Message}", "Erro", MessageBoxButton.OK, MessageBoxImage.Error);
-            e.Handled = true;
+                // LÓGICA DE EXECUÇÃO SILENCIOSA:
+                // Como o objetivo é apenas manter a persistência ativa e reaplicar o necessário.
+                // Futuramente, você pode implementar um sistema de "Carregar Perfil" aqui
+                // para reaplicar automaticamente os tweaks que o usuário salvou.
+                
+                // Por enquanto, apenas registramos que rodou com sucesso.
+                Logger.Log("Tarefas de inicialização silenciosa concluídas.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Erro no modo silencioso: {ex.Message}", "ERROR");
+            }
+            finally
+            {
+                // Garante que o processo seja encerrado imediatamente para não consumir memória
+                Shutdown();
+            }
         }
     }
 }
