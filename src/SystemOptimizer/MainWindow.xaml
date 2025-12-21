@@ -23,7 +23,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         
-        <ui:TitleBar Grid.Row="0" Title="Otimizador de Sistema - John Wiliam &amp; IA" />
+        <ui:TitleBar Grid.Row="0" Title="Otimizador de Sistema - John Wiliam & IA" />
 
         <ui:NavigationView x:Name="RootNavigation"
                            Grid.Row="1"
@@ -59,6 +59,12 @@
                 <ui:NavigationViewItem Content="Visual" TargetPageType="{x:Type pages:AppearancePage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PaintBrush24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="Pesquisa" TargetPageType="{x:Type pages:SearchPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Search24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 
