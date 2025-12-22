@@ -4,6 +4,7 @@ using Wpf.Ui;
 using SystemOptimizer.ViewModels;
 using System;
 using SystemOptimizer.Helpers;
+using Wpf.Ui.Appearance;
 
 namespace SystemOptimizer
 {
