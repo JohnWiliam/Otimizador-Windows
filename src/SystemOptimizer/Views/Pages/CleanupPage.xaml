@@ -17,7 +17,12 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Limpeza do Sistema" FontSize="26" FontWeight="SemiBold" Margin="0,0,0,16" />
+        <TextBlock Grid.Row="0" 
+                   Text="Limpeza do Sistema" 
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                   FontSize="26" 
+                   FontWeight="SemiBold" 
+                   Margin="0,0,0,16" />
 
         <ui:Card Grid.Row="1" Margin="0,0,0,16" Padding="20">
             <Grid>
@@ -27,9 +32,16 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Arquivos Temporários e Cache" FontSize="15" FontWeight="Medium" />
-                    <TextBlock Text="Libere espaço em disco removendo arquivos desnecessários." 
-                               FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                    <TextBlock Text="Arquivos Temporários e Cache" 
+                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                               FontSize="15" 
+                               FontWeight="Medium" />
+                    
+                    <TextBlock Text="Libere espaço em disco removendo arquivos desnecessários."
+                               FontSize="13" 
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                               Margin="0,4,0,0" 
+                               TextWrapping="Wrap"/>
                 </StackPanel>
 
                 <ui:Button Grid.Column="1" 
@@ -60,12 +72,16 @@
                         CornerRadius="4,4,0,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <ui:SymbolIcon Symbol="CodeText20" Margin="0,0,10,0" FontSize="16"/>
-                        <TextBlock Text="Log de Execução" FontWeight="Medium" FontSize="13" />
+                        <TextBlock Text="Log de Execução" 
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                   FontWeight="Medium" 
+                                   FontSize="13" />
                     </StackPanel>
                 </Border>
 
                 <RichTextBox Grid.Row="1" x:Name="LogOutput" 
                              IsReadOnly="True" 
+                             Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                              Background="Transparent" 
                              BorderThickness="0" 
                              Padding="16"
