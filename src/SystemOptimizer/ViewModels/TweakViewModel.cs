@@ -40,7 +40,7 @@ namespace SystemOptimizer.ViewModels
                 notifyTweak.PropertyChanged += Tweak_PropertyChanged;
             }
 
-            // Initialize UI with current status
+            // Inicializa a UI com o status atual
             UpdateStatusUI();
         }
 
@@ -48,7 +48,6 @@ namespace SystemOptimizer.ViewModels
         {
             if (e.PropertyName == nameof(ITweak.Status))
             {
-                // Ensure UI update happens on UI thread
                 if (Application.Current?.Dispatcher != null && !Application.Current.Dispatcher.CheckAccess())
                 {
                     Application.Current.Dispatcher.Invoke(UpdateStatusUI);
@@ -60,10 +59,6 @@ namespace SystemOptimizer.ViewModels
             }
         }
 
-        /// <summary>
-        /// Updates the status UI based on the underlying tweak status.
-        /// This method is fast as it only reads the property.
-        /// </summary>
         public void UpdateStatusUI()
         {
             switch (_tweak.Status)
@@ -71,17 +66,17 @@ namespace SystemOptimizer.ViewModels
                 case TweakStatus.Optimized:
                     StatusText = "Otimizado";
                     StatusIcon = SymbolRegular.CheckmarkCircle24;
-                    StatusColor = new SolidColorBrush(Color.FromRgb(0x0f, 0x7b, 0x0f)); // Darker Green
+                    StatusColor = new SolidColorBrush(Color.FromRgb(0x0f, 0x7b, 0x0f)); // Verde Escuro
                     break;
                 case TweakStatus.Default:
                     StatusText = "Não Otimizado";
                     StatusIcon = SymbolRegular.DismissCircle24;
-                    StatusColor = new SolidColorBrush(Color.FromRgb(0xc4, 0x2b, 0x1c)); // Red
+                    StatusColor = new SolidColorBrush(Color.FromRgb(0xc4, 0x2b, 0x1c)); // Vermelho
                     break;
                 case TweakStatus.Modified:
                     StatusText = "Modificado";
                     StatusIcon = SymbolRegular.Edit24;
-                    StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Orange
+                    StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Laranja
                     break;
                 default:
                     StatusText = "Desconhecido";
@@ -90,13 +85,9 @@ namespace SystemOptimizer.ViewModels
                     break;
             }
 
-            // Freeze brushes for performance if not already frozen (though we create new ones)
             if (StatusColor.CanFreeze) StatusColor.Freeze();
         }
 
-        /// <summary>
-        /// Refreshes the status of the tweak asynchronously.
-        /// </summary>
         public async Task RefreshStatusAsync()
         {
              await Task.Run(() => _tweak.CheckStatus());
