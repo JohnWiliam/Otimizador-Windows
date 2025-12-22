@@ -1,3 +1,24 @@
+🚀 Otimizador de Sistema v1.2.0
+
+Esta atualização foca na experiência visual e integração com o sistema, trazendo o tão aguardado suporte nativo ao Modo Escuro.
+
+✨ O Que Há de Novo?
+🌗 Suporte Automático a Temas (Dark/Light Mode)
+
+A aplicação agora sincroniza-se automaticamente com a aparência do seu Windows.
+
+* **Detecção Inteligente:** O aplicativo identifica se o Windows está configurado para o tema "Claro" ou "Escuro" e adapta a interface instantaneamente.
+* **Experiência Nativa:** Utilização do `SystemThemeWatcher` para garantir que a troca de temas ocorra de forma fluida e integrada ao sistema operacional.
+
+🎨 Refatoração Visual e Correções
+
+Ajustes profundos no código XAML para garantir legibilidade e contraste perfeitos.
+
+* **Cores Dinâmicas:** Substituição de cores fixas por recursos dinâmicos (`DynamicResource`). Isso corrige problemas onde textos ficavam invisíveis ou com baixo contraste em fundos escuros.
+* **Correção de Interface:** Títulos e descrições agora utilizam os pinceis de sistema corretos (`TextFillColorPrimaryBrush`), garantindo que a interface permaneça moderna e legível em qualquer cenário de iluminação.
+
+---
+
 🚀 Otimizador de Sistema v1.1.1
 
 Esta atualização traz um refinamento visual significativo para as ferramentas de limpeza e consolida a gestão de ajustes do sistema.
