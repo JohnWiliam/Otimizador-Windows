@@ -38,7 +38,18 @@
                                 </StackPanel>
 
                                 <Border Grid.Column="2" Background="Transparent" Padding="8,4" CornerRadius="4" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding StatusText}" Foreground="{Binding StatusColor}" FontWeight="Bold" FontSize="12" />
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ui:SymbolIcon Symbol="{Binding StatusIcon}" 
+                                                       FontSize="18" 
+                                                       Foreground="{Binding StatusColor}" 
+                                                       Margin="0,0,6,0" 
+                                                       Filled="True"/>
+                                        <TextBlock Text="{Binding StatusText}" 
+                                                   Foreground="{Binding StatusColor}" 
+                                                   FontWeight="Bold" 
+                                                   FontSize="12" 
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
                                 </Border>
                             </Grid>
                         </ui:Card>
