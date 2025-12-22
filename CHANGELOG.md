@@ -1,8 +1,8 @@
-🚀 Otimizador de Sistema v1.2.0
+**🚀 Otimizador de Sistema v1.2.0**
 
 Esta atualização foca na experiência visual e integração com o sistema, trazendo o tão aguardado suporte nativo ao Modo Escuro.
 
-✨ O Que Há de Novo?
+**✨ O Que Há de Novo?**
 🌗 Suporte Automático a Temas (Dark/Light Mode)
 
 A aplicação agora sincroniza-se automaticamente com a aparência do seu Windows.
@@ -10,7 +10,7 @@ A aplicação agora sincroniza-se automaticamente com a aparência do seu Window
 * **Detecção Inteligente:** O aplicativo identifica se o Windows está configurado para o tema "Claro" ou "Escuro" e adapta a interface instantaneamente.
 * **Experiência Nativa:** Utilização do `SystemThemeWatcher` para garantir que a troca de temas ocorra de forma fluida e integrada ao sistema operacional.
 
-🎨 Refatoração Visual e Correções
+**🎨 Refatoração Visual e Correções**
 
 Ajustes profundos no código XAML para garantir legibilidade e contraste perfeitos.
 
@@ -19,11 +19,11 @@ Ajustes profundos no código XAML para garantir legibilidade e contraste perfeit
 
 ---
 
-🚀 Otimizador de Sistema v1.1.1
+**🚀 Otimizador de Sistema v1.1.1**
 
 Esta atualização traz um refinamento visual significativo para as ferramentas de limpeza e consolida a gestão de ajustes do sistema.
 
-✨ O Que Há de Novo?
+**✨ O Que Há de Novo?**
 🧹 Página de Limpeza Aprimorada (Visual Log 2.0)
 
 A interface de limpeza foi reescrita para fornecer feedback visual instantâneo e detalhado (baseado no código em `CleanupPage.xaml.cs`).
@@ -37,7 +37,7 @@ A interface de limpeza foi reescrita para fornecer feedback visual instantâneo 
 * **Ícones Dinâmicos:** Cada linha de log agora é acompanhada por um ícone contextual (`SymbolIcon`) que representa o tipo de ação (vassoura, check, alerta), tornando o acompanhamento do processo muito mais visual.
 * **RichTextBox Integration:** Migração para um componente de texto rico que permite formatação avançada e melhor legibilidade.
 
-🛠️ Criação da Aba Tweaks
+**🛠️ Criação da Aba Tweaks**
 
 Implementação da interface gráfica dedicada para a aplicação de ajustes (Tweaks), conforme visualizado em `TweaksPage.xaml`.
 
@@ -47,18 +47,18 @@ Implementação da interface gráfica dedicada para a aplicação de ajustes (Tw
 
 ---
 
-🚀 Otimizador de Sistema v1.1.0
+**🚀 Otimizador de Sistema v1.1.0**
 
 Apresentamos a versão 1.1.0, trazendo uma nova categoria poderosa e funcionalidades focadas na longevidade do teu hardware.
-✨ O Que Há de Novo?
-🛠️ Nova Aba: Tweaks
+**✨ O Que Há de Novo?**
+**🛠️ Nova Aba:** Tweaks
 
 Adicionámos uma secção dedicada a ajustes finos do sistema, migrando funcionalidades avançadas de scripts PowerShell diretamente para a interface nativa em C#.
 
     Foco Total em SSDs: Estas novas opções foram desenhadas para reduzir a escrita desnecessária em disco e libertar recursos em segundo plano.
 
-🔥 Funcionalidades em Destaque
-1. ⚡ Desativar SysMain (Superfetch)
+**🔥 Funcionalidades em Destaque**
+**1. ⚡ Desativar SysMain (Superfetch)**
 
 Otimiza a performance para quem utiliza SSDs.
 
@@ -66,7 +66,7 @@ Otimiza a performance para quem utiliza SSDs.
 
     Benefício: Reduz o uso constante do disco e liberta RAM. Em SSDs modernos, o pré-carregamento é muitas vezes desnecessário e consome ciclos de vida útil do disco.
 
-2. 🛑 Desativar Prefetch
+**2. 🛑 Desativar Prefetch**
 
 Para um sistema mais limpo e com menos "lixo" de rastreamento.
 
@@ -74,7 +74,7 @@ Para um sistema mais limpo e com menos "lixo" de rastreamento.
 
     Benefício: Menos operações de escrita (Write Operations), o que é vital para a saúde a longo prazo do teu SSD.
 
-3. 🤖 Persistência Inteligente (Silent Mode)
+**3. 🤖 Persistência Inteligente (Silent Mode)**
 
 A funcionalidade mais robusta desta atualização.
 
@@ -82,7 +82,7 @@ A funcionalidade mais robusta desta atualização.
 
     Por que é importante: O Windows Update tende a reverter as tuas otimizações. Com a persistência ativada, o programa garante que os teus Tweaks favoritos são reaplicados automaticamente a cada reinício, sem abrir janelas ou interromper o teu fluxo.
 
-⚙️ Melhorias Técnicas
+**⚙️ Melhorias Técnicas**
 
     Refatoração de Código: Migração de lógica .ps1 para C# nativo.
 
