@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using SystemOptimizer.Models;
-using Wpf.Ui.Common;
+using Wpf.Ui.Controls;
 
 namespace SystemOptimizer.ViewModels
 {
