@@ -1,9 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using SystemOptimizer.Helpers;
 using SystemOptimizer.Models;
+using Wpf.Ui.Controls; // Atualizado para Controls conforme sua versão
 
 namespace SystemOptimizer.ViewModels
 {
@@ -25,6 +28,9 @@ namespace SystemOptimizer.ViewModels
         [ObservableProperty]
         private SolidColorBrush _statusColor = Brushes.Gray;
 
+        [ObservableProperty]
+        private SymbolRegular _statusIcon = SymbolRegular.QuestionCircle24;
+
         public ITweak Tweak => _tweak;
 
         public TweakViewModel(ITweak tweak)
@@ -36,54 +42,79 @@ namespace SystemOptimizer.ViewModels
                 notifyTweak.PropertyChanged += Tweak_PropertyChanged;
             }
 
-            // Initialize UI with current status
+            // Inicializa UI com status atual (Seguro pois roda na thread de criação)
             UpdateStatusUI();
         }
 
         private void Tweak_PropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(ITweak.Status))
+            // Proteção contra crashes vindos de threads secundárias
+            try
             {
-                // Ensure UI update happens on UI thread
-                if (Application.Current?.Dispatcher != null && !Application.Current.Dispatcher.CheckAccess())
+                if (e.PropertyName == nameof(ITweak.Status))
                 {
-                    Application.Current.Dispatcher.Invoke(UpdateStatusUI);
+                    var app = System.Windows.Application.Current;
+                    
+                    // Se estivermos numa thread secundária, usamos o Dispatcher
+                    if (app != null && app.Dispatcher != null && !app.Dispatcher.CheckAccess())
+                    {
+                        app.Dispatcher.Invoke(UpdateStatusUI);
+                    }
+                    else
+                    {
+                        // Se já estamos na UI Thread ou o App não está disponível, chamamos direto
+                        UpdateStatusUI();
+                    }
                 }
-                else
-                {
-                    UpdateStatusUI();
-                }
+            }
+            catch (Exception ex)
+            {
+                // Loga o erro mas não derruba o aplicativo
+                Logger.Log($"Erro ao atualizar UI do Tweak {_tweak.Id}: {ex.Message}", "WARNING");
             }
         }
 
         /// <summary>
         /// Updates the status UI based on the underlying tweak status.
-        /// This method is fast as it only reads the property.
         /// </summary>
         public void UpdateStatusUI()
         {
-            switch (_tweak.Status)
+            try
             {
-                case TweakStatus.Optimized:
-                    StatusText = "● OTIMIZADO";
-                    StatusColor = new SolidColorBrush(Color.FromRgb(16, 124, 16)); // #107C10
-                    break;
-                case TweakStatus.Default:
-                    StatusText = "● PADRÃO";
-                    StatusColor = new SolidColorBrush(Color.FromRgb(0, 120, 212)); // #0078D4
-                    break;
-                case TweakStatus.Modified:
-                    StatusText = "● MODIFICADO";
-                    StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // #CA5010
-                    break;
-                default:
-                    StatusText = "○ INDEFINIDO";
-                    StatusColor = Brushes.Gray;
-                    break;
-            }
+                switch (_tweak.Status)
+                {
+                    case TweakStatus.Optimized:
+                        StatusText = "Otimizado";
+                        StatusIcon = SymbolRegular.CheckmarkCircle24;
+                        StatusColor = new SolidColorBrush(Color.FromRgb(0x0f, 0x7b, 0x0f)); // Verde Escuro
+                        break;
+                    case TweakStatus.Default:
+                        StatusText = "Não Otimizado";
+                        StatusIcon = SymbolRegular.DismissCircle24;
+                        StatusColor = new SolidColorBrush(Color.FromRgb(0xc4, 0x2b, 0x1c)); // Vermelho
+                        break;
+                    case TweakStatus.Modified:
+                        StatusText = "Modificado";
+                        StatusIcon = SymbolRegular.Edit24;
+                        StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Laranja
+                        break;
+                    default:
+                        StatusText = "Desconhecido";
+                        StatusIcon = SymbolRegular.QuestionCircle24;
+                        StatusColor = Brushes.Gray;
+                        break;
+                }
 
-            // Freeze brushes for performance if not already frozen (though we create new ones)
-            if (StatusColor.CanFreeze) StatusColor.Freeze();
+                // Proteção extra ao congelar o pincel
+                if (StatusColor != null && StatusColor.CanFreeze) 
+                {
+                    StatusColor.Freeze();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Erro interno no UpdateStatusUI ({_tweak.Id}): {ex.Message}", "ERROR");
+            }
         }
 
         /// <summary>
