@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using SystemOptimizer.Models;
+using Wpf.Ui.Common;
 
 namespace SystemOptimizer.ViewModels
 {
@@ -24,6 +25,9 @@ namespace SystemOptimizer.ViewModels
 
         [ObservableProperty]
         private SolidColorBrush _statusColor = Brushes.Gray;
+
+        [ObservableProperty]
+        private SymbolRegular _statusIcon = SymbolRegular.QuestionCircle24;
 
         public ITweak Tweak => _tweak;
 
@@ -65,19 +69,23 @@ namespace SystemOptimizer.ViewModels
             switch (_tweak.Status)
             {
                 case TweakStatus.Optimized:
-                    StatusText = "● OTIMIZADO";
-                    StatusColor = new SolidColorBrush(Color.FromRgb(16, 124, 16)); // #107C10
+                    StatusText = "Otimizado";
+                    StatusIcon = SymbolRegular.CheckmarkCircle24;
+                    StatusColor = new SolidColorBrush(Color.FromRgb(0x0f, 0x7b, 0x0f)); // Darker Green
                     break;
                 case TweakStatus.Default:
-                    StatusText = "● PADRÃO";
-                    StatusColor = new SolidColorBrush(Color.FromRgb(0, 120, 212)); // #0078D4
+                    StatusText = "Não Otimizado";
+                    StatusIcon = SymbolRegular.DismissCircle24;
+                    StatusColor = new SolidColorBrush(Color.FromRgb(0xc4, 0x2b, 0x1c)); // Red
                     break;
                 case TweakStatus.Modified:
-                    StatusText = "● MODIFICADO";
-                    StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // #CA5010
+                    StatusText = "Modificado";
+                    StatusIcon = SymbolRegular.Edit24;
+                    StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Orange
                     break;
                 default:
-                    StatusText = "○ INDEFINIDO";
+                    StatusText = "Desconhecido";
+                    StatusIcon = SymbolRegular.QuestionCircle24;
                     StatusColor = Brushes.Gray;
                     break;
             }
