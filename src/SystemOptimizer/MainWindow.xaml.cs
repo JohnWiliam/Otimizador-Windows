@@ -4,7 +4,7 @@ using Wpf.Ui;
 using SystemOptimizer.ViewModels;
 using System;
 using SystemOptimizer.Helpers;
-using Wpf.Ui.Appearance;
+using Wpf.Ui.Appearance; // NECESSÁRIO PARA O SYSTEM THEME WATCHER
 
 namespace SystemOptimizer
 {
@@ -22,6 +22,9 @@ namespace SystemOptimizer
             DataContext = ViewModel;
 
             InitializeComponent();
+
+            // ATIVA A SINCRONIZAÇÃO AUTOMÁTICA COM O TEMA DO WINDOWS
+            SystemThemeWatcher.Watch(this);
 
             // Initialize the navigation service with the NavigationView control
             navigationService.SetNavigationControl(RootNavigation);
