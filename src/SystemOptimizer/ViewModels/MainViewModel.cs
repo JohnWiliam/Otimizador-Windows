@@ -9,6 +9,7 @@ using SystemOptimizer.Services;
 using System.Collections.Generic;
 using System;
 using SystemOptimizer.Helpers;
+using Wpf.Ui.Appearance;
 
 namespace SystemOptimizer.ViewModels
 {
