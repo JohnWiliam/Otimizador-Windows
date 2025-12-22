@@ -41,9 +41,9 @@
                                                Foreground="{Binding StatusColor}" 
                                                Margin="0,0,6,0" 
                                                Filled="True"/>
+                                
                                 <TextBlock Text="{Binding StatusText}" 
-                                           Foreground="{Binding StatusColor}" 
-                                           FontWeight="Bold" 
+                                           Foreground="#757575" 
                                            FontSize="12" 
                                            VerticalAlignment="Center" />
                             </StackPanel>
