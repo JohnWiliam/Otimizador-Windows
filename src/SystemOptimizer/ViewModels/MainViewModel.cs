@@ -18,7 +18,8 @@ namespace SystemOptimizer.ViewModels
         private readonly CleanupService _cleanupService;
         private readonly IDialogService _dialogService;
 
-        // Título Atualizado para v1.1.2
+        // --- ALTERAÇÃO AQUI ---
+        // Definimos o título aqui. O 'ObservableProperty' gera automaticamente a propriedade 'ApplicationTitle'
         [ObservableProperty]
         private string _applicationTitle = "Otimizador de Sistema - John Wiliam & IA v1.1.2";
 
@@ -78,7 +79,7 @@ namespace SystemOptimizer.ViewModels
                                 .Concat(NetworkTweaks)
                                 .Concat(SecurityTweaks)
                                 .Concat(AppearanceTweaks)
-                                .Concat(TweaksPageItems); // Atualizado
+                                .Concat(TweaksPageItems);
         }
 
         private void PopulateCategories()
@@ -88,7 +89,7 @@ namespace SystemOptimizer.ViewModels
             NetworkTweaks.Clear();
             SecurityTweaks.Clear();
             AppearanceTweaks.Clear();
-            TweaksPageItems.Clear(); // Atualizado
+            TweaksPageItems.Clear();
 
             foreach (var tweak in _tweakService.Tweaks)
             {
@@ -100,7 +101,7 @@ namespace SystemOptimizer.ViewModels
                     case TweakCategory.Network: NetworkTweaks.Add(vm); break;
                     case TweakCategory.Security: SecurityTweaks.Add(vm); break;
                     case TweakCategory.Appearance: AppearanceTweaks.Add(vm); break;
-                    case TweakCategory.Tweaks: TweaksPageItems.Add(vm); break; // Nova categoria
+                    case TweakCategory.Tweaks: TweaksPageItems.Add(vm); break;
                 }
             }
         }
@@ -124,7 +125,7 @@ namespace SystemOptimizer.ViewModels
                 "Network" => NetworkTweaks,
                 "Security" => SecurityTweaks,
                 "Appearance" => AppearanceTweaks,
-                "Tweaks" => TweaksPageItems, // Atualizado
+                "Tweaks" => TweaksPageItems,
                 _ => Enumerable.Empty<TweakViewModel>()
             };
 
@@ -145,7 +146,7 @@ namespace SystemOptimizer.ViewModels
                 "Network" => NetworkTweaks,
                 "Security" => SecurityTweaks,
                 "Appearance" => AppearanceTweaks,
-                "Tweaks" => TweaksPageItems, // Atualizado
+                "Tweaks" => TweaksPageItems,
                 _ => Enumerable.Empty<TweakViewModel>()
             };
 
