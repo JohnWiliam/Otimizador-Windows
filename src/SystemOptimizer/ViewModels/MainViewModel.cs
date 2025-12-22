@@ -18,9 +18,9 @@ namespace SystemOptimizer.ViewModels
         private readonly CleanupService _cleanupService;
         private readonly IDialogService _dialogService;
 
-        // Título Atualizado para v1.1.1
+        // Título Atualizado para v1.1.2
         [ObservableProperty]
-        private string _applicationTitle = "Otimizador de Sistema - John Wiliam & IA v1.1.1";
+        private string _applicationTitle = "Otimizador de Sistema - John Wiliam & IA v1.1.2";
 
         public ObservableCollection<TweakViewModel> PrivacyTweaks { get; } = new();
         public ObservableCollection<TweakViewModel> PerformanceTweaks { get; } = new();
