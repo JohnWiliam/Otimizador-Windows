@@ -11,7 +11,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>SystemOptimizer</RootNamespace>
     <Authors>John Wiliam &amp; IA</Authors>
-    <Version>1.1.2.</Version>
+    <Version>1.1.2</Version>
     <Platforms>AnyCPU;x64</Platforms>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
