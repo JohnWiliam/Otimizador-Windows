@@ -19,43 +19,8 @@
         <TextBlock Grid.Row="0" Text="Tweaks" FontSize="24" FontWeight="SemiBold" Margin="0,0,0,10" />
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding TweaksPageItems}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <ui:Card Margin="0,0,5,5" Padding="12">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-
-                                <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center" Margin="0,0,12,0" />
-
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="13" />
-                                    <TextBlock Text="{Binding Description}" Foreground="#666666" FontSize="11" Margin="0,1,0,0" TextWrapping="Wrap" />
-                                </StackPanel>
-
-                                <Border Grid.Column="2" Background="Transparent" Padding="8,4" CornerRadius="4" VerticalAlignment="Center">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <ui:SymbolIcon Symbol="{Binding StatusIcon}" 
-                                                       FontSize="18" 
-                                                       Foreground="{Binding StatusColor}" 
-                                                       Margin="0,0,6,0" 
-                                                       Filled="True"/>
-                                        <TextBlock Text="{Binding StatusText}" 
-                                                   Foreground="{Binding StatusColor}" 
-                                                   FontWeight="Bold" 
-                                                   FontSize="12" 
-                                                   VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-                        </ui:Card>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding TweaksPageItems}" 
+                          ItemTemplate="{StaticResource TweakItemTemplate}" />
         </ScrollViewer>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
