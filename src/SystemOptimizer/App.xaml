@@ -4,8 +4,7 @@
              xmlns:local="clr-namespace:SystemOptimizer"
              xmlns:helpers="clr-namespace:SystemOptimizer.Helpers"
              xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
-             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             StartupUri="MainWindow.xaml">
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
