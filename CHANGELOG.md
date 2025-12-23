@@ -1,3 +1,5 @@
+[![GitHub downloads](https://img.shields.io/github/downloads/JohnWiliam/Otimizador-Windows/total?color=green&logo=github)](https://github.com/JohnWiliam/Otimizador-Windows/releases/latest)
+
 **🚀 Otimizador de Sistema v1.2.0**
 
 Esta atualização foca na experiência visual e integração com o sistema, trazendo o tão aguardado suporte nativo ao Modo Escuro.
