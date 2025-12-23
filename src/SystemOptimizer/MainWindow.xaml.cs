@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using Wpf.Ui;
+using Wpf.Ui.Abstractions; // Adicionado para corrigir o erro CS0246 e CS0535
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using SystemOptimizer.Helpers;
