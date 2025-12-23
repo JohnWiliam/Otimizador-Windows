@@ -8,7 +8,7 @@ using SystemOptimizer.ViewModels;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
 using Wpf.Ui;
-using Wpf.Ui.Abstractions; // Adicionado para corrigir o erro CS0246
+using Wpf.Ui.Abstractions; 
 
 namespace SystemOptimizer;
 
@@ -23,6 +23,10 @@ public partial class App : Application
             {
                 // 1. ViewModels
                 services.AddSingleton<MainViewModel>();
+                
+                // NOVO: Registo do SettingsViewModel
+                services.AddSingleton<SettingsViewModel>();
+                
                 services.AddTransient<TweakViewModel>();
 
                 // 2. Core Services
@@ -30,9 +34,7 @@ public partial class App : Application
                 services.AddSingleton<CleanupService>();
 
                 // 3. UI Services
-                // CORREÇÃO: IPageService substituído por INavigationViewPageProvider
                 services.AddSingleton<INavigationViewPageProvider, PageService>();
-                
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
                 services.AddSingleton<ISnackbarService, SnackbarService>();
@@ -47,6 +49,9 @@ public partial class App : Application
                 services.AddTransient<SecurityPage>();
                 services.AddTransient<CleanupPage>();
                 services.AddTransient<AppearancePage>();
+                
+                // NOVO: Registo da SettingsPage para resolver o erro de "null"
+                services.AddTransient<SettingsPage>();
             })
             .Build();
     }
