@@ -10,12 +10,12 @@
 
 * **Idioma/Language**
 
-[🇧🇷 Português](#-português-do-brasil) | [🇺🇸 English](#-english)
+[🇧🇷 Português](#-português) | [🇺🇸 English](#-english)
 
 ---
 # 🚀 Otimizador de Sistema (System Optimizer)
 
-## 🇧🇷 Português do Brasil
+## 🇧🇷 Português
 
 O **Otimizador de Sistema** é uma aplicação moderna, portátil e robusta desenvolvida em **C# (WPF)** para ajustar, limpar e acelerar o Windows. Ele utiliza a biblioteca **WPF-UI** para oferecer uma interface elegante com efeitos **Mica/Acrylic** e **Fluent Design**, garantindo uma experiência nativa no Windows 11.
 
