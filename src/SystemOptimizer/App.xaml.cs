@@ -8,6 +8,7 @@ using SystemOptimizer.ViewModels;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
 using Wpf.Ui;
+using Wpf.Ui.Abstractions; // Adicionado para corrigir o erro CS0246
 
 namespace SystemOptimizer;
 
