@@ -3,7 +3,7 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
 ![Language](https://img.shields.io/badge/language-C%23%20%7C%20.NET%208-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
-[![Novidades](https://img.shields.io/badge/Changelog-Ver%20Histórico%20de%20Versão-blueviolet)](https://github.com/JohnWiliam/Otimizador-Windows/releases/latest)
+[![Novidades](https://img.shields.io/badge/Changelog-Ver%20Histórico%20de%20Versão-blueviolet)](https://github.com/JohnWiliam/Otimizador-Windows/blob/main/CHANGELOG.md)
 [![GitHub downloads](https://img.shields.io/github/downloads/JohnWiliam/Otimizador-Windows/total?color=green&logo=github)](https://github.com/JohnWiliam/Otimizador-Windows/releases/latest)
 
 > Criado e Idealizado por John Wiliam com o auxílio de IA.
