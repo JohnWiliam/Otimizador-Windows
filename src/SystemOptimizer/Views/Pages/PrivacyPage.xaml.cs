@@ -1,14 +1,13 @@
 using System.Windows.Controls;
 using SystemOptimizer.ViewModels;
 
-namespace SystemOptimizer.Views.Pages
+namespace SystemOptimizer.Views.Pages;
+
+public partial class PrivacyPage : Page
 {
-    public partial class PrivacyPage : Page
+    public PrivacyPage(MainViewModel viewModel)
     {
-        public PrivacyPage(MainViewModel viewModel)
-        {
-            InitializeComponent();
-            DataContext = viewModel;
-        }
+        InitializeComponent();
+        DataContext = viewModel;
     }
 }

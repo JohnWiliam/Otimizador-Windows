@@ -1,9 +1,8 @@
 using System.Threading.Tasks;
 
-namespace SystemOptimizer.Services
+namespace SystemOptimizer.Services;
+
+public interface IDialogService
 {
-    public interface IDialogService
-    {
-        Task ShowMessageAsync(string title, string message);
-    }
+    Task ShowMessageAsync(string title, string message);
 }

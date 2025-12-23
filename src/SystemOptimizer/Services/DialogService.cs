@@ -1,26 +1,24 @@
 using System.Threading.Tasks;
 using System.Windows;
-using Wpf.Ui.Controls;
 
-namespace SystemOptimizer.Services
+namespace SystemOptimizer.Services;
+
+public class DialogService : IDialogService
 {
-    public class DialogService : IDialogService
+    public async Task ShowMessageAsync(string title, string message)
     {
-        public async Task ShowMessageAsync(string title, string message)
+        // We must run UI operations on the UI thread
+        await Application.Current.Dispatcher.InvokeAsync(async () =>
         {
-            // We must run UI operations on the UI thread
-            await Application.Current.Dispatcher.InvokeAsync(async () =>
+            var uiMessageBox = new Wpf.Ui.Controls.MessageBox
             {
-                var uiMessageBox = new Wpf.Ui.Controls.MessageBox
-                {
-                    Title = title,
-                    Content = message,
-                    CloseButtonText = "OK",
-                    ShowTitle = true
-                };
-                
-                await uiMessageBox.ShowDialogAsync();
-            });
-        }
+                Title = title,
+                Content = message,
+                CloseButtonText = "OK",
+                ShowTitle = true
+            };
+
+            await uiMessageBox.ShowDialogAsync();
+        });
     }
 }

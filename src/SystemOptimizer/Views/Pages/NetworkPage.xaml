@@ -23,10 +23,10 @@
                    FontWeight="SemiBold" 
                    Margin="0,0,0,16" />
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
+        <ui:DynamicScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,12,0">
             <ItemsControl ItemsSource="{Binding NetworkTweaks}" 
                           ItemTemplate="{StaticResource TweakItemTemplate}" />
-        </ScrollViewer>
+        </ui:DynamicScrollViewer>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <ui:Button Content="Restaurar Padrões" Command="{Binding RevertSelectedCommand}" CommandParameter="Network" Appearance="Secondary" Icon="ArrowUndo24" Margin="0,0,12,0" Width="160" />
