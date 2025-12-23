@@ -23,10 +23,10 @@
                    FontWeight="SemiBold" 
                    Margin="0,0,0,10" />
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ui:DynamicScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding SecurityTweaks}" 
                           ItemTemplate="{StaticResource TweakItemTemplate}" />
-        </ScrollViewer>
+        </ui:DynamicScrollViewer>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
             <ui:Button Content="Restaurar Seleção" Command="{Binding RevertSelectedCommand}" CommandParameter="Security" Appearance="Secondary" Margin="0,0,10,0" Width="150" />
