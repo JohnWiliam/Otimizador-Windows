@@ -29,7 +29,9 @@ public partial class App : Application
                 services.AddSingleton<CleanupService>();
 
                 // 3. UI Services
-                services.AddSingleton<IPageService, PageService>();
+                // CORREÇÃO: IPageService substituído por INavigationViewPageProvider
+                services.AddSingleton<INavigationViewPageProvider, PageService>();
+                
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
                 services.AddSingleton<ISnackbarService, SnackbarService>();
