@@ -1,7 +1,7 @@
 # 🚀 Otimizador de Sistema (System Optimizer)
 
-![Platform](https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-blue)
-![Language](https://img.shields.io/badge/language-C%23%20%7C%20.NET%208-purple)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%2011-blue)
+![Language](https://img.shields.io/badge/language-C%23%2014%20%7C%20.NET%2010-purple)
 ![License](https://img.shields.io/badge/license-MIT-green)
 [![Novidades](https://img.shields.io/badge/Changelog-Ver%20Histórico%20de%20Versão-blueviolet)](https://github.com/JohnWiliam/Otimizador-Windows/blob/main/CHANGELOG.md)
 [![GitHub downloads](https://img.shields.io/github/downloads/JohnWiliam/Otimizador-Windows/total?color=green&logo=github)](https://github.com/JohnWiliam/Otimizador-Windows/releases/latest)
@@ -17,7 +17,7 @@
 
 ## 🇧🇷 Português
 
-O **Otimizador de Sistema** é uma aplicação moderna, portátil e robusta desenvolvida em **C# (WPF)** para ajustar, limpar e acelerar o Windows. Ele utiliza a biblioteca **WPF-UI** para oferecer uma interface elegante com efeitos **Mica/Acrylic** e **Fluent Design**, garantindo uma experiência nativa no Windows 11.
+O **Otimizador de Sistema** é uma aplicação moderna, portátil e robusta desenvolvida em **C# 14 (WPF)** para ajustar, limpar e acelerar o Windows. Ele utiliza a biblioteca **WPF-UI 4.1** para oferecer uma interface elegante com efeitos **Mica/Acrylic** e **Fluent Design**, garantindo uma experiência nativa no Windows 11.
 
 ### ✨ Funcionalidades Principais
 
@@ -75,7 +75,7 @@ O projeto segue a arquitetura **MVVM (Model-View-ViewModel)** com **Injeção de
 
 ### 🚀 Como Compilar
 
-Você precisa do **.NET 8 SDK** instalado.
+Você precisa do **.NET 10 SDK** instalado.
 
 1.  Abra o terminal na pasta raiz do projeto.
 2.  Execute o script de build:
@@ -92,7 +92,7 @@ Este software modifica configurações do registro e serviços do sistema. Embor
 
 ## 🇺🇸 English
 
-**System Optimizer** is a modern, portable, and robust application built in **C# (WPF)** to tweak, clean, and accelerate Windows. It leverages the **WPF-UI** library to deliver a sleek interface with **Mica/Acrylic** effects and **Fluent Design**, ensuring a native feel on Windows 11.
+**System Optimizer** is a modern, portable, and robust application built in **C# 14 (WPF)** to tweak, clean, and accelerate Windows. It leverages the **WPF-UI 4.1** library to deliver a sleek interface with **Mica/Acrylic** effects and **Fluent Design**, ensuring a native feel on Windows 11.
 
 ### ✨ Key Features
 
@@ -150,7 +150,7 @@ The project follows the **MVVM (Model-View-ViewModel)** architecture with **Depe
 
 ### 🚀 How to Build
 
-You need the **.NET 8 SDK** installed.
+You need the **.NET 10 SDK** installed.
 
 1.  Open a terminal in the project root folder.
 2.  Run the build script:

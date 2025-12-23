@@ -1,32 +1,27 @@
 using System;
 using System.Windows;
 using Wpf.Ui;
+using Wpf.Ui.Abstractions; // Adicionado para corrigir o erro CS0246
 
-namespace SystemOptimizer.Services
+namespace SystemOptimizer.Services;
+
+public class PageService(IServiceProvider serviceProvider) : INavigationViewPageProvider
 {
-    public class PageService : IPageService
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+
+    public T? GetPage<T>() where T : class
     {
-        private readonly IServiceProvider _serviceProvider;
+        if (!typeof(FrameworkElement).IsAssignableFrom(typeof(T)))
+            throw new InvalidOperationException("The page should be a WPF control.");
 
-        public PageService(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-        }
+        return (T?)_serviceProvider.GetService(typeof(T));
+    }
 
-        public T? GetPage<T>() where T : class
-        {
-            if (!typeof(FrameworkElement).IsAssignableFrom(typeof(T)))
-                throw new InvalidOperationException("The page should be a WPF control.");
+    public object? GetPage(Type pageType)
+    {
+        if (!typeof(FrameworkElement).IsAssignableFrom(pageType))
+            throw new InvalidOperationException("The page should be a WPF control.");
 
-            return (T?)_serviceProvider.GetService(typeof(T));
-        }
-
-        public FrameworkElement? GetPage(Type pageType)
-        {
-            if (!typeof(FrameworkElement).IsAssignableFrom(pageType))
-                throw new InvalidOperationException("The page should be a WPF control.");
-
-            return _serviceProvider.GetService(pageType) as FrameworkElement;
-        }
+        return _serviceProvider.GetService(pageType);
     }
 }

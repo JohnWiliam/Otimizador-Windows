@@ -48,9 +48,14 @@
                            Command="{Binding RunCleanupCommand}"
                            IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
                            Appearance="Primary" 
-                           Icon="Broom24"
-                           Content="Executar Limpeza"
-                           Height="40" Padding="15,0" Margin="16,0,0,0"/>
+                           Height="40" 
+                           Padding="15,0" 
+                           Margin="16,0,0,0">
+                    <ui:Button.Icon>
+                        <ui:SymbolIcon Symbol="Broom24"/>
+                    </ui:Button.Icon>
+                    <TextBlock Text="Executar Limpeza"/>
+                </ui:Button>
             </Grid>
         </ui:Card>
 
@@ -89,7 +94,6 @@
                              VerticalContentAlignment="Top"
                              FontFamily="Segoe UI" 
                              FontSize="12">
-                    
                     <FlowDocument PagePadding="0" TextAlignment="Left" FontFamily="Segoe UI">
                     </FlowDocument>
                 </RichTextBox>
