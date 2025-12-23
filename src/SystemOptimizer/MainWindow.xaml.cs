@@ -1,10 +1,11 @@
 using System;
 using System.Windows;
 using Wpf.Ui;
-using Wpf.Ui.Appearance; // NECESSÁRIO PARA O SYSTEM THEME WATCHER
+using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.ViewModels;
+using SystemOptimizer.Services;
 
 namespace SystemOptimizer;
 
@@ -46,9 +47,14 @@ public partial class MainWindow : FluentWindow, INavigationWindow
     }
 
     public INavigationView GetNavigation() => RootNavigation;
+
     public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
-    public void SetPageService(IPageService pageService) => RootNavigation.SetPageService(pageService);
+
+    public void SetPageService(INavigationViewPageProvider pageService) => RootNavigation.SetPageService(pageService);
+
     public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
+
     public void ShowWindow() => Show();
+
     public void CloseWindow() => Close();
 }
