@@ -21,7 +21,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IDialogService _dialogService;
 
     [ObservableProperty]
-    private string _applicationTitle = "Otimizador de Sistema - John Wiliam & IA v1.1.2";
+    private string _applicationTitle = "Otimizador de Sistema - Criado e Idealizado por John Wiliam & IA v2.0.0";
 
     public ObservableCollection<TweakViewModel> PrivacyTweaks { get; } = [];
     public ObservableCollection<TweakViewModel> PerformanceTweaks { get; } = [];
