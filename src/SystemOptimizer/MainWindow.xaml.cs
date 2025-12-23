@@ -28,11 +28,12 @@ public partial class MainWindow : FluentWindow, INavigationWindow
         // ATIVA A SINCRONIZAÇÃO AUTOMÁTICA COM O TEMA DO WINDOWS
         SystemThemeWatcher.Watch(this);
 
-        // Initialize the navigation service with the NavigationView control
+        // Configura o controlo de navegação
         navigationService.SetNavigationControl(RootNavigation);
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
 
-        // Set the ServiceProvider so NavigationView can resolve pages via DI
+        // INJETA O SERVICE PROVIDER NO NAVIGATIONVIEW
+        // Isso permite que o controlo resolva as páginas e o INavigationViewPageProvider automaticamente.
         RootNavigation.SetServiceProvider(serviceProvider);
 
         Loaded += MainWindow_Loaded;
@@ -51,8 +52,13 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
     public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
 
-    // CORREÇÃO: Uso de cast explícito para INavigationView para acessar SetPageService
-    public void SetPageService(INavigationViewPageProvider pageService) => ((INavigationView)RootNavigation).SetPageService(pageService);
+    // CORREÇÃO: O método SetPageService foi removido do NavigationView na v4.
+    // Como já usamos SetServiceProvider no construtor, o NavigationView já consegue resolver as páginas.
+    // Mantemos este método apenas para satisfazer a interface INavigationWindow.
+    public void SetPageService(INavigationViewPageProvider pageService)
+    {
+        // Não é necessário fazer nada aqui na versão 4.x do WPF-UI
+    }
 
     public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
 
