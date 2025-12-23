@@ -8,6 +8,8 @@
 
 > Criado e Idealizado por John Wiliam com o auxílio de IA.
 
+* **Idioma/Language**
+
 [🇧🇷 Português](#-português-do-brasil) | [🇺🇸 English](#-english)
 
 ---
