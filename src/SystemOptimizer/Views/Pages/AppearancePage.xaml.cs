@@ -1,14 +1,13 @@
 using System.Windows.Controls;
 using SystemOptimizer.ViewModels;
 
-namespace SystemOptimizer.Views.Pages
+namespace SystemOptimizer.Views.Pages;
+
+public partial class AppearancePage : Page
 {
-    public partial class AppearancePage : Page
+    public AppearancePage(MainViewModel viewModel)
     {
-        public AppearancePage(MainViewModel viewModel)
-        {
-            InitializeComponent();
-            DataContext = viewModel;
-        }
+        InitializeComponent();
+        DataContext = viewModel;
     }
 }

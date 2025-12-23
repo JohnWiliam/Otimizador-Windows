@@ -1,14 +1,13 @@
 using System.Windows.Controls;
 using SystemOptimizer.ViewModels;
 
-namespace SystemOptimizer.Views.Pages
+namespace SystemOptimizer.Views.Pages;
+
+public partial class TweaksPage : Page
 {
-    public partial class TweaksPage : Page
+    public TweaksPage(MainViewModel viewModel)
     {
-        public TweaksPage(MainViewModel viewModel)
-        {
-            InitializeComponent();
-            DataContext = viewModel;
-        }
+        InitializeComponent();
+        DataContext = viewModel;
     }
 }

@@ -9,238 +9,232 @@ using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 
-namespace SystemOptimizer.Services
+namespace SystemOptimizer.Services;
+
+public class TweakService
 {
-    public class TweakService
+    public List<ITweak> Tweaks { get; private set; } = [];
+
+    public void LoadTweaks()
     {
-        public List<ITweak> Tweaks { get; private set; } = new List<ITweak>();
+        Logger.Log("Starting LoadTweaks...");
+        Tweaks.Clear();
+        AddPrivacyTweaks();
+        AddPerformanceTweaks();
+        AddNetworkTweaks();
+        AddSecurityTweaks();
+        AddAppearanceTweaks();
+        AddCustomTweaks();
+        Logger.Log($"LoadTweaks finished. Loaded {Tweaks.Count} tweaks.");
+    }
 
-        public void LoadTweaks()
+    public async Task RefreshStatusesAsync()
+    {
+        await Task.Run(() =>
         {
-            Logger.Log("Starting LoadTweaks...");
-            Tweaks.Clear();
-            AddPrivacyTweaks();
-            AddPerformanceTweaks();
-            AddNetworkTweaks();
-            AddSecurityTweaks();
-            AddAppearanceTweaks();
-            AddCustomTweaks();
-            Logger.Log($"LoadTweaks finished. Loaded {Tweaks.Count} tweaks.");
-        }
-
-        public async Task RefreshStatusesAsync()
-        {
-            await Task.Run(() => 
+            Parallel.ForEach(Tweaks, tweak =>
             {
-                Parallel.ForEach(Tweaks, tweak => 
-                {
-                    try { tweak.CheckStatus(); }
-                    catch (Exception ex) { Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR"); }
-                });
+                try { tweak.CheckStatus(); }
+                catch (Exception ex) { Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR"); }
             });
-        }
+        });
+    }
 
-        // ... [Mantenha os métodos AddPrivacyTweaks, AddPerformanceTweaks, AddNetworkTweaks, 
-        //      AddSecurityTweaks e AddAppearanceTweaks iguais ao código anterior] ...
-        // Vou omitir aqui para economizar espaço, mas ELES DEVEM ESTAR NO ARQUIVO FINAL.
-        // Se precisar deles novamente, me avise, mas o foco da correção é o AddCustomTweaks abaixo.
+    private void AddPrivacyTweaks()
+    {
+         Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, "Desativar Telemetria", "Impede o envio de dados diagnósticos para a Microsoft.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P2", TweakCategory.Privacy, "Desativar DiagTrack", "Desabilita o serviço de Experiência do Usuário Conectado.", @"HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack", "Start", 4, 2));
+        Tweaks.Add(new RegistryTweak("P3", TweakCategory.Privacy, "Desativar Cortana", "Bloqueia o assistente de voz legado e pesquisa web.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P4", TweakCategory.Privacy, "Desativar ID de Anúncio", "Impede rastreamento comercial entre aplicativos.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, "Desativar Geolocalização", "Bloqueia o rastreamento de localização global do OS.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P6", TweakCategory.Privacy, "Desativar Dicas do Windows", "Remove sugestões 'irritantes' no Menu Iniciar.", @"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338393Enabled", 0, 1));
+        Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, "Desativar Dados OOBE", "Privacidade durante a configuração inicial do sistema.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, "DELETE"));
+    }
 
-        private void AddPrivacyTweaks()
-        {
-             Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, "Desativar Telemetria", "Impede o envio de dados diagnósticos para a Microsoft.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, "DELETE"));
-            Tweaks.Add(new RegistryTweak("P2", TweakCategory.Privacy, "Desativar DiagTrack", "Desabilita o serviço de Experiência do Usuário Conectado.", @"HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack", "Start", 4, 2));
-            Tweaks.Add(new RegistryTweak("P3", TweakCategory.Privacy, "Desativar Cortana", "Bloqueia o assistente de voz legado e pesquisa web.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0, "DELETE"));
-            Tweaks.Add(new RegistryTweak("P4", TweakCategory.Privacy, "Desativar ID de Anúncio", "Impede rastreamento comercial entre aplicativos.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, "DELETE"));
-            Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, "Desativar Geolocalização", "Bloqueia o rastreamento de localização global do OS.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, "DELETE"));
-            Tweaks.Add(new RegistryTweak("P6", TweakCategory.Privacy, "Desativar Dicas do Windows", "Remove sugestões 'irritantes' no Menu Iniciar.", @"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338393Enabled", 0, 1));
-            Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, "Desativar Dados OOBE", "Privacidade durante a configuração inicial do sistema.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, "DELETE"));
-        }
+    private void AddPerformanceTweaks()
+    {
+         Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, "Plano de Energia Ultimate", "Força o plano de desempenho máximo (Ultimate/High).",
+            () => {
+                var list = CommandHelper.RunCommand("powercfg", "/list");
+                string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
+                if (!list.Contains(ultimateGuid)) CommandHelper.RunCommand("powercfg", $"-duplicatescheme {ultimateGuid}");
+                CommandHelper.RunCommand("powercfg", $"/setactive {ultimateGuid}");
+                var check = CommandHelper.RunCommand("powercfg", "/getactivescheme");
+                if (!check.Contains(ultimateGuid)) CommandHelper.RunCommand("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+                return true;
+            },
+            () => { CommandHelper.RunCommand("powercfg", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e"); return true; },
+            () => { var res = CommandHelper.RunCommand("powercfg", "/getactivescheme"); return res.Contains("e9a42b02") || res.Contains("8c5e7fda"); }
+        ));
 
-        private void AddPerformanceTweaks()
-        {
-             Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, "Plano de Energia Ultimate", "Força o plano de desempenho máximo (Ultimate/High).",
-                () => { 
-                    var list = CommandHelper.RunCommand("powercfg", "/list");
-                    string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
-                    if (!list.Contains(ultimateGuid)) CommandHelper.RunCommand("powercfg", $"-duplicatescheme {ultimateGuid}");
-                    CommandHelper.RunCommand("powercfg", $"/setactive {ultimateGuid}");
-                    var check = CommandHelper.RunCommand("powercfg", "/getactivescheme");
-                    if (!check.Contains(ultimateGuid)) CommandHelper.RunCommand("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
-                    return true; 
-                },
-                () => { CommandHelper.RunCommand("powercfg", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e"); return true; },
-                () => { var res = CommandHelper.RunCommand("powercfg", "/getactivescheme"); return res.Contains("e9a42b02") || res.Contains("8c5e7fda"); }
-            ));
+        Tweaks.Add(new CustomTweak("PF2", TweakCategory.Performance, "Desativar GameDVR", "Remove gravação em segundo plano (Aumenta FPS).",
+            () => {
+                Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", 0, RegistryValueKind.DWord);
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", true)) { key.SetValue("AllowGameDVR", 0, RegistryValueKind.DWord); }
+                return true;
+            },
+            () => {
+                Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", 1, RegistryValueKind.DWord);
+                try { using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", true); key?.DeleteValue("AllowGameDVR", false); } catch {}
+                return true;
+            },
+            () => {
+                var v1 = Registry.GetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", null);
+                var v2 = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR", null);
+                return (v1 is int i1 && i1 == 0) && (v2 is int i2 && i2 == 0);
+            }
+        ));
 
-            Tweaks.Add(new CustomTweak("PF2", TweakCategory.Performance, "Desativar GameDVR", "Remove gravação em segundo plano (Aumenta FPS).",
-                () => {
-                    Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", 0, RegistryValueKind.DWord);
-                    using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", true)) { key.SetValue("AllowGameDVR", 0, RegistryValueKind.DWord); }
-                    return true;
-                },
-                () => {
-                    Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", 1, RegistryValueKind.DWord);
-                    try { using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", true); key?.DeleteValue("AllowGameDVR", false); } catch {}
-                    return true;
-                },
-                () => {
-                    var v1 = Registry.GetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", null);
-                    var v2 = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR", null);
-                    return (v1 is int i1 && i1 == 0) && (v2 is int i2 && i2 == 0);
-                }
-            ));
+        Tweaks.Add(new CustomTweak("PF3", TweakCategory.Performance, "Input Mouse 1:1", "Remove aprimoramento de precisão (Aceleração).",
+            () => {
+                Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", "0", RegistryValueKind.String);
+                Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold1", "0", RegistryValueKind.String);
+                Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold2", "0", RegistryValueKind.String);
+                return true;
+            },
+            () => { Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", "1", RegistryValueKind.String); return true; },
+            () => { var val = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", null); return val != null && val.ToString() == "0"; }
+        ));
 
-            Tweaks.Add(new CustomTweak("PF3", TweakCategory.Performance, "Input Mouse 1:1", "Remove aprimoramento de precisão (Aceleração).",
-                () => {
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", "0", RegistryValueKind.String);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold1", "0", RegistryValueKind.String);
-                    Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold2", "0", RegistryValueKind.String);
-                    return true;
-                },
-                () => { Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", "1", RegistryValueKind.String); return true; },
-                () => { var val = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", null); return val != null && val.ToString() == "0"; }
-            ));
+        Tweaks.Add(new RegistryTweak("PF5", TweakCategory.Performance, "Prioridade de CPU", "Ajusta prioridade para Programas vs Serviços (26 hex).",
+            @"HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl", "Win32PrioritySeparation", 38, 2));
+        Tweaks.Add(new RegistryTweak("PF6", TweakCategory.Performance, "Throttling de Rede", "Remove limite de processamento de pacotes (Index FFFFFF).",
+            @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", "NetworkThrottlingIndex", -1, 10));
+        Tweaks.Add(new RegistryTweak("PF7", TweakCategory.Performance, "Agendamento GPU", "Habilita agendamento acelerado por hardware (Requer Reinício).",
+            @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1));
 
-            Tweaks.Add(new RegistryTweak("PF5", TweakCategory.Performance, "Prioridade de CPU", "Ajusta prioridade para Programas vs Serviços (26 hex).",
-                @"HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl", "Win32PrioritySeparation", 38, 2));
-            Tweaks.Add(new RegistryTweak("PF6", TweakCategory.Performance, "Throttling de Rede", "Remove limite de processamento de pacotes (Index FFFFFF).",
-                @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", "NetworkThrottlingIndex", -1, 10)); 
-            Tweaks.Add(new RegistryTweak("PF7", TweakCategory.Performance, "Agendamento GPU", "Habilita agendamento acelerado por hardware (Requer Reinício).",
-                @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1));
-            
-            Tweaks.Add(new CustomTweak("PF8", TweakCategory.Performance, "Desativar VBS / HVCI", "Aumenta FPS, mas reduz a segurança do sistema (REQUER REINÍCIO).",
-                () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 0, RegistryValueKind.DWord); } return true; },
-                () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 1, RegistryValueKind.DWord); } return true; },
-                () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", -1); return val is int i && i == 0; }
-            ));
+        Tweaks.Add(new CustomTweak("PF8", TweakCategory.Performance, "Desativar VBS / HVCI", "Aumenta FPS, mas reduz a segurança do sistema (REQUER REINÍCIO).",
+            () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 0, RegistryValueKind.DWord); } return true; },
+            () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 1, RegistryValueKind.DWord); } return true; },
+            () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", -1); return val is int i && i == 0; }
+        ));
 
-            Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, "Desativar Hibernação", "Libera GBs de espaço em disco (Remove hiberfil.sys).",
-                () => { CommandHelper.RunCommand("powercfg", "/hibernate off"); return true; },
-                () => { CommandHelper.RunCommand("powercfg", "/hibernate on"); return true; },
-                () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled", -1); return val is int i && i == 0; } 
-            ));
-        }
+        Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, "Desativar Hibernação", "Libera GBs de espaço em disco (Remove hiberfil.sys).",
+            () => { CommandHelper.RunCommand("powercfg", "/hibernate off"); return true; },
+            () => { CommandHelper.RunCommand("powercfg", "/hibernate on"); return true; },
+            () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled", -1); return val is int i && i == 0; }
+        ));
+    }
 
-        private void AddNetworkTweaks()
-        {
-            Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, "TCP Auto-Tuning", "Janela TCP Dinâmica (Essencial para >100Mbps).",
-                () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
-                () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
-                () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).AutoTuningLevelLocal").Trim(); return res.Equals("Normal", StringComparison.OrdinalIgnoreCase); } 
-            ));
+    private void AddNetworkTweaks()
+    {
+        Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, "TCP Auto-Tuning", "Janela TCP Dinâmica (Essencial para >100Mbps).",
+            () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
+            () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
+            () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).AutoTuningLevelLocal").Trim(); return res.Equals("Normal", StringComparison.OrdinalIgnoreCase); }
+        ));
 
-            Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, "Algoritmo CUBIC", "Gestão moderna de congestionamento para alta velocidade.",
-                () => { 
-                    var res = CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=cubic"); 
-                    if (res.Contains("falha") || res.Contains("failed")) CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
-                    return true; 
-                },
-                () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
-                () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).CongestionProvider").Trim().ToUpper(); return res == "CUBIC" || res == "CTCP"; }
-            ));
+        Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, "Algoritmo CUBIC", "Gestão moderna de congestionamento para alta velocidade.",
+            () => {
+                var res = CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=cubic");
+                if (res.Contains("falha") || res.Contains("failed")) CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
+                return true;
+            },
+            () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
+            () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).CongestionProvider").Trim().ToUpper(); return res == "CUBIC" || res == "CTCP"; }
+        ));
 
-            Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, "Ativar ECN", "Notificação Explícita de Congestionamento (Menos Perda).",
-                () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
-                () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
-                () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).EcnCapability").Trim(); return res.Equals("Enabled", StringComparison.OrdinalIgnoreCase); } 
-            ));
+        Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, "Ativar ECN", "Notificação Explícita de Congestionamento (Menos Perda).",
+            () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
+            () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
+            () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).EcnCapability").Trim(); return res.Equals("Enabled", StringComparison.OrdinalIgnoreCase); }
+        ));
 
-            Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, "Desativar RSS", "Receive Side Scaling (Teste de estabilidade/driver).",
-                () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled"); return true; },
-                () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
-                () => { var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower(); return res.Contains("rss") && (res.Contains("disabled") || res.Contains("desabilitado")); }
-            ));
+        Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, "Desativar RSS", "Receive Side Scaling (Teste de estabilidade/driver).",
+            () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled"); return true; },
+            () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
+            () => { var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower(); return res.Contains("rss") && (res.Contains("disabled") || res.Contains("desabilitado")); }
+        ));
 
-            Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, "Desativar QoS Limit", "Remove reserva de banda (Packet Scheduler).", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, "DELETE"));
-        }
+        Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, "Desativar QoS Limit", "Remove reserva de banda (Packet Scheduler).", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, "DELETE"));
+    }
 
-        private void AddSecurityTweaks()
-        {
-            Tweaks.Add(new RegistryTweak("S1", TweakCategory.Security, "Mostrar Extensões", "Segurança: Exibe extensões reais (.exe, .bat).", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0, 1));
-            Tweaks.Add(new RegistryTweak("S2", TweakCategory.Security, "Desativar AutoRun", "Segurança: Bloqueia execução automática de USB.", @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDriveTypeAutoRun", 255, "DELETE"));
-        }
+    private void AddSecurityTweaks()
+    {
+        Tweaks.Add(new RegistryTweak("S1", TweakCategory.Security, "Mostrar Extensões", "Segurança: Exibe extensões reais (.exe, .bat).", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0, 1));
+        Tweaks.Add(new RegistryTweak("S2", TweakCategory.Security, "Desativar AutoRun", "Segurança: Bloqueia execução automática de USB.", @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDriveTypeAutoRun", 255, "DELETE"));
+    }
 
-        private void AddAppearanceTweaks()
-        {
-            Tweaks.Add(new RegistryTweak("A1", TweakCategory.Appearance, "Desativar Transparência", "Aumenta a resposta da UI removendo Acrylic/Mica.", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 0, 1));
-            Tweaks.Add(new RegistryTweak("A2", TweakCategory.Appearance, "Modo Escuro", "Força tema escuro para aplicativos.", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0, 1));
-            Tweaks.Add(new RegistryTweak("A3", TweakCategory.Appearance, "Efeitos Visuais", "Ajusta para 'Melhor Desempenho' (Parcial).", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting", 2, 3));
-        }
+    private void AddAppearanceTweaks()
+    {
+        Tweaks.Add(new RegistryTweak("A1", TweakCategory.Appearance, "Desativar Transparência", "Aumenta a resposta da UI removendo Acrylic/Mica.", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 0, 1));
+        Tweaks.Add(new RegistryTweak("A2", TweakCategory.Appearance, "Modo Escuro", "Força tema escuro para aplicativos.", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0, 1));
+        Tweaks.Add(new RegistryTweak("A3", TweakCategory.Appearance, "Efeitos Visuais", "Ajusta para 'Melhor Desempenho' (Parcial).", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting", 2, 3));
+    }
 
-        private void AddCustomTweaks()
-        {
-            // SE1: SysMain
-            Tweaks.Add(new CustomTweak("SE1", TweakCategory.Tweaks, "Desativar SysMain", "Otimiza uso de disco para SSDs (Superfetch).",
-                () => { 
-                    CommandHelper.RunCommand("sc", "config SysMain start= disabled"); 
-                    CommandHelper.RunCommandNoWait("sc", "stop SysMain"); 
-                    return true; 
-                },
-                () => { 
-                    CommandHelper.RunCommand("sc", "config SysMain start= auto"); 
-                    CommandHelper.RunCommandNoWait("sc", "start SysMain"); 
-                    return true; 
-                },
-                () => { try { using var sc = new ServiceController("SysMain"); return sc.StartType == ServiceStartMode.Disabled; } catch { return false; } }
-            ));
+    private void AddCustomTweaks()
+    {
+        // SE1: SysMain
+        Tweaks.Add(new CustomTweak("SE1", TweakCategory.Tweaks, "Desativar SysMain", "Otimiza uso de disco para SSDs (Superfetch).",
+            () => {
+                CommandHelper.RunCommand("sc", "config SysMain start= disabled");
+                CommandHelper.RunCommandNoWait("sc", "stop SysMain");
+                return true;
+            },
+            () => {
+                CommandHelper.RunCommand("sc", "config SysMain start= auto");
+                CommandHelper.RunCommandNoWait("sc", "start SysMain");
+                return true;
+            },
+            () => { try { using var sc = new ServiceController("SysMain"); return sc.StartType == ServiceStartMode.Disabled; } catch { return false; } }
+        ));
 
-            // SE2: Prefetch
-            Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, "Desativar Prefetch", "Impede criação de rastros de inicialização (RegWrite).",
-                @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
+        // SE2: Prefetch
+        Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, "Desativar Prefetch", "Impede criação de rastros de inicialização (RegWrite).",
+            @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
 
-            // SE3: Persistência Robusta e Correção de Warning Nullable
-            string taskName = "SystemOptimizer_AutoRun";
-            string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SystemOptimizer");
-            string targetExePath = Path.Combine(appDataPath, "SystemOptimizer.exe");
-            
-            // CORREÇÃO WARNING: Uso de coalescência nula (??) para garantir string não-nula
-            string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+        // SE3: Persistência Robusta e Correção de Warning Nullable
+        string taskName = "SystemOptimizer_AutoRun";
+        string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SystemOptimizer");
+        string targetExePath = Path.Combine(appDataPath, "SystemOptimizer.exe");
 
-            Tweaks.Add(new CustomTweak("SE3", TweakCategory.Tweaks, "Habilitar Persistência", "Copia o programa para ProgramData e agenda execução no boot.",
-                () => { 
-                    try
-                    {
-                        if (string.IsNullOrEmpty(currentExe)) return false;
+        // CORREÇÃO WARNING: Uso de coalescência nula (??) para garantir string não-nula
+        string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
 
-                        // 1. Criar diretório
-                        if (!Directory.Exists(appDataPath))
-                            Directory.CreateDirectory(appDataPath);
+        Tweaks.Add(new CustomTweak("SE3", TweakCategory.Tweaks, "Habilitar Persistência", "Copia o programa para ProgramData e agenda execução no boot.",
+            () => {
+                try
+                {
+                    if (string.IsNullOrEmpty(currentExe)) return false;
 
-                        // 2. Copiar
-                        File.Copy(currentExe, targetExePath, true);
+                    // 1. Criar diretório
+                    if (!Directory.Exists(appDataPath))
+                        Directory.CreateDirectory(appDataPath);
 
-                        // 3. Criar a tarefa
-                        string cmd = $"/create /tn \"{taskName}\" /tr \"\\\"{targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
-                        var res = CommandHelper.RunCommand("schtasks", cmd);
-                        
-                        // 4. Validação Robusta (Correção de Encoding)
-                        bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
-                                      res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-                                      res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase);
+                    // 2. Copiar
+                    File.Copy(currentExe, targetExePath, true);
 
-                        return !string.IsNullOrWhiteSpace(res) && !failed;
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"Erro ao habilitar persistência: {ex.Message}", "ERROR");
-                        return false;
-                    }
-                },
-                () => { 
-                    var res = CommandHelper.RunCommand("schtasks", $"/delete /tn \"{taskName}\" /f");
+                    // 3. Criar a tarefa
+                    string cmd = $"/create /tn \"{taskName}\" /tr \"\\\"{targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
+                    var res = CommandHelper.RunCommand("schtasks", cmd);
+
+                    // 4. Validação Robusta (Correção de Encoding)
                     bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
                                   res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
                                   res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase);
-                    return !failed;
-                },
-                () => { 
-                    var res = CommandHelper.RunCommand("schtasks", $"/query /tn \"{taskName}\"");
-                    bool notFound = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
-                                    res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) || 
-                                    res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase);
-                    return !notFound;
+
+                    return !string.IsNullOrWhiteSpace(res) && !failed;
                 }
-            ));
-        }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Erro ao habilitar persistência: {ex.Message}", "ERROR");
+                    return false;
+                }
+            },
+            () => {
+                var res = CommandHelper.RunCommand("schtasks", $"/delete /tn \"{taskName}\" /f");
+                bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) ||
+                              res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
+                              res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase);
+                return !failed;
+            },
+            () => {
+                var res = CommandHelper.RunCommand("schtasks", $"/query /tn \"{taskName}\"");
+                bool notFound = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) ||
+                                res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
+                                res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase);
+                return !notFound;
+            }
+        ));
     }
 }
