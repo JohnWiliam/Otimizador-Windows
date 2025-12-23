@@ -1,7 +1,7 @@
 using System;
 using System.Windows;
 using Wpf.Ui;
-using Wpf.Ui.Abstractions; // Adicionado para corrigir o erro CS0246 e CS0535
+using Wpf.Ui.Abstractions;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 using SystemOptimizer.Helpers;
@@ -51,7 +51,8 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
     public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
 
-    public void SetPageService(INavigationViewPageProvider pageService) => RootNavigation.SetPageService(pageService);
+    // CORREÇÃO: Uso de cast explícito para INavigationView para acessar SetPageService
+    public void SetPageService(INavigationViewPageProvider pageService) => ((INavigationView)RootNavigation).SetPageService(pageService);
 
     public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
 
