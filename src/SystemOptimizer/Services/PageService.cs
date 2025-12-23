@@ -4,7 +4,7 @@ using Wpf.Ui;
 
 namespace SystemOptimizer.Services;
 
-public class PageService(IServiceProvider serviceProvider) : IPageService
+public class PageService(IServiceProvider serviceProvider) : INavigationViewPageProvider
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
 
@@ -16,11 +16,11 @@ public class PageService(IServiceProvider serviceProvider) : IPageService
         return (T?)_serviceProvider.GetService(typeof(T));
     }
 
-    public FrameworkElement? GetPage(Type pageType)
+    public object? GetPage(Type pageType)
     {
         if (!typeof(FrameworkElement).IsAssignableFrom(pageType))
             throw new InvalidOperationException("The page should be a WPF control.");
 
-        return _serviceProvider.GetService(pageType) as FrameworkElement;
+        return _serviceProvider.GetService(pageType);
     }
 }
