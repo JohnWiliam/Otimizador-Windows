@@ -1,36 +1,61 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Wpf.Ui.Appearance;
-using Wpf.Ui.Controls;
 
 namespace SystemOptimizer.ViewModels;
 
+// Classe auxiliar para as opções do ComboBox
+public record ThemeOption(string Name, ApplicationTheme Theme);
+
 public partial class SettingsViewModel : ObservableObject
 {
-    [ObservableProperty]
-    private ApplicationTheme _currentTheme = ApplicationTheme.Unknown;
-
     [ObservableProperty]
     private string _currentLanguage = "Português";
 
     public ObservableCollection<string> Languages { get; } = ["Português"];
 
+    // Lista de opções de tema para o ComboBox
+    public ObservableCollection<ThemeOption> ThemeOptions { get; } = 
+    [
+        new("Padrão do Sistema", ApplicationTheme.Unknown),
+        new("Claro", ApplicationTheme.Light),
+        new("Escuro", ApplicationTheme.Dark)
+    ];
+
+    [ObservableProperty]
+    private ThemeOption _currentThemeOption;
+
     public SettingsViewModel()
     {
-        // Define o tema atual baseado no estado do sistema ao iniciar
-        CurrentTheme = ApplicationThemeManager.GetAppTheme();
+        // Define "Padrão do Sistema" como a opção inicial padrão
+        // (Ou podes lógica para detetar qual o tema atual e selecionar a opção correta)
+        _currentThemeOption = ThemeOptions.First(x => x.Theme == ApplicationTheme.Unknown);
+        
+        // Aplica o tema inicial
+        UpdateTheme(_currentThemeOption.Theme);
     }
 
-    [RelayCommand]
-    private void ChangeTheme(ApplicationTheme theme)
+    // Este método é chamado automaticamente sempre que o usuário muda a seleção no ComboBox
+    partial void OnCurrentThemeOptionChanged(ThemeOption value)
     {
-        if (CurrentTheme == theme)
-            return;
-
-        ApplicationThemeManager.Apply(theme);
-        CurrentTheme = theme;
+        if (value != null)
+        {
+            UpdateTheme(value.Theme);
+        }
     }
-    
-    // Futuramente, aqui poderás adicionar lógica para mudar o idioma
+
+    private void UpdateTheme(ApplicationTheme theme)
+    {
+        if (theme == ApplicationTheme.Unknown)
+        {
+            // CORREÇÃO: Usamos o método próprio ApplySystemTheme() em vez de converter manualmente
+            ApplicationThemeManager.ApplySystemTheme();
+        }
+        else
+        {
+            // Aplica o tema Claro ou Escuro selecionado
+            ApplicationThemeManager.Apply(theme);
+        }
+    }
 }
