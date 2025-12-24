@@ -24,6 +24,10 @@ public partial class SettingsViewModel : ObservableObject
     private readonly string _appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SystemOptimizer");
     private readonly string _targetExePath;
 
+    // --- Constantes para Atalhos (Manter Instalado) ---
+    private readonly string _desktopShortcutPath;
+    private readonly string _startMenuShortcutPath;
+
     [ObservableProperty]
     private string _currentLanguage = "Português";
 
@@ -40,17 +44,28 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private ThemeOption _currentThemeOption;
 
-    // Nova Propriedade para o Switch de Persistência
+    // Propriedade para o Switch de Persistência
     [ObservableProperty]
     private bool _isPersistenceEnabled;
+
+    // --- NOVA PROPRIEDADE: Manter Instalado ---
+    [ObservableProperty]
+    private bool _isKeepInstalledEnabled;
 
     // Construtor atualizado com Injeção de Dependência
     public SettingsViewModel(TweakService tweakService)
     {
         _tweakService = tweakService;
 
-        // Define o caminho do executável de destino
+        // Define o caminho do executável de destino (C:\ProgramData\SystemOptimizer\SystemOptimizer.exe)
         _targetExePath = Path.Combine(_appDataPath, "SystemOptimizer.exe");
+
+        // Define caminhos dos atalhos
+        string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
+        string startMenu = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu); // Geralmente AppData\Roaming\Microsoft\Windows\Start Menu
+        
+        _desktopShortcutPath = Path.Combine(desktop, "System Optimizer.lnk");
+        _startMenuShortcutPath = Path.Combine(startMenu, "Programs", "System Optimizer.lnk");
 
         // Define "Padrão do Sistema" como a opção inicial padrão
         _currentThemeOption = ThemeOptions.First(x => x.Theme == ApplicationTheme.Unknown);
@@ -58,8 +73,9 @@ public partial class SettingsViewModel : ObservableObject
         // Aplica o tema inicial
         UpdateTheme(_currentThemeOption.Theme);
 
-        // Verifica o estado atual da persistência ao abrir
+        // Verifica o estado atual das funcionalidades ao abrir
         CheckPersistenceStatus();
+        CheckKeepInstalledStatus();
     }
 
     // Este método é chamado automaticamente sempre que o usuário muda a seleção no ComboBox
@@ -80,6 +96,12 @@ public partial class SettingsViewModel : ObservableObject
             DisablePersistence();
     }
 
+    // --- NOVO: Trigger para "Manter Instalado" ---
+    partial void OnIsKeepInstalledEnabledChanged(bool value)
+    {
+        ManageShortcuts(value);
+    }
+
     private void UpdateTheme(ApplicationTheme theme)
     {
         if (theme == ApplicationTheme.Unknown)
@@ -92,7 +114,102 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    // --- Lógica de Persistência ---
+    // --- Lógica de "Manter Instalado" (Atalhos) ---
+
+    private void CheckKeepInstalledStatus()
+    {
+        // Consideramos instalado se pelo menos um dos atalhos existir
+        bool exists = File.Exists(_desktopShortcutPath) || File.Exists(_startMenuShortcutPath);
+        
+        // Suprimimos o aviso para atualizar a UI sem disparar o evento OnChanged novamente (loop)
+#pragma warning disable MVVMTK0034
+        SetProperty(ref _isKeepInstalledEnabled, exists, nameof(IsKeepInstalledEnabled));
+#pragma warning restore MVVMTK0034
+    }
+
+    private void ManageShortcuts(bool create)
+    {
+        try
+        {
+            if (create)
+            {
+                // 1. Garante que o diretório existe
+                if (!Directory.Exists(_appDataPath))
+                    Directory.CreateDirectory(_appDataPath);
+                
+                // 2. Garante que o executável alvo existe (copia o atual se necessário)
+                // Isso permite que a função funcione mesmo se a Persistência não tiver sido ativada antes
+                if (!File.Exists(_targetExePath))
+                {
+                    string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+                    if (!string.IsNullOrEmpty(currentExe))
+                    {
+                        File.Copy(currentExe, _targetExePath, true);
+                    }
+                }
+
+                // 3. Cria atalhos usando PowerShell
+                CreateShortcut(_desktopShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
+                CreateShortcut(_startMenuShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
+                
+                Logger.Log("Funcionalidade 'Manter Instalado' ativada. Atalhos criados.");
+            }
+            else
+            {
+                // Remove os atalhos
+                if (File.Exists(_desktopShortcutPath)) File.Delete(_desktopShortcutPath);
+                if (File.Exists(_startMenuShortcutPath)) File.Delete(_startMenuShortcutPath);
+                
+                Logger.Log("Funcionalidade 'Manter Instalado' desativada. Atalhos removidos.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Erro ao gerenciar atalhos: {ex.Message}", "ERROR");
+            
+            // Reverte o switch visualmente em caso de erro
+#pragma warning disable MVVMTK0034
+            SetProperty(ref _isKeepInstalledEnabled, !create, nameof(IsKeepInstalledEnabled));
+#pragma warning restore MVVMTK0034
+        }
+    }
+
+    /// <summary>
+    /// Cria um atalho .lnk usando um script PowerShell temporário.
+    /// Isso evita a necessidade de adicionar referências COM (Interop) ao projeto.
+    /// </summary>
+    private void CreateShortcut(string shortcutPath, string targetPath, string description)
+    {
+        try
+        {
+            // Script PowerShell para criar o objeto WScript.Shell e salvar o atalho
+            string psScript = $@"
+                $WshShell = New-Object -comObject WScript.Shell;
+                $Shortcut = $WshShell.CreateShortcut('{shortcutPath}');
+                $Shortcut.TargetPath = '{targetPath}';
+                $Shortcut.Description = '{description}';
+                $Shortcut.WorkingDirectory = '{Path.GetDirectoryName(targetPath)}';
+                $Shortcut.Save()";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript}\"",
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            process?.WaitForExit();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao criar atalho via PowerShell: {ex.Message}", "ERROR");
+            throw; // Relança para ser tratado pelo ManageShortcuts
+        }
+    }
+
+    // --- Lógica de Persistência (Existente) ---
 
     private void CheckPersistenceStatus()
     {
@@ -103,7 +220,6 @@ public partial class SettingsViewModel : ObservableObject
                       !res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) &&
                       !res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase);
         
-        // CORREÇÃO: Suprimimos o aviso MVVMTK0034 para atualizar a UI sem disparar o evento
 #pragma warning disable MVVMTK0034
         SetProperty(ref _isPersistenceEnabled, exists, nameof(IsPersistenceEnabled));
 #pragma warning restore MVVMTK0034
