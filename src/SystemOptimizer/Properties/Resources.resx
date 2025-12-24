@@ -245,7 +245,7 @@
     <value>Persistência</value>
   </data>
   <data name="Settings_PersistenceDesc" xml:space="preserve">
-    <value>Iniciar automaticamente com o Windows (Minimizado)</value>
+    <value>Reaplica silenciosamente os Tweaks na inicialização caso algum gatilho altere as preferências do usuário.</value>
   </data>
   <data name="Settings_KeepInstalled" xml:space="preserve">
     <value>Manter Instalado</value>
