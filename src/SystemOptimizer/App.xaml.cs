@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -24,7 +26,7 @@ public partial class App : Application
                 // 1. ViewModels
                 services.AddSingleton<MainViewModel>();
                 
-                // NOVO: Registo do SettingsViewModel
+                // Registo do SettingsViewModel (A injeção do TweakService será automática aqui)
                 services.AddSingleton<SettingsViewModel>();
                 
                 services.AddTransient<TweakViewModel>();
@@ -50,7 +52,6 @@ public partial class App : Application
                 services.AddTransient<CleanupPage>();
                 services.AddTransient<AppearancePage>();
                 
-                // NOVO: Registo da SettingsPage para resolver o erro de "null"
                 services.AddTransient<SettingsPage>();
             })
             .Build();
@@ -65,7 +66,8 @@ public partial class App : Application
 
         if (e.Args.Contains("--silent"))
         {
-            RunSilentMode();
+            // Agora aguardamos a execução completa do modo silencioso
+            await RunSilentMode();
         }
         else
         {
@@ -92,24 +94,54 @@ public partial class App : Application
         e.Handled = true; // Impede o crash total se possível
     }
 
-    private void RunSilentMode()
+    private async Task RunSilentMode()
     {
         try
         {
-            Logger.Log("Iniciando Modo Silencioso...");
+            Logger.Log("Iniciando Modo Silencioso (Auto-Run)...");
 
             var tweakService = _host.Services.GetRequiredService<TweakService>();
+            
+            // 1. Carrega todos os tweaks disponíveis na memória
             tweakService.LoadTweaks();
 
-            // Lógica adicional de persistência se necessário
-            Logger.Log("Modo Silencioso Concluído.");
+            // 2. Verifica o estado atual real do sistema
+            // (Isso é importante para não tentar aplicar algo que já está aplicado)
+            await tweakService.RefreshStatusesAsync();
+
+            // 3. Carrega a lista de desejos (o que estava ativo quando o user ativou a persistência)
+            var savedTweakIds = TweakPersistence.LoadState();
+
+            if (savedTweakIds.Count == 0)
+            {
+                Logger.Log("Nenhum tweak salvo para persistência.");
+            }
+            else
+            {
+                int appliedCount = 0;
+                foreach (var id in savedTweakIds)
+                {
+                    var tweak = tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
+                    
+                    // Se o tweak existe E AINDA NÃO está otimizado no sistema atual
+                    if (tweak != null && !tweak.IsOptimized)
+                    {
+                        Logger.Log($"Reaplicando tweak persistente: {tweak.Title} ({tweak.Id})");
+                        var result = tweak.Apply();
+                        if (result.Success) appliedCount++;
+                        else Logger.Log($"Falha ao aplicar {tweak.Id}: {result.Message}", "ERROR");
+                    }
+                }
+                Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
+            }
         }
         catch (Exception ex)
         {
-            Logger.Log($"Erro no modo silencioso: {ex.Message}", "ERROR");
+            Logger.Log($"Erro crítico no modo silencioso: {ex.Message}", "ERROR");
         }
         finally
         {
+            // Fecha a aplicação após concluir o trabalho em background
             Shutdown();
         }
     }
