@@ -5,22 +5,23 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
+      xmlns:p="clr-namespace:SystemOptimizer.Properties"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
-      Title="Configurações">
+      Title="{x:Static p:Resources.Settings_Title}">
 
     <ui:DynamicScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="24">
             
-            <TextBlock Text="Geral" FontSize="20" 
+            <TextBlock Text="{x:Static p:Resources.Settings_General}" FontSize="20"
                        FontWeight="SemiBold" Margin="0,0,0,16"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
 
             <ui:CardControl Icon="DarkTheme24" Margin="0,0,0,12">
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Text="Aparência" FontWeight="Medium"/>
-                        <TextBlock Text="Escolha o tema da aplicação" 
+                        <TextBlock Text="{x:Static p:Resources.Settings_Appearance}" FontWeight="Medium"/>
+                        <TextBlock Text="{x:Static p:Resources.Settings_ThemeDesc}"
                                    FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
                 </ui:CardControl.Header>
@@ -35,8 +36,8 @@
             <ui:CardControl Icon="LocalLanguage24">
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Text="Idioma" FontWeight="Medium"/>
-                        <TextBlock Text="Selecione o idioma da interface" 
+                        <TextBlock Text="{x:Static p:Resources.Settings_Language}" FontWeight="Medium"/>
+                        <TextBlock Text="{x:Static p:Resources.Settings_LanguageDesc}"
                                    FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
                 </ui:CardControl.Header>
@@ -46,15 +47,15 @@
                           SelectedIndex="0"/>
             </ui:CardControl>
 
-            <TextBlock Text="Comportamento" FontSize="20" 
+            <TextBlock Text="{x:Static p:Resources.Settings_Behavior}" FontSize="20"
                        FontWeight="SemiBold" Margin="0,24,0,16"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
 
             <ui:CardControl Icon="SlideHide24">
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Text="Persistência" FontWeight="Medium"/>
-                        <TextBlock Text="Iniciar automaticamente com o Windows (Minimizado)" 
+                        <TextBlock Text="{x:Static p:Resources.Settings_Persistence}" FontWeight="Medium"/>
+                        <TextBlock Text="{x:Static p:Resources.Settings_PersistenceDesc}"
                                    FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
                 </ui:CardControl.Header>
@@ -65,8 +66,8 @@
             <ui:CardControl Icon="Pin24" Margin="0,12,0,0">
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Text="Manter Instalado" FontWeight="Medium"/>
-                        <TextBlock Text="Criar atalhos na Área de Trabalho e Menu Iniciar" 
+                        <TextBlock Text="{x:Static p:Resources.Settings_KeepInstalled}" FontWeight="Medium"/>
+                        <TextBlock Text="{x:Static p:Resources.Settings_KeepInstalledDesc}"
                                    FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
                 </ui:CardControl.Header>

@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,7 @@ using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
+using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
 
@@ -59,6 +61,15 @@ public partial class App : Application
 
     protected override async void OnStartup(StartupEventArgs e)
     {
+        // Carrega configurações de idioma antes de inicializar a UI
+        AppSettings.Load();
+        var culture = new System.Globalization.CultureInfo(AppSettings.Current.Language);
+        Thread.CurrentThread.CurrentCulture = culture;
+        Thread.CurrentThread.CurrentUICulture = culture;
+
+        // Atualiza a cultura do ResourceManager
+        Resources.Culture = culture;
+
         // Configura tratamento global de erros para evitar fechamento repentino
         this.DispatcherUnhandledException += OnDispatcherUnhandledException;
 
