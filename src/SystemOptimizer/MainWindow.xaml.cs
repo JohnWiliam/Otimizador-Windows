@@ -33,8 +33,8 @@ public partial class MainWindow : FluentWindow, INavigationWindow
         navigationService.SetNavigationControl(RootNavigation);
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
         
-        // Configura o serviço de diálogo para usar o Presenter definido no XAML
-        contentDialogService.SetContentPresenter(RootContentDialogPresenter);
+        // CORREÇÃO: SetContentPresenter foi substituído por SetDialogHost na versão mais recente
+        contentDialogService.SetDialogHost(RootContentDialogPresenter);
 
         // INJETA O SERVICE PROVIDER NO NAVIGATIONVIEW
         RootNavigation.SetServiceProvider(serviceProvider);
