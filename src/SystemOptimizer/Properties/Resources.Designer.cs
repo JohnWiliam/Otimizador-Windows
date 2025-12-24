@@ -172,5 +172,7 @@ namespace SystemOptimizer.Properties {
         public static string Msg_CompletedWithErrors => ResourceManager.GetString("Msg_CompletedWithErrors", resourceCulture);
         public static string Msg_ErrorTitle => ResourceManager.GetString("Msg_ErrorTitle", resourceCulture);
         public static string Msg_InitFail => ResourceManager.GetString("Msg_InitFail", resourceCulture);
+        
+        public static string App_Title => ResourceManager.GetString("App_Title", resourceCulture);
     }
 }
