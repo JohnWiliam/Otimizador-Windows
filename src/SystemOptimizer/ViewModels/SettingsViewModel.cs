@@ -45,7 +45,6 @@ public partial class SettingsViewModel : ObservableObject
         _targetExePath = Path.Combine(_appDataPath, "SystemOptimizer.exe");
 
         // Define "Padrão do Sistema" como a opção inicial padrão
-        // (Ou podes lógica para detetar qual o tema atual e selecionar a opção correta)
         _currentThemeOption = ThemeOptions.First(x => x.Theme == ApplicationTheme.Unknown);
         
         // Aplica o tema inicial
@@ -77,12 +76,10 @@ public partial class SettingsViewModel : ObservableObject
     {
         if (theme == ApplicationTheme.Unknown)
         {
-            // CORREÇÃO: Usamos o método próprio ApplySystemTheme() em vez de converter manualmente
             ApplicationThemeManager.ApplySystemTheme();
         }
         else
         {
-            // Aplica o tema Claro ou Escuro selecionado
             ApplicationThemeManager.Apply(theme);
         }
     }
@@ -98,8 +95,11 @@ public partial class SettingsViewModel : ObservableObject
                       !res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) &&
                       !res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase);
         
-        // Define o valor sem disparar o evento OnChanged (para evitar loop na inicialização)
+        // CORREÇÃO: Suprimimos o aviso MVVMTK0034 porque queremos atualizar a UI 
+        // sem disparar o evento OnIsPersistenceEnabledChanged (para evitar loops).
+#pragma warning disable MVVMTK0034
         SetProperty(ref _isPersistenceEnabled, exists, nameof(IsPersistenceEnabled));
+#pragma warning restore MVVMTK0034
     }
 
     private void EnablePersistence()
@@ -131,8 +131,11 @@ public partial class SettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Log($"Erro ao habilitar persistência: {ex.Message}", "ERROR");
-            // Se falhar, reverte o switch visualmente (sem loop infinito, pois o check status vai confirmar depois se necessário)
+            
+            // CORREÇÃO: Reverte o switch visualmente sem disparar a lógica de desativação novamente.
+#pragma warning disable MVVMTK0034
             SetProperty(ref _isPersistenceEnabled, false, nameof(IsPersistenceEnabled));
+#pragma warning restore MVVMTK0034
         }
     }
 
