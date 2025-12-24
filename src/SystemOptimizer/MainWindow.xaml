@@ -86,17 +86,19 @@
             </ui:NavigationView.FooterMenuItems>
 
             <ui:NavigationView.ContentOverlay>
-                 <Grid>
-                      <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
-                      
-                      <Border CornerRadius="8" ClipToBounds="True">
-                          <ContentPresenter x:Name="RootContentDialogPresenter" />
-                      </Border>
-                 </Grid>
+                 <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
             </ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
 
+        <Border Grid.Row="0" Grid.RowSpan="2" 
+                Panel.ZIndex="1000"
+                CornerRadius="8" 
+                ClipToBounds="True">
+            <ContentPresenter x:Name="RootContentDialogPresenter" />
+        </Border>
+
          <Grid Grid.Row="0" Grid.RowSpan="2" 
+              Panel.ZIndex="1001"
               Background="#99000000" 
               Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
               d:Visibility="Collapsed">
@@ -112,6 +114,7 @@
         </Grid>
         
         <Grid Grid.Row="0" Grid.RowSpan="2" 
+              Panel.ZIndex="1002"
               Background="{DynamicResource ApplicationBackgroundBrush}"
               Visibility="{Binding IsInitializing, Converter={StaticResource BooleanToVisibilityConverter}}"
               d:Visibility="Collapsed">
