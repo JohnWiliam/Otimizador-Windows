@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
+using Wpf.Ui.Appearance; // Necessário para detectar o tema
 
 namespace SystemOptimizer.Services;
 
@@ -20,6 +21,7 @@ public class DialogService : IDialogService
 
     public async Task ShowMessageAsync(string title, string message, DialogType type = DialogType.Info)
     {
+        // 1. Configura Ícone e Cor do Ícone
         SymbolRegular iconSymbol = SymbolRegular.Info24;
         Brush iconColor = Brushes.White;
 
@@ -27,28 +29,31 @@ public class DialogService : IDialogService
         {
             case DialogType.Success:
                 iconSymbol = SymbolRegular.CheckmarkCircle24;
-                iconColor = new SolidColorBrush(Color.FromRgb(0x10, 0x7C, 0x10)); 
+                iconColor = new SolidColorBrush(Color.FromRgb(0x10, 0x7C, 0x10));
                 break;
             case DialogType.Warning:
                 iconSymbol = SymbolRegular.Warning24;
-                iconColor = new SolidColorBrush(Color.FromRgb(0xD8, 0x3B, 0x01)); 
+                iconColor = new SolidColorBrush(Color.FromRgb(0xD8, 0x3B, 0x01));
                 break;
             case DialogType.Error:
                 iconSymbol = SymbolRegular.DismissCircle24;
-                iconColor = new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23)); 
+                iconColor = new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23));
                 break;
             case DialogType.Info:
             default:
                 iconSymbol = SymbolRegular.Info24;
-                iconColor = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD7)); 
+                iconColor = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD7));
                 break;
         }
 
-        var contentGrid = new Grid 
-        { 
+        // 2. Constrói o Layout Interno
+        var contentGrid = new Grid
+        {
             Margin = new Thickness(0, 10, 0, 0),
-            Background = Brushes.Transparent // Garante que o grid não bloqueie o fundo acrílico
+            Background = Brushes.Transparent, // Importante: Transparente para ver o fundo do Dialog
+            VerticalAlignment = VerticalAlignment.Center
         };
+        
         contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
@@ -61,12 +66,14 @@ public class DialogService : IDialogService
             Margin = new Thickness(0, 0, 15, 0)
         };
 
+        // Usa System.Windows.Controls.TextBlock explicitamente
         var textBlock = new System.Windows.Controls.TextBlock
         {
             Text = message,
             TextWrapping = TextWrapping.Wrap,
             FontSize = 14,
             VerticalAlignment = VerticalAlignment.Center,
+            // Garante que o texto seja legível dependendo do tema, mas sem bloquear o fundo
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] ?? Brushes.White
         };
 
@@ -76,13 +83,21 @@ public class DialogService : IDialogService
         contentGrid.Children.Add(iconControl);
         contentGrid.Children.Add(textBlock);
 
-        // CORREÇÃO: "Efeito Acrílico Fake"
-        // Pegamos a cor de fundo padrão da janela (geralmente cinza escuro ou claro)
-        // e aplicamos uma opacidade mais forte (0.75).
-        // Isso cria um visual de "vidro fumê" uniforme em toda a caixa.
-        var baseBrush = (Brush)Application.Current.Resources["ApplicationBackgroundBrush"] 
-                        ?? new SolidColorBrush(Color.FromRgb(32, 32, 32));
+        // 3. Configura o Fundo "Acrílico Fake" Uniforme (0.85 Opacidade)
+        // Detectamos o tema atual para escolher entre Preto ou Branco como base
+        var currentTheme = ApplicationThemeManager.GetAppTheme();
+        
+        // Se for Dark, usa um cinza bem escuro. Se for Light, usa um cinza quase branco.
+        Color baseColor = currentTheme == ApplicationTheme.Dark 
+            ? Color.FromRgb(30, 30, 30) 
+            : Color.FromRgb(250, 250, 250);
 
+        var acrylicBrush = new SolidColorBrush(baseColor)
+        {
+            Opacity = 0.85 // Opacidade solicitada
+        };
+
+        // 4. Cria o Dialog
         var dialog = new ContentDialog
         {
             Title = title,
@@ -90,22 +105,13 @@ public class DialogService : IDialogService
             CloseButtonText = "OK",
             DefaultButton = ContentDialogButton.Close,
             DialogMaxWidth = 500,
-            BorderThickness = new Thickness(1), // Borda fina para definição
-            BorderBrush = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)), // Borda sutil
-            Background = ApplyOpacity(baseBrush, 0.75) // 75% opaco = efeito translúcido
+            BorderThickness = new Thickness(1),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(30, 128, 128, 128)), // Borda sutil
+            
+            // Aplica o pincel translúcido em TODO o fundo do diálogo
+            Background = acrylicBrush 
         };
 
         await _contentDialogService.ShowAsync(dialog, CancellationToken.None);
-    }
-
-    private Brush ApplyOpacity(Brush brush, double opacity)
-    {
-        if (brush.Clone() is Brush clone)
-        {
-            clone.Opacity = opacity;
-            if (clone.CanFreeze) clone.Freeze();
-            return clone;
-        }
-        return brush;
     }
 }
