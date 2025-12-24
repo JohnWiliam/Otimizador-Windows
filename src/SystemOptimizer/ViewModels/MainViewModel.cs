@@ -21,7 +21,6 @@ public partial class MainViewModel : ObservableObject
     private readonly CleanupService _cleanupService;
     private readonly IDialogService _dialogService;
 
-    // Título da aplicação puxado dos recursos
     [ObservableProperty]
     private string _applicationTitle = Resources.App_Title;
 
@@ -65,7 +64,8 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Log($"Error during initialization: {ex.Message}", "CRITICAL");
-            await _dialogService.ShowMessageAsync(Resources.Msg_ErrorTitle, string.Format(Resources.Msg_InitFail, ex.Message));
+            // Passando DialogType.Error para ícone vermelho
+            await _dialogService.ShowMessageAsync(Resources.Msg_ErrorTitle, string.Format(Resources.Msg_InitFail, ex.Message), DialogType.Error);
         }
         finally
         {
@@ -155,8 +155,6 @@ public partial class MainViewModel : ObservableObject
         string lastError = "";
         bool rebootNeeded = false;
 
-        // O bloco Try/Finally garante que o IsBusy seja desativado (False)
-        // ANTES de tentar exibir qualquer mensagem de diálogo.
         try
         {
             await Task.Run(() =>
@@ -174,20 +172,21 @@ public partial class MainViewModel : ObservableObject
         }
         finally
         {
-            // O overlay de carregamento é removido aqui
             IsBusy = false;
         }
 
-        // Agora que o overlay sumiu, podemos mostrar o diálogo e o usuário conseguirá clicar
         if (failCount > 0)
         {
-            await _dialogService.ShowMessageAsync(Resources.Msg_ResultTitle, string.Format(Resources.Msg_CompletedWithErrors, successCount, failCount, lastError));
+            // DialogType.Warning para avisar que houve falhas parciais
+            await _dialogService.ShowMessageAsync(Resources.Msg_ResultTitle, string.Format(Resources.Msg_CompletedWithErrors, successCount, failCount, lastError), DialogType.Warning);
         }
         else if (successCount > 0)
         {
             string msg = applying ? Resources.Msg_Applied : Resources.Msg_Restored;
             if (rebootNeeded) msg += Resources.Msg_RebootNeeded;
-            await _dialogService.ShowMessageAsync(Resources.Msg_SuccessTitle, msg);
+            
+            // DialogType.Success para sucesso
+            await _dialogService.ShowMessageAsync(Resources.Msg_SuccessTitle, msg, DialogType.Success);
         }
     }
 
