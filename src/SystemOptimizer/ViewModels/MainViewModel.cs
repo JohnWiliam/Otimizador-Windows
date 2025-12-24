@@ -21,6 +21,7 @@ public partial class MainViewModel : ObservableObject
     private readonly CleanupService _cleanupService;
     private readonly IDialogService _dialogService;
 
+    // Título da aplicação puxado dos recursos
     [ObservableProperty]
     private string _applicationTitle = Resources.App_Title;
 
@@ -125,7 +126,6 @@ public partial class MainViewModel : ObservableObject
         };
 
         await ProcessTweaks(list, true);
-        IsBusy = false;
     }
 
     [RelayCommand]
@@ -146,7 +146,6 @@ public partial class MainViewModel : ObservableObject
         };
 
         await ProcessTweaks(list, false);
-        IsBusy = false;
     }
 
     private async Task ProcessTweaks(IEnumerable<TweakViewModel> list, bool applying)
@@ -156,19 +155,30 @@ public partial class MainViewModel : ObservableObject
         string lastError = "";
         bool rebootNeeded = false;
 
-        await Task.Run(() =>
+        // O bloco Try/Finally garante que o IsBusy seja desativado (False)
+        // ANTES de tentar exibir qualquer mensagem de diálogo.
+        try
         {
-            foreach (var item in list.Where(x => x.IsSelected))
+            await Task.Run(() =>
             {
-                if (IsRebootRequired(item.Id)) rebootNeeded = true;
-                var result = applying ? item.Tweak.Apply() : item.Tweak.Revert();
-                if (result.Success) successCount++;
-                else { failCount++; lastError = result.Message; }
-            }
-        });
+                foreach (var item in list.Where(x => x.IsSelected))
+                {
+                    if (IsRebootRequired(item.Id)) rebootNeeded = true;
+                    var result = applying ? item.Tweak.Apply() : item.Tweak.Revert();
+                    if (result.Success) successCount++;
+                    else { failCount++; lastError = result.Message; }
+                }
+            });
 
-        foreach (var item in list) { item.IsSelected = false; item.UpdateStatusUI(); }
+            foreach (var item in list) { item.IsSelected = false; item.UpdateStatusUI(); }
+        }
+        finally
+        {
+            // O overlay de carregamento é removido aqui
+            IsBusy = false;
+        }
 
+        // Agora que o overlay sumiu, podemos mostrar o diálogo e o usuário conseguirá clicar
         if (failCount > 0)
         {
             await _dialogService.ShowMessageAsync(Resources.Msg_ResultTitle, string.Format(Resources.Msg_CompletedWithErrors, successCount, failCount, lastError));
@@ -186,8 +196,14 @@ public partial class MainViewModel : ObservableObject
     {
         if (IsBusy) return;
         IsBusy = true;
-        CleanupLogs.Clear();
-        await _cleanupService.RunCleanupAsync();
-        IsBusy = false;
+        try
+        {
+            CleanupLogs.Clear();
+            await _cleanupService.RunCleanupAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 }
