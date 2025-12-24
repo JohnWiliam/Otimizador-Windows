@@ -53,7 +53,7 @@ public class DialogService : IDialogService
             : Color.FromRgb(248, 248, 248);
 
         // Efeito "Fake Acrylic"
-        var acrylicBrush = new SolidColorBrush(baseColor) { Opacity = 0.85 };
+        var acrylicBrush = new SolidColorBrush(baseColor) { Opacity = 0.90 };
 
         // 3. Constrói o Layout Interno
         var contentGrid = new Grid
@@ -113,10 +113,10 @@ public class DialogService : IDialogService
             
             // CORREÇÃO: Aumentei a largura e REMOVI a altura máxima.
             // Agora a caixa vai esticar verticalmente o quanto precisar para caber o texto.
-            DialogMaxWidth = 380, 
+            DialogMaxWidth = 360, 
             // DialogMaxHeight foi removido propositalmente
             
-            Padding = new Thickness(24), // Espaçamento interno confortável
+            Padding = new Thickness(20), // Espaçamento interno confortável
             
             BorderThickness = new Thickness(1),
             BorderBrush = new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
