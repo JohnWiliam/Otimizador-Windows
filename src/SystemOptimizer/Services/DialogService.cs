@@ -28,28 +28,24 @@ public class DialogService : IDialogService
         {
             case DialogType.Success:
                 iconSymbol = SymbolRegular.CheckmarkCircle24;
-                // Verde vibrante para sucesso
-                iconColor = new SolidColorBrush(Color.FromRgb(0x10, 0x7C, 0x10)); 
+                iconColor = new SolidColorBrush(Color.FromRgb(0x10, 0x7C, 0x10)); // Verde
                 break;
             case DialogType.Warning:
                 iconSymbol = SymbolRegular.Warning24;
-                // Amarelo/Laranja para aviso
-                iconColor = new SolidColorBrush(Color.FromRgb(0xD8, 0x3B, 0x01)); 
+                iconColor = new SolidColorBrush(Color.FromRgb(0xD8, 0x3B, 0x01)); // Laranja
                 break;
             case DialogType.Error:
                 iconSymbol = SymbolRegular.DismissCircle24;
-                // Vermelho para erro
-                iconColor = new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23)); 
+                iconColor = new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23)); // Vermelho
                 break;
             case DialogType.Info:
             default:
                 iconSymbol = SymbolRegular.Info24;
-                // Azul padrão do sistema
-                iconColor = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD7)); 
+                iconColor = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD7)); // Azul
                 break;
         }
 
-        // Constrói o layout visual do conteúdo (Ícone + Texto)
+        // Constrói o layout visual
         var contentGrid = new Grid { Margin = new Thickness(0, 10, 0, 0) };
         contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -59,11 +55,12 @@ public class DialogService : IDialogService
             Symbol = iconSymbol,
             FontSize = 40,
             Foreground = iconColor,
-            VerticalAlignment = VerticalAlignment.Top,
+            // CORREÇÃO: Alinhamento 'Center' garante que o ícone fique na mesma linha visual do texto
+            VerticalAlignment = VerticalAlignment.Center, 
             Margin = new Thickness(0, 0, 15, 0)
         };
 
-        // CORREÇÃO: Especificando System.Windows.Controls.TextBlock explicitamente para resolver ambiguidade
+        // Mantemos System.Windows.Controls.TextBlock explícito para evitar erro de ambiguidade
         var textBlock = new System.Windows.Controls.TextBlock
         {
             Text = message,
@@ -79,11 +76,10 @@ public class DialogService : IDialogService
         contentGrid.Children.Add(iconControl);
         contentGrid.Children.Add(textBlock);
 
-        // Cria o diálogo com o conteúdo personalizado
         var dialog = new ContentDialog
         {
             Title = title,
-            Content = contentGrid, // Usa nosso Grid visual em vez de apenas string
+            Content = contentGrid,
             CloseButtonText = "OK",
             DefaultButton = ContentDialogButton.Close,
             DialogMaxWidth = 500
