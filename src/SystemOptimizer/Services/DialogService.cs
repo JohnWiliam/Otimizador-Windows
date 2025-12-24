@@ -52,15 +52,15 @@ public class DialogService : IDialogService
             ? Color.FromRgb(32, 32, 32)  
             : Color.FromRgb(248, 248, 248);
 
-        // Efeito "Fake Acrylic" com Opacidade 0.90 (Solicitado)
+        // Efeito "Fake Acrylic" (0.90 de opacidade)
         var acrylicBrush = new SolidColorBrush(baseColor) { Opacity = 0.90 };
 
         // 3. Constrói o Layout Interno
         var contentGrid = new Grid
         {
-            // Removemos margens verticais extras do Grid para compactar
             Margin = new Thickness(0), 
-            Background = Brushes.Transparent
+            Background = Brushes.Transparent,
+            VerticalAlignment = VerticalAlignment.Center // Garante que o grid todo se centralize se a caixa for maior
         };
         
         contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -69,10 +69,11 @@ public class DialogService : IDialogService
         var iconControl = new SymbolIcon
         {
             Symbol = iconSymbol,
-            FontSize = 28,
+            FontSize = 32, // Tamanho confortável
             Foreground = iconColor,
-            VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, 4, 16, 0)
+            // CORREÇÃO: Alinhamento 'Center' para ficar no meio da altura do texto
+            VerticalAlignment = VerticalAlignment.Center, 
+            Margin = new Thickness(0, 0, 16, 0) // Removemos a margem superior
         };
 
         var textStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
@@ -82,7 +83,7 @@ public class DialogService : IDialogService
             Text = title,
             FontSize = 16,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 3), // Margem mínima entre Título e Texto
+            Margin = new Thickness(0, 0, 0, 4),
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] ?? Brushes.White
         };
 
@@ -114,9 +115,10 @@ public class DialogService : IDialogService
             
             DialogMaxWidth = 420, 
             
-            // AJUSTE DE PADDING: Reduzido verticalmente para (Top: 18, Bottom: 12)
-            // Mantido lateralmente em 24 para estética.
-            Padding = new Thickness(24, 18, 24, 12),
+            // PADDING REFINADO:
+            // Top: 20 (Equilíbrio visual com o título)
+            // Bottom: 10 (Menor porque os botões já têm margem, aproximando o conteúdo)
+            Padding = new Thickness(24, 20, 24, 10),
             
             BorderThickness = new Thickness(1),
             BorderBrush = new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
@@ -124,7 +126,7 @@ public class DialogService : IDialogService
             Background = acrylicBrush 
         };
 
-        // Sobrescreve brushes para garantir transparência total na área de conteúdo
+        // Sobrescreve brushes para garantir transparência total
         dialog.Resources["ContentDialogTopOverlay"] = Brushes.Transparent;
         dialog.Resources["ContentDialogContentBackground"] = Brushes.Transparent;
         dialog.Resources["ContentDialogBackground"] = Brushes.Transparent;
