@@ -88,7 +88,10 @@
             <ui:NavigationView.ContentOverlay>
                  <Grid>
                       <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
-                      <ContentPresenter x:Name="RootContentDialogPresenter" />
+                      
+                      <Border CornerRadius="8" ClipToBounds="True">
+                          <ContentPresenter x:Name="RootContentDialogPresenter" />
+                      </Border>
                  </Grid>
             </ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
