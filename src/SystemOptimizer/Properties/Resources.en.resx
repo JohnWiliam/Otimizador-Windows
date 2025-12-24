@@ -268,4 +268,31 @@
   <data name="Msg_RestartTitle" xml:space="preserve">
     <value>Restart Required</value>
   </data>
+  <data name="Nav_Privacy" xml:space="preserve">
+    <value>Privacy</value>
+  </data>
+  <data name="Nav_Performance" xml:space="preserve">
+    <value>Performance</value>
+  </data>
+  <data name="Nav_Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="Nav_Security" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="Nav_Visual" xml:space="preserve">
+    <value>Visuals</value>
+  </data>
+  <data name="Nav_Tweaks" xml:space="preserve">
+    <value>Tweaks</value>
+  </data>
+  <data name="Nav_Cleanup" xml:space="preserve">
+    <value>Cleanup</value>
+  </data>
+  <data name="Status_Applying" xml:space="preserve">
+    <value>Applying changes...</value>
+  </data>
+  <data name="Status_Loading" xml:space="preserve">
+    <value>Loading system state...</value>
+  </data>
 </root>
