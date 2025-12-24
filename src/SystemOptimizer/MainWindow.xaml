@@ -75,9 +75,17 @@
                 </ui:NavigationViewItem>
             </ui:NavigationView.MenuItems>
 
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Content="Configurações" TargetPageType="{x:Type pages:SettingsPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Settings24" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.FooterMenuItems>
+
             <ui:NavigationView.ContentOverlay>
                  <Grid>
-                     <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
+                      <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
                  </Grid>
             </ui:NavigationView.ContentOverlay>
         </ui:NavigationView>
