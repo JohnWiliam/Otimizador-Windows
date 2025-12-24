@@ -387,4 +387,7 @@ Error: {2}</value>
   <data name="Msg_InitFail" xml:space="preserve">
     <value>Failed to initialize: {0}</value>
   </data>
+  <data name="App_Title" xml:space="preserve">
+    <value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.0.0</value>
+  </data>
 </root>
