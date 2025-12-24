@@ -68,7 +68,7 @@ public partial class App : Application
         Thread.CurrentThread.CurrentUICulture = culture;
 
         // Atualiza a cultura do ResourceManager
-        Resources.Culture = culture;
+        SystemOptimizer.Properties.Resources.Culture = culture;
 
         // Configura tratamento global de erros para evitar fechamento repentino
         this.DispatcherUnhandledException += OnDispatcherUnhandledException;
