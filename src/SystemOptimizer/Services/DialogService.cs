@@ -113,7 +113,7 @@ public class DialogService : IDialogService
             
             // CORREÇÃO: Aumentei a largura e REMOVI a altura máxima.
             // Agora a caixa vai esticar verticalmente o quanto precisar para caber o texto.
-            DialogMaxWidth = 420, 
+            DialogMaxWidth = 380, 
             // DialogMaxHeight foi removido propositalmente
             
             Padding = new Thickness(24), // Espaçamento interno confortável
