@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Globalization; // Necessário para detectar o idioma do sistema
 
 namespace SystemOptimizer.Helpers;
 
@@ -20,6 +21,7 @@ public static class AppSettings
 
     public static void Load()
     {
+        bool loaded = false;
         try
         {
             if (File.Exists(_configPath))
@@ -29,12 +31,30 @@ public static class AppSettings
                 if (config != null)
                 {
                     Current = config;
+                    loaded = true;
                 }
             }
         }
         catch (Exception)
         {
-            // Ignore errors, use default
+            // Ignora erros e usa o padrão (ou a lógica abaixo)
+        }
+
+        // Se não foi carregado (primeira execução ou arquivo deletado), define baseado no sistema
+        if (!loaded)
+        {
+            var systemCulture = CultureInfo.InstalledUICulture;
+
+            // Verifica se o idioma do sistema começa com "pt" (cobre pt-BR e pt-PT)
+            if (systemCulture.TwoLetterISOLanguageName.Equals("pt", StringComparison.OrdinalIgnoreCase))
+            {
+                Current.Language = "pt-BR";
+            }
+            else
+            {
+                // Para qualquer outro idioma, define Inglês como padrão internacional
+                Current.Language = "en-US";
+            }
         }
     }
 
@@ -42,7 +62,6 @@ public static class AppSettings
     {
         try
         {
-            
             if (Path.GetDirectoryName(_configPath) is string dir && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
