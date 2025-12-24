@@ -182,59 +182,7 @@ public class TweakService
         // SE2: Prefetch
         Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, "Desativar Prefetch", "Impede criação de rastros de inicialização (RegWrite).",
             @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
-
-        // SE3: Persistência Robusta e Correção de Warning Nullable
-        string taskName = "SystemOptimizer_AutoRun";
-        string appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SystemOptimizer");
-        string targetExePath = Path.Combine(appDataPath, "SystemOptimizer.exe");
-
-        // CORREÇÃO WARNING: Uso de coalescência nula (??) para garantir string não-nula
-        string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-
-        Tweaks.Add(new CustomTweak("SE3", TweakCategory.Tweaks, "Habilitar Persistência", "Copia o programa para ProgramData e agenda execução no boot.",
-            () => {
-                try
-                {
-                    if (string.IsNullOrEmpty(currentExe)) return false;
-
-                    // 1. Criar diretório
-                    if (!Directory.Exists(appDataPath))
-                        Directory.CreateDirectory(appDataPath);
-
-                    // 2. Copiar
-                    File.Copy(currentExe, targetExePath, true);
-
-                    // 3. Criar a tarefa
-                    string cmd = $"/create /tn \"{taskName}\" /tr \"\\\"{targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
-                    var res = CommandHelper.RunCommand("schtasks", cmd);
-
-                    // 4. Validação Robusta (Correção de Encoding)
-                    bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || 
-                                  res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-                                  res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase);
-
-                    return !string.IsNullOrWhiteSpace(res) && !failed;
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"Erro ao habilitar persistência: {ex.Message}", "ERROR");
-                    return false;
-                }
-            },
-            () => {
-                var res = CommandHelper.RunCommand("schtasks", $"/delete /tn \"{taskName}\" /f");
-                bool failed = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) ||
-                              res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-                              res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase);
-                return !failed;
-            },
-            () => {
-                var res = CommandHelper.RunCommand("schtasks", $"/query /tn \"{taskName}\"");
-                bool notFound = res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) ||
-                                res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-                                res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase);
-                return !notFound;
-            }
-        ));
+        
+        // O Tweak SE3 (Persistência) foi removido daqui e movido para SettingsViewModel
     }
 }
