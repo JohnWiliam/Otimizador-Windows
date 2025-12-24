@@ -263,7 +263,8 @@
     <value>Escuro</value>
   </data>
   <data name="Msg_RestartRequired" xml:space="preserve">
-    <value>Para aplicar a alteração de idioma, é necessário reiniciar a aplicação. Deseja reiniciar agora?</value>
+    <value>Para aplicar a alteração de idioma, é necessário reiniciar a aplicação.
+Deseja reiniciar agora?</value>
   </data>
   <data name="Msg_RestartTitle" xml:space="preserve">
     <value>Reinício Necessário</value>
@@ -294,5 +295,96 @@
   </data>
   <data name="Status_Loading" xml:space="preserve">
     <value>Carregando estado do sistema...</value>
+  </data>
+  <data name="Btn_Apply" xml:space="preserve">
+    <value>Aplicar Seleção</value>
+  </data>
+  <data name="Btn_Restore" xml:space="preserve">
+    <value>Restaurar Seleção</value>
+  </data>
+  <data name="Btn_RunCleanup" xml:space="preserve">
+    <value>Executar Limpeza</value>
+  </data>
+  <data name="Status_Optimized" xml:space="preserve">
+    <value>Otimizado</value>
+  </data>
+  <data name="Status_Default" xml:space="preserve">
+    <value>Não Otimizado</value>
+  </data>
+  <data name="Status_Modified" xml:space="preserve">
+    <value>Modificado</value>
+  </data>
+  <data name="Status_Unknown" xml:space="preserve">
+    <value>Desconhecido</value>
+  </data>
+  <data name="Status_Undefined" xml:space="preserve">
+    <value>INDEFINIDO</value>
+  </data>
+  <data name="Cleanup_Title" xml:space="preserve">
+    <value>Limpeza do Sistema</value>
+  </data>
+  <data name="Cleanup_CacheTitle" xml:space="preserve">
+    <value>Arquivos Temporários e Cache</value>
+  </data>
+  <data name="Cleanup_CacheDesc" xml:space="preserve">
+    <value>Libere espaço em disco removendo arquivos desnecessários.</value>
+  </data>
+  <data name="Cleanup_LogTitle" xml:space="preserve">
+    <value>Log de Execução</value>
+  </data>
+  <data name="Log_Starting" xml:space="preserve">
+    <value>Iniciando varredura e limpeza...</value>
+  </data>
+  <data name="Log_Finished" xml:space="preserve">
+    <value>LIMPEZA CONCLUÍDA! Liberado: {0} MB</value>
+  </data>
+  <data name="Log_DNS" xml:space="preserve">
+    <value>Cache DNS: Limpo</value>
+  </data>
+  <data name="Log_Removed" xml:space="preserve">
+    <value>{0} : {1} MB removidos</value>
+  </data>
+  <data name="Log_Clean" xml:space="preserve">
+    <value>{0} : Limpo</value>
+  </data>
+  <data name="Log_WUServicesStopped" xml:space="preserve">
+    <value>Serviços WU: Parados. Tentando limpeza...</value>
+  </data>
+  <data name="Log_WUServicesRestarted" xml:space="preserve">
+    <value>Serviços WU: Reiniciados.</value>
+  </data>
+  <data name="Log_WUError" xml:space="preserve">
+    <value>Windows Update : Alguns arquivos estavam em uso.</value>
+  </data>
+  <data name="Log_WUFailStop" xml:space="preserve">
+    <value>Windows Update : Não foi possível parar serviços.</value>
+  </data>
+  <data name="Msg_SuccessTitle" xml:space="preserve">
+    <value>Sucesso</value>
+  </data>
+  <data name="Msg_ResultTitle" xml:space="preserve">
+    <value>Resultado</value>
+  </data>
+  <data name="Msg_Applied" xml:space="preserve">
+    <value>Otimizações aplicadas.</value>
+  </data>
+  <data name="Msg_Restored" xml:space="preserve">
+    <value>Configurações restauradas.</value>
+  </data>
+  <data name="Msg_RebootNeeded" xml:space="preserve">
+    <value>
+REINICIE o computador.</value>
+  </data>
+  <data name="Msg_CompletedWithErrors" xml:space="preserve">
+    <value>Concluído com erros.
+Sucessos: {0}
+Falhas: {1}
+Erro: {2}</value>
+  </data>
+  <data name="Msg_ErrorTitle" xml:space="preserve">
+    <value>Erro</value>
+  </data>
+  <data name="Msg_InitFail" xml:space="preserve">
+    <value>Falha ao iniciar: {0}</value>
   </data>
 </root>
