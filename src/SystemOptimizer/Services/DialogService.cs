@@ -63,7 +63,8 @@ public class DialogService : IDialogService
             Margin = new Thickness(0, 0, 15, 0)
         };
 
-        var textBlock = new TextBlock
+        // CORREÇÃO: Especificando System.Windows.Controls.TextBlock explicitamente para resolver ambiguidade
+        var textBlock = new System.Windows.Controls.TextBlock
         {
             Text = message,
             TextWrapping = TextWrapping.Wrap,
