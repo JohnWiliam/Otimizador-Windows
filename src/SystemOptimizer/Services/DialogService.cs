@@ -52,13 +52,14 @@ public class DialogService : IDialogService
             ? Color.FromRgb(32, 32, 32)  
             : Color.FromRgb(248, 248, 248);
 
-        // Efeito "Fake Acrylic"
+        // Efeito "Fake Acrylic" com Opacidade 0.90 (Solicitado)
         var acrylicBrush = new SolidColorBrush(baseColor) { Opacity = 0.90 };
 
         // 3. Constrói o Layout Interno
         var contentGrid = new Grid
         {
-            Margin = new Thickness(0, 0, 0, 10), // Pequena margem inferior para separar dos botões
+            // Removemos margens verticais extras do Grid para compactar
+            Margin = new Thickness(0), 
             Background = Brushes.Transparent
         };
         
@@ -71,7 +72,7 @@ public class DialogService : IDialogService
             FontSize = 28,
             Foreground = iconColor,
             VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, 4, 16, 0) // Ajuste fino no alinhamento
+            Margin = new Thickness(0, 4, 16, 0)
         };
 
         var textStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
@@ -81,7 +82,7 @@ public class DialogService : IDialogService
             Text = title,
             FontSize = 16,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 4),
+            Margin = new Thickness(0, 0, 0, 3), // Margem mínima entre Título e Texto
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] ?? Brushes.White
         };
 
@@ -111,12 +112,11 @@ public class DialogService : IDialogService
             CloseButtonText = "OK",
             DefaultButton = ContentDialogButton.Close,
             
-            // CORREÇÃO: Aumentei a largura e REMOVI a altura máxima.
-            // Agora a caixa vai esticar verticalmente o quanto precisar para caber o texto.
-            DialogMaxWidth = 360, 
-            // DialogMaxHeight foi removido propositalmente
+            DialogMaxWidth = 420, 
             
-            Padding = new Thickness(20), // Espaçamento interno confortável
+            // AJUSTE DE PADDING: Reduzido verticalmente para (Top: 18, Bottom: 12)
+            // Mantido lateralmente em 24 para estética.
+            Padding = new Thickness(24, 18, 24, 12),
             
             BorderThickness = new Thickness(1),
             BorderBrush = new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
