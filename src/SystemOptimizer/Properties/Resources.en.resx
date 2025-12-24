@@ -245,7 +245,7 @@
     <value>Persistence</value>
   </data>
   <data name="Settings_PersistenceDesc" xml:space="preserve">
-    <value>Start automatically with Windows (Minimized)</value>
+    <value>Silently re-applies Tweaks on startup if any trigger alters user preferences.</value>
   </data>
   <data name="Settings_KeepInstalled" xml:space="preserve">
     <value>Keep Installed</value>
