@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
+      xmlns:p="clr-namespace:SystemOptimizer.Properties"
       mc:Ignorable="d" 
       d:DesignHeight="550" d:DesignWidth="800"
       Title="CleanupPage"
@@ -18,7 +19,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" 
-                   Text="Limpeza do Sistema" 
+                   Text="{x:Static p:Resources.Cleanup_Title}" 
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                    FontSize="26" 
                    FontWeight="SemiBold" 
@@ -32,12 +33,12 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Arquivos Temporários e Cache" 
+                    <TextBlock Text="{x:Static p:Resources.Cleanup_CacheTitle}" 
                                Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                FontSize="15" 
                                FontWeight="Medium" />
                     
-                    <TextBlock Text="Libere espaço em disco removendo arquivos desnecessários."
+                    <TextBlock Text="{x:Static p:Resources.Cleanup_CacheDesc}"
                                FontSize="13" 
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                Margin="0,4,0,0" 
@@ -54,7 +55,7 @@
                     <ui:Button.Icon>
                         <ui:SymbolIcon Symbol="Broom24"/>
                     </ui:Button.Icon>
-                    <TextBlock Text="Executar Limpeza"/>
+                    <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
                 </ui:Button>
             </Grid>
         </ui:Card>
@@ -77,7 +78,7 @@
                         CornerRadius="4,4,0,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <ui:SymbolIcon Symbol="CodeText20" Margin="0,0,10,0" FontSize="16"/>
-                        <TextBlock Text="Log de Execução" 
+                        <TextBlock Text="{x:Static p:Resources.Cleanup_LogTitle}" 
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                    FontWeight="Medium" 
                                    FontSize="13" />

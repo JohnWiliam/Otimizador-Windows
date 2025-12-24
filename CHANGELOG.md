@@ -2,9 +2,17 @@
 
 **🚀 Otimizador de Sistema v2.0.0**
 
-Esta é a maior atualização da história do projeto, marcando uma reescrita completa da arquitetura para tecnologias de ponta e introduzindo um painel de controlo centralizado.
+Esta é a maior atualização da história do projeto, marcando uma reescrita completa da arquitetura para tecnologias de ponta, introduzindo um painel de controlo centralizado e expandindo o alcance do software globalmente.
 
 **✨ O Que Há de Novo?**
+
+* **🌍 Internacionalização e Suporte a Idiomas**
+>
+> O código foi refatorado para suportar múltiplos idiomas, separando a lógica da interface das strings de texto.
+>
+> * **Suporte Completo ao Inglês:** Adicionada tradução integral da aplicação para o inglês (Interface, Logs e Tooltips).
+> * **Deteção Inteligente:** O programa agora deteta automaticamente o idioma padrão do sistema operacional na primeira execução. Se o sistema estiver em Português, o app inicia em Português; para qualquer outro idioma, inicia em Inglês (padrão internacional).
+> * **Gestão Manual:** Caso prefira, é possível alterar o idioma manualmente a qualquer momento através da nova aba de **Configurações**.
 
 * **🏗️ Salto Tecnológico (Refatoração Core)**
 >

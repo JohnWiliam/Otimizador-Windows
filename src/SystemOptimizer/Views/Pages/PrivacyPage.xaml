@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
+      xmlns:p="clr-namespace:SystemOptimizer.Properties"
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="PrivacyPage">
@@ -17,7 +18,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" 
-                   Text="Privacidade" 
+                   Text="{x:Static p:Resources.Nav_Privacy}" 
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                    FontSize="24" 
                    FontWeight="SemiBold" 
@@ -29,8 +30,8 @@
         </ui:DynamicScrollViewer>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <ui:Button Content="Restaurar Seleção" Command="{Binding RevertSelectedCommand}" CommandParameter="Privacy" Appearance="Secondary" Margin="0,0,10,0" Width="150" />
-            <ui:Button Content="Aplicar Seleção" Command="{Binding ApplySelectedCommand}" CommandParameter="Privacy" Appearance="Primary" Width="150" />
+            <ui:Button Content="{x:Static p:Resources.Btn_Restore}" Command="{Binding RevertSelectedCommand}" CommandParameter="Privacy" Appearance="Secondary" Margin="0,0,10,0" Width="150" />
+            <ui:Button Content="{x:Static p:Resources.Btn_Apply}" Command="{Binding ApplySelectedCommand}" CommandParameter="Privacy" Appearance="Primary" Width="150" />
         </StackPanel>
     </Grid>
 </Page>

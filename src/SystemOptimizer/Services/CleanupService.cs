@@ -5,6 +5,7 @@ using System.ServiceProcess;
 using System.Threading.Tasks;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Models;
+using SystemOptimizer.Properties; // Namespace dos Resources
 
 namespace SystemOptimizer.Services;
 
@@ -16,7 +17,7 @@ public class CleanupService
     {
         await Task.Run(async () =>
         {
-            OnLogItem?.Invoke(new CleanupLogItem { Message = "Iniciando varredura e limpeza...", Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
+            OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_Starting, Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
 
             // 1. Windows Update Cleanup (Smart com Retry)
             await CleanWindowsUpdateAsync();
@@ -71,14 +72,14 @@ public class CleanupService
             try
             {
                 CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
-                OnLogItem?.Invoke(new CleanupLogItem { Message = "Cache DNS: Limpo", Icon = "Globe24", StatusColor = "Green" });
+                OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNS, Icon = "Globe24", StatusColor = "Green" });
             }
             catch { }
 
             double totalMb = Math.Round(totalBytes / 1024.0 / 1024.0, 2);
             OnLogItem?.Invoke(new CleanupLogItem
             {
-                Message = $"LIMPEZA CONCLUÍDA! Liberado: {totalMb} MB",
+                Message = string.Format(Resources.Log_Finished, totalMb),
                 Icon = "Delete24",
                 StatusColor = "#0078D4",
                 IsBold = true
@@ -115,16 +116,19 @@ public class CleanupService
         if (categoryBytes > 0)
         {
             double mb = Math.Round(categoryBytes / 1024.0 / 1024.0, 2);
+            string msg = string.Format(Resources.Log_Removed, label, mb);
+            if (skippedCount > 0) msg += $" ({skippedCount} ignored)";
+
             OnLogItem?.Invoke(new CleanupLogItem
             {
-                Message = $"{label} : {mb} MB removidos" + (skippedCount > 0 ? $" ({skippedCount} ignorados)" : ""),
+                Message = msg,
                 Icon = "Checkmark24",
                 StatusColor = "Green"
             });
         }
         else
         {
-            OnLogItem?.Invoke(new CleanupLogItem { Message = $"{label} : Limpo", Icon = "Info24", StatusColor = "Gray" });
+            OnLogItem?.Invoke(new CleanupLogItem { Message = string.Format(Resources.Log_Clean, label), Icon = "Info24", StatusColor = "Gray" });
         }
         return categoryBytes;
     }
@@ -139,7 +143,7 @@ public class CleanupService
 
         if (stopped)
         {
-            OnLogItem?.Invoke(new CleanupLogItem { Message = "Serviços WU: Parados. Tentando limpeza...", Icon = "Pause24", StatusColor = "#CA5010" });
+            OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUServicesStopped, Icon = "Pause24", StatusColor = "#CA5010" });
 
             // CORREÇÃO: Retry Pattern ao invés de Delay fixo
             bool success = false;
@@ -160,15 +164,15 @@ public class CleanupService
 
             if (!success)
             {
-                OnLogItem?.Invoke(new CleanupLogItem { Message = "Windows Update : Alguns arquivos estavam em uso.", Icon = "Warning24", StatusColor = "Orange" });
+                OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUError, Icon = "Warning24", StatusColor = "Orange" });
             }
 
             await ToggleServicesAsync(services, true);
-            OnLogItem?.Invoke(new CleanupLogItem { Message = "Serviços WU: Reiniciados.", Icon = "Play24", StatusColor = "Green" });
+            OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUServicesRestarted, Icon = "Play24", StatusColor = "Green" });
         }
         else
         {
-            OnLogItem?.Invoke(new CleanupLogItem { Message = "Windows Update : Não foi possível parar serviços.", Icon = "Warning24", StatusColor = "Orange" });
+            OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUFailStop, Icon = "Warning24", StatusColor = "Orange" });
         }
     }
 

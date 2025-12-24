@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Models;
+using SystemOptimizer.Properties; // Namespace dos resources
 using Wpf.Ui.Controls;
 
 namespace SystemOptimizer.ViewModels;
@@ -22,7 +23,7 @@ public partial class TweakViewModel : ObservableObject
     private bool _isSelected;
 
     [ObservableProperty]
-    private string _statusText = "○ INDEFINIDO";
+    private string _statusText = $"○ {Resources.Status_Undefined}";
 
     [ObservableProperty]
     private SolidColorBrush _statusColor = Brushes.Gray;
@@ -83,22 +84,22 @@ public partial class TweakViewModel : ObservableObject
             switch (_tweak.Status)
             {
                 case TweakStatus.Optimized:
-                    StatusText = "Otimizado";
+                    StatusText = Resources.Status_Optimized;
                     StatusIcon = SymbolRegular.CheckmarkCircle24;
                     StatusColor = new SolidColorBrush(Color.FromRgb(0x0f, 0x7b, 0x0f)); // Verde Escuro
                     break;
                 case TweakStatus.Default:
-                    StatusText = "Não Otimizado";
+                    StatusText = Resources.Status_Default;
                     StatusIcon = SymbolRegular.DismissCircle24;
                     StatusColor = new SolidColorBrush(Color.FromRgb(0xc4, 0x2b, 0x1c)); // Vermelho
                     break;
                 case TweakStatus.Modified:
-                    StatusText = "Modificado";
+                    StatusText = Resources.Status_Modified;
                     StatusIcon = SymbolRegular.Edit24;
                     StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Laranja
                     break;
                 default:
-                    StatusText = "Desconhecido";
+                    StatusText = Resources.Status_Unknown;
                     StatusIcon = SymbolRegular.QuestionCircle24;
                     StatusColor = Brushes.Gray;
                     break;

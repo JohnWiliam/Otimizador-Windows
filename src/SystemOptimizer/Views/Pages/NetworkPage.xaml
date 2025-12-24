@@ -5,6 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
+      xmlns:p="clr-namespace:SystemOptimizer.Properties"
       mc:Ignorable="d" 
       d:DesignHeight="550" d:DesignWidth="800"
       Title="NetworkPage">
@@ -17,7 +18,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" 
-                   Text="Otimizações de Rede" 
+                   Text="{x:Static p:Resources.Nav_Network}" 
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                    FontSize="26" 
                    FontWeight="SemiBold" 
@@ -29,8 +30,8 @@
         </ui:DynamicScrollViewer>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-            <ui:Button Content="Restaurar Padrões" Command="{Binding RevertSelectedCommand}" CommandParameter="Network" Appearance="Secondary" Icon="ArrowUndo24" Margin="0,0,12,0" Width="160" />
-            <ui:Button Content="Aplicar Otimizações" Command="{Binding ApplySelectedCommand}" CommandParameter="Network" Appearance="Primary" Icon="Checkmark24" Width="180" />
+            <ui:Button Content="{x:Static p:Resources.Btn_Restore}" Command="{Binding RevertSelectedCommand}" CommandParameter="Network" Appearance="Secondary" Icon="ArrowUndo24" Margin="0,0,12,0" Width="160" />
+            <ui:Button Content="{x:Static p:Resources.Btn_Apply}" Command="{Binding ApplySelectedCommand}" CommandParameter="Network" Appearance="Primary" Icon="Checkmark24" Width="180" />
         </StackPanel>
     </Grid>
 </Page>

@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="P1_Title" xml:space="preserve">
+    <value>Disable Telemetry</value>
+  </data>
+  <data name="P1_Desc" xml:space="preserve">
+    <value>Prevents sending diagnostic data to Microsoft.</value>
+  </data>
+  <data name="P2_Title" xml:space="preserve">
+    <value>Disable DiagTrack</value>
+  </data>
+  <data name="P2_Desc" xml:space="preserve">
+    <value>Disables Connected User Experiences and Telemetry service.</value>
+  </data>
+  <data name="P3_Title" xml:space="preserve">
+    <value>Disable Cortana</value>
+  </data>
+  <data name="P3_Desc" xml:space="preserve">
+    <value>Blocks legacy voice assistant and web search.</value>
+  </data>
+  <data name="P4_Title" xml:space="preserve">
+    <value>Disable Advertising ID</value>
+  </data>
+  <data name="P4_Desc" xml:space="preserve">
+    <value>Prevents commercial tracking across apps.</value>
+  </data>
+  <data name="P5_Title" xml:space="preserve">
+    <value>Disable Geolocation</value>
+  </data>
+  <data name="P5_Desc" xml:space="preserve">
+    <value>Blocks global OS location tracking.</value>
+  </data>
+  <data name="P6_Title" xml:space="preserve">
+    <value>Disable Windows Tips</value>
+  </data>
+  <data name="P6_Desc" xml:space="preserve">
+    <value>Removes 'annoying' suggestions in Start Menu.</value>
+  </data>
+  <data name="P7_Title" xml:space="preserve">
+    <value>Disable OOBE Data</value>
+  </data>
+  <data name="P7_Desc" xml:space="preserve">
+    <value>Privacy during initial system setup.</value>
+  </data>
+  <data name="PF1_Title" xml:space="preserve">
+    <value>Ultimate Power Plan</value>
+  </data>
+  <data name="PF1_Desc" xml:space="preserve">
+    <value>Forces maximum performance plan (Ultimate/High).</value>
+  </data>
+  <data name="PF2_Title" xml:space="preserve">
+    <value>Disable GameDVR</value>
+  </data>
+  <data name="PF2_Desc" xml:space="preserve">
+    <value>Removes background recording (Increases FPS).</value>
+  </data>
+  <data name="PF3_Title" xml:space="preserve">
+    <value>Mouse Input 1:1</value>
+  </data>
+  <data name="PF3_Desc" xml:space="preserve">
+    <value>Removes precision enhancement (Acceleration).</value>
+  </data>
+  <data name="PF5_Title" xml:space="preserve">
+    <value>CPU Priority</value>
+  </data>
+  <data name="PF5_Desc" xml:space="preserve">
+    <value>Adjusts priority for Programs vs Services (26 hex).</value>
+  </data>
+  <data name="PF6_Title" xml:space="preserve">
+    <value>Network Throttling</value>
+  </data>
+  <data name="PF6_Desc" xml:space="preserve">
+    <value>Removes packet processing limit (Index FFFFFF).</value>
+  </data>
+  <data name="PF7_Title" xml:space="preserve">
+    <value>GPU Scheduling</value>
+  </data>
+  <data name="PF7_Desc" xml:space="preserve">
+    <value>Enables hardware-accelerated scheduling (Requires Restart).</value>
+  </data>
+  <data name="PF8_Title" xml:space="preserve">
+    <value>Disable VBS / HVCI</value>
+  </data>
+  <data name="PF8_Desc" xml:space="preserve">
+    <value>Increases FPS but reduces system security (REQUIRES RESTART).</value>
+  </data>
+  <data name="PF9_Title" xml:space="preserve">
+    <value>Disable Hibernation</value>
+  </data>
+  <data name="PF9_Desc" xml:space="preserve">
+    <value>Frees up GBs of disk space (Removes hiberfil.sys).</value>
+  </data>
+  <data name="N1_Title" xml:space="preserve">
+    <value>TCP Auto-Tuning</value>
+  </data>
+  <data name="N1_Desc" xml:space="preserve">
+    <value>Dynamic TCP Window (Essential for >100Mbps).</value>
+  </data>
+  <data name="N2_Title" xml:space="preserve">
+    <value>CUBIC Algorithm</value>
+  </data>
+  <data name="N2_Desc" xml:space="preserve">
+    <value>Modern congestion management for high speed.</value>
+  </data>
+  <data name="N3_Title" xml:space="preserve">
+    <value>Enable ECN</value>
+  </data>
+  <data name="N3_Desc" xml:space="preserve">
+    <value>Explicit Congestion Notification (Less Loss).</value>
+  </data>
+  <data name="N4_Title" xml:space="preserve">
+    <value>Disable RSS</value>
+  </data>
+  <data name="N4_Desc" xml:space="preserve">
+    <value>Receive Side Scaling (Stability/driver test).</value>
+  </data>
+  <data name="N5_Title" xml:space="preserve">
+    <value>Disable QoS Limit</value>
+  </data>
+  <data name="N5_Desc" xml:space="preserve">
+    <value>Removes bandwidth reservation (Packet Scheduler).</value>
+  </data>
+  <data name="S1_Title" xml:space="preserve">
+    <value>Show Extensions</value>
+  </data>
+  <data name="S1_Desc" xml:space="preserve">
+    <value>Security: Displays real extensions (.exe, .bat).</value>
+  </data>
+  <data name="S2_Title" xml:space="preserve">
+    <value>Disable AutoRun</value>
+  </data>
+  <data name="S2_Desc" xml:space="preserve">
+    <value>Security: Blocks automatic USB execution.</value>
+  </data>
+  <data name="A1_Title" xml:space="preserve">
+    <value>Disable Transparency</value>
+  </data>
+  <data name="A1_Desc" xml:space="preserve">
+    <value>Increases UI response by removing Acrylic/Mica.</value>
+  </data>
+  <data name="A2_Title" xml:space="preserve">
+    <value>Dark Mode</value>
+  </data>
+  <data name="A2_Desc" xml:space="preserve">
+    <value>Forces dark mode for applications.</value>
+  </data>
+  <data name="A3_Title" xml:space="preserve">
+    <value>Visual Effects</value>
+  </data>
+  <data name="A3_Desc" xml:space="preserve">
+    <value>Adjusts for 'Best Performance' (Partial).</value>
+  </data>
+  <data name="SE1_Title" xml:space="preserve">
+    <value>Disable SysMain</value>
+  </data>
+  <data name="SE1_Desc" xml:space="preserve">
+    <value>Optimizes disk usage for SSDs (Superfetch).</value>
+  </data>
+  <data name="SE2_Title" xml:space="preserve">
+    <value>Disable Prefetch</value>
+  </data>
+  <data name="SE2_Desc" xml:space="preserve">
+    <value>Prevents creation of startup traces (RegWrite).</value>
+  </data>
+  <data name="Settings_Title" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Settings_General" xml:space="preserve">
+    <value>General</value>
+  </data>
+  <data name="Settings_Appearance" xml:space="preserve">
+    <value>Appearance</value>
+  </data>
+  <data name="Settings_ThemeDesc" xml:space="preserve">
+    <value>Choose application theme</value>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>Language</value>
+  </data>
+  <data name="Settings_LanguageDesc" xml:space="preserve">
+    <value>Select interface language</value>
+  </data>
+  <data name="Settings_Behavior" xml:space="preserve">
+    <value>Behavior</value>
+  </data>
+  <data name="Settings_Persistence" xml:space="preserve">
+    <value>Persistence</value>
+  </data>
+  <data name="Settings_PersistenceDesc" xml:space="preserve">
+    <value>Start automatically with Windows (Minimized)</value>
+  </data>
+  <data name="Settings_KeepInstalled" xml:space="preserve">
+    <value>Keep Installed</value>
+  </data>
+  <data name="Settings_KeepInstalledDesc" xml:space="preserve">
+    <value>Create shortcuts on Desktop and Start Menu</value>
+  </data>
+  <data name="Theme_System" xml:space="preserve">
+    <value>System Default</value>
+  </data>
+  <data name="Theme_Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="Theme_Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="Msg_RestartRequired" xml:space="preserve">
+    <value>A restart is required to apply the language change.
+Do you want to restart now?</value>
+  </data>
+  <data name="Msg_RestartTitle" xml:space="preserve">
+    <value>Restart Required</value>
+  </data>
+  <data name="Nav_Privacy" xml:space="preserve">
+    <value>Privacy</value>
+  </data>
+  <data name="Nav_Performance" xml:space="preserve">
+    <value>Performance</value>
+  </data>
+  <data name="Nav_Network" xml:space="preserve">
+    <value>Network</value>
+  </data>
+  <data name="Nav_Security" xml:space="preserve">
+    <value>Security</value>
+  </data>
+  <data name="Nav_Visual" xml:space="preserve">
+    <value>Visuals</value>
+  </data>
+  <data name="Nav_Tweaks" xml:space="preserve">
+    <value>Tweaks</value>
+  </data>
+  <data name="Nav_Cleanup" xml:space="preserve">
+    <value>Cleanup</value>
+  </data>
+  <data name="Status_Applying" xml:space="preserve">
+    <value>Applying changes...</value>
+  </data>
+  <data name="Status_Loading" xml:space="preserve">
+    <value>Loading system state...</value>
+  </data>
+  <data name="Btn_Apply" xml:space="preserve">
+    <value>Apply Selection</value>
+  </data>
+  <data name="Btn_Restore" xml:space="preserve">
+    <value>Restore Selection</value>
+  </data>
+  <data name="Btn_RunCleanup" xml:space="preserve">
+    <value>Run Cleanup</value>
+  </data>
+  <data name="Status_Optimized" xml:space="preserve">
+    <value>Optimized</value>
+  </data>
+  <data name="Status_Default" xml:space="preserve">
+    <value>Not Optimized</value>
+  </data>
+  <data name="Status_Modified" xml:space="preserve">
+    <value>Modified</value>
+  </data>
+  <data name="Status_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="Status_Undefined" xml:space="preserve">
+    <value>UNDEFINED</value>
+  </data>
+  <data name="Cleanup_Title" xml:space="preserve">
+    <value>System Cleanup</value>
+  </data>
+  <data name="Cleanup_CacheTitle" xml:space="preserve">
+    <value>Temporary Files and Cache</value>
+  </data>
+  <data name="Cleanup_CacheDesc" xml:space="preserve">
+    <value>Free up disk space by removing unnecessary files.</value>
+  </data>
+  <data name="Cleanup_LogTitle" xml:space="preserve">
+    <value>Execution Log</value>
+  </data>
+  <data name="Log_Starting" xml:space="preserve">
+    <value>Starting scan and cleanup...</value>
+  </data>
+  <data name="Log_Finished" xml:space="preserve">
+    <value>CLEANUP FINISHED! Freed: {0} MB</value>
+  </data>
+  <data name="Log_DNS" xml:space="preserve">
+    <value>DNS Cache: Cleared</value>
+  </data>
+  <data name="Log_Removed" xml:space="preserve">
+    <value>{0} : {1} MB removed</value>
+  </data>
+  <data name="Log_Clean" xml:space="preserve">
+    <value>{0} : Clean</value>
+  </data>
+  <data name="Log_WUServicesStopped" xml:space="preserve">
+    <value>WU Services: Stopped. Attempting cleanup...</value>
+  </data>
+  <data name="Log_WUServicesRestarted" xml:space="preserve">
+    <value>WU Services: Restarted.</value>
+  </data>
+  <data name="Log_WUError" xml:space="preserve">
+    <value>Windows Update : Some files were in use.</value>
+  </data>
+  <data name="Log_WUFailStop" xml:space="preserve">
+    <value>Windows Update : Could not stop services.</value>
+  </data>
+  <data name="Msg_SuccessTitle" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="Msg_ResultTitle" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Msg_Applied" xml:space="preserve">
+    <value>Optimizations applied.</value>
+  </data>
+  <data name="Msg_Restored" xml:space="preserve">
+    <value>Settings restored.</value>
+  </data>
+  <data name="Msg_RebootNeeded" xml:space="preserve">
+    <value>
+RESTART the computer.</value>
+  </data>
+  <data name="Msg_CompletedWithErrors" xml:space="preserve">
+    <value>Completed with errors.
+Success: {0}
+Failures: {1}
+Error: {2}</value>
+  </data>
+  <data name="Msg_ErrorTitle" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Msg_InitFail" xml:space="preserve">
+    <value>Failed to initialize: {0}</value>
+  </data>
+  <data name="App_Title" xml:space="preserve">
+    <value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.0.0</value>
+  </data>
+</root>

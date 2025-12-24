@@ -9,6 +9,7 @@ using SystemOptimizer.Services;
 using System.Collections.Generic;
 using System;
 using SystemOptimizer.Helpers;
+using SystemOptimizer.Properties; // Namespace dos Resources
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 
@@ -21,7 +22,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IDialogService _dialogService;
 
     [ObservableProperty]
-    private string _applicationTitle = "Otimizador de Sistema - Criado e Idealizado por John Wiliam & IA v2.0.0";
+    private string _applicationTitle = Resources.App_Title;
 
     public ObservableCollection<TweakViewModel> PrivacyTweaks { get; } = [];
     public ObservableCollection<TweakViewModel> PerformanceTweaks { get; } = [];
@@ -63,7 +64,8 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Log($"Error during initialization: {ex.Message}", "CRITICAL");
-            await _dialogService.ShowMessageAsync("Erro", $"Falha ao iniciar: {ex.Message}");
+            // Passando DialogType.Error para ícone vermelho
+            await _dialogService.ShowMessageAsync(Resources.Msg_ErrorTitle, string.Format(Resources.Msg_InitFail, ex.Message), DialogType.Error);
         }
         finally
         {
@@ -124,7 +126,6 @@ public partial class MainViewModel : ObservableObject
         };
 
         await ProcessTweaks(list, true);
-        IsBusy = false;
     }
 
     [RelayCommand]
@@ -145,7 +146,6 @@ public partial class MainViewModel : ObservableObject
         };
 
         await ProcessTweaks(list, false);
-        IsBusy = false;
     }
 
     private async Task ProcessTweaks(IEnumerable<TweakViewModel> list, bool applying)
@@ -155,28 +155,38 @@ public partial class MainViewModel : ObservableObject
         string lastError = "";
         bool rebootNeeded = false;
 
-        await Task.Run(() =>
+        try
         {
-            foreach (var item in list.Where(x => x.IsSelected))
+            await Task.Run(() =>
             {
-                if (IsRebootRequired(item.Id)) rebootNeeded = true;
-                var result = applying ? item.Tweak.Apply() : item.Tweak.Revert();
-                if (result.Success) successCount++;
-                else { failCount++; lastError = result.Message; }
-            }
-        });
+                foreach (var item in list.Where(x => x.IsSelected))
+                {
+                    if (IsRebootRequired(item.Id)) rebootNeeded = true;
+                    var result = applying ? item.Tweak.Apply() : item.Tweak.Revert();
+                    if (result.Success) successCount++;
+                    else { failCount++; lastError = result.Message; }
+                }
+            });
 
-        foreach (var item in list) { item.IsSelected = false; item.UpdateStatusUI(); }
+            foreach (var item in list) { item.IsSelected = false; item.UpdateStatusUI(); }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
 
         if (failCount > 0)
         {
-            await _dialogService.ShowMessageAsync("Resultado", $"Concluído com erros.\nSucessos: {successCount}\nFalhas: {failCount}\nErro: {lastError}");
+            // DialogType.Warning para avisar que houve falhas parciais
+            await _dialogService.ShowMessageAsync(Resources.Msg_ResultTitle, string.Format(Resources.Msg_CompletedWithErrors, successCount, failCount, lastError), DialogType.Warning);
         }
         else if (successCount > 0)
         {
-            string msg = applying ? "Otimizações aplicadas." : "Configurações restauradas.";
-            if (rebootNeeded) msg += "\n\nREINICIE o computador.";
-            await _dialogService.ShowMessageAsync("Sucesso", msg);
+            string msg = applying ? Resources.Msg_Applied : Resources.Msg_Restored;
+            if (rebootNeeded) msg += Resources.Msg_RebootNeeded;
+            
+            // DialogType.Success para sucesso
+            await _dialogService.ShowMessageAsync(Resources.Msg_SuccessTitle, msg, DialogType.Success);
         }
     }
 
@@ -185,8 +195,14 @@ public partial class MainViewModel : ObservableObject
     {
         if (IsBusy) return;
         IsBusy = true;
-        CleanupLogs.Clear();
-        await _cleanupService.RunCleanupAsync();
-        IsBusy = false;
+        try
+        {
+            CleanupLogs.Clear();
+            await _cleanupService.RunCleanupAsync();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 }
