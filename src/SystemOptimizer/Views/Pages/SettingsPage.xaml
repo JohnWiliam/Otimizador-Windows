@@ -12,7 +12,8 @@
     <ui:DynamicScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="24">
             
-            <TextBlock Text="Geral" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,16"
+            <TextBlock Text="Geral" FontSize="20" 
+                       FontWeight="SemiBold" Margin="0,0,0,16"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
 
             <ui:CardControl Icon="DarkTheme24" Margin="0,0,0,12">
@@ -43,6 +44,22 @@
                           ItemsSource="{Binding Languages}" 
                           SelectedItem="{Binding CurrentLanguage}"
                           SelectedIndex="0"/>
+            </ui:CardControl>
+
+            <TextBlock Text="Comportamento" FontSize="20" 
+                       FontWeight="SemiBold" Margin="0,24,0,16"
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+
+            <ui:CardControl Icon="SlideHide24">
+                <ui:CardControl.Header>
+                    <StackPanel>
+                        <TextBlock Text="Persistência" FontWeight="Medium"/>
+                        <TextBlock Text="Iniciar automaticamente com o Windows (Minimizado)" 
+                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </ui:CardControl.Header>
+                
+                <ui:ToggleSwitch IsChecked="{Binding IsPersistenceEnabled}" />
             </ui:CardControl>
 
         </StackPanel>
