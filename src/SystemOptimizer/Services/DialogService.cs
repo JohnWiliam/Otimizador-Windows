@@ -49,16 +49,16 @@ public class DialogService : IDialogService
         // 2. Determina o Tema e a Cor de Fundo Base
         var currentTheme = ApplicationThemeManager.GetAppTheme();
         Color baseColor = currentTheme == ApplicationTheme.Dark 
-            ? Color.FromRgb(32, 32, 32)  // Cinza escuro para Dark Mode
-            : Color.FromRgb(248, 248, 248); // Branco gelo para Light Mode
+            ? Color.FromRgb(32, 32, 32)  
+            : Color.FromRgb(248, 248, 248);
 
-        // Cria o efeito "Fake Acrylic" (Cor sólida com transparência)
+        // Efeito "Fake Acrylic"
         var acrylicBrush = new SolidColorBrush(baseColor) { Opacity = 0.85 };
 
-        // 3. Constrói o Layout Interno (Ultra Compacto)
+        // 3. Constrói o Layout Interno
         var contentGrid = new Grid
         {
-            Margin = new Thickness(0, 5, 0, 5), // Margens internas mínimas
+            Margin = new Thickness(0, 0, 0, 10), // Pequena margem inferior para separar dos botões
             Background = Brushes.Transparent
         };
         
@@ -68,10 +68,10 @@ public class DialogService : IDialogService
         var iconControl = new SymbolIcon
         {
             Symbol = iconSymbol,
-            FontSize = 28, // Ícone ligeiramente menor
+            FontSize = 28,
             Foreground = iconColor,
             VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, 2, 12, 0)
+            Margin = new Thickness(0, 4, 16, 0) // Ajuste fino no alinhamento
         };
 
         var textStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
@@ -79,9 +79,9 @@ public class DialogService : IDialogService
         var titleBlock = new System.Windows.Controls.TextBlock
         {
             Text = title,
-            FontSize = 15, // Título compacto
+            FontSize = 16,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 3),
+            Margin = new Thickness(0, 0, 0, 4),
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] ?? Brushes.White
         };
 
@@ -89,8 +89,8 @@ public class DialogService : IDialogService
         {
             Text = message,
             TextWrapping = TextWrapping.Wrap,
-            FontSize = 13, // Texto do corpo menor
-            Opacity = 0.85,
+            FontSize = 14,
+            Opacity = 0.9,
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] ?? Brushes.White
         };
 
@@ -106,31 +106,28 @@ public class DialogService : IDialogService
         // 4. Configuração da Caixa de Diálogo
         var dialog = new ContentDialog
         {
-            Title = null, // Remove cabeçalho nativo
+            Title = null, 
             Content = contentGrid,
             CloseButtonText = "OK",
             DefaultButton = ContentDialogButton.Close,
             
-            // Dimensões Compactas
-            DialogMaxWidth = 340, 
-            DialogMaxHeight = 200, // Limita altura vertical
+            // CORREÇÃO: Aumentei a largura e REMOVI a altura máxima.
+            // Agora a caixa vai esticar verticalmente o quanto precisar para caber o texto.
+            DialogMaxWidth = 420, 
+            // DialogMaxHeight foi removido propositalmente
             
-            // Remove espaçamentos padrão do controle que incham a caixa
-            Padding = new Thickness(20, 20, 20, 15), 
+            Padding = new Thickness(24), // Espaçamento interno confortável
             
             BorderThickness = new Thickness(1),
             BorderBrush = new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
             
-            // Aplica o fundo acrílico em TUDO
             Background = acrylicBrush 
         };
 
-        // 5. TRUQUE CRÍTICO: Sobrescrever os Brushes internos do ContentDialog
-        // Isso remove o fundo branco/sólido que a biblioteca aplica automaticamente na área de conteúdo
-        // forçando-a a ser transparente para revelar nosso fundo acrílico.
+        // Sobrescreve brushes para garantir transparência total na área de conteúdo
         dialog.Resources["ContentDialogTopOverlay"] = Brushes.Transparent;
         dialog.Resources["ContentDialogContentBackground"] = Brushes.Transparent;
-        dialog.Resources["ContentDialogBackground"] = Brushes.Transparent; // Fallback
+        dialog.Resources["ContentDialogBackground"] = Brushes.Transparent;
 
         await _contentDialogService.ShowAsync(dialog, CancellationToken.None);
     }
