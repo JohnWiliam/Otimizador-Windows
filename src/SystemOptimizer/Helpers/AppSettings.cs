@@ -42,8 +42,8 @@ public static class AppSettings
     {
         try
         {
-            string dir = Path.GetDirectoryName(_configPath);
-            if (!Directory.Exists(dir))
+            
+            if (Path.GetDirectoryName(_configPath) is string dir && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }
