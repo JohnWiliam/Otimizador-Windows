@@ -55,12 +55,10 @@ public class DialogService : IDialogService
             Symbol = iconSymbol,
             FontSize = 40,
             Foreground = iconColor,
-            // CORREÇÃO: Alinhamento 'Center' garante que o ícone fique na mesma linha visual do texto
             VerticalAlignment = VerticalAlignment.Center, 
             Margin = new Thickness(0, 0, 15, 0)
         };
 
-        // Mantemos System.Windows.Controls.TextBlock explícito para evitar erro de ambiguidade
         var textBlock = new System.Windows.Controls.TextBlock
         {
             Text = message,
@@ -76,15 +74,34 @@ public class DialogService : IDialogService
         contentGrid.Children.Add(iconControl);
         contentGrid.Children.Add(textBlock);
 
+        // Configuração do Dialog para estética Mica/Moderno
         var dialog = new ContentDialog
         {
             Title = title,
             Content = contentGrid,
             CloseButtonText = "OK",
             DefaultButton = ContentDialogButton.Close,
-            DialogMaxWidth = 500
+            DialogMaxWidth = 500,
+            
+            // CORREÇÃO VISUAL: Usa a cor de controle padrão do tema com leve transparência
+            // Isso simula o efeito Mica integrado, evitando o bloco sólido opaco.
+            Background = ApplyOpacity(
+                (Brush)Application.Current.Resources["ControlFillColorDefaultBrush"] ?? new SolidColorBrush(Color.FromRgb(32, 32, 32)), 
+                0.95)
         };
 
         await _contentDialogService.ShowAsync(dialog, CancellationToken.None);
+    }
+
+    // Método auxiliar para adicionar transparência a um Brush existente
+    private Brush ApplyOpacity(Brush brush, double opacity)
+    {
+        if (brush.Clone() is Brush clone)
+        {
+            clone.Opacity = opacity;
+            if (clone.CanFreeze) clone.Freeze();
+            return clone;
+        }
+        return brush;
     }
 }
