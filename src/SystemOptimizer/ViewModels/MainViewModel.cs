@@ -9,6 +9,7 @@ using SystemOptimizer.Services;
 using System.Collections.Generic;
 using System;
 using SystemOptimizer.Helpers;
+using SystemOptimizer.Properties; // Namespace dos Resources
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 
@@ -63,7 +64,7 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Log($"Error during initialization: {ex.Message}", "CRITICAL");
-            await _dialogService.ShowMessageAsync("Erro", $"Falha ao iniciar: {ex.Message}");
+            await _dialogService.ShowMessageAsync(Resources.Msg_ErrorTitle, string.Format(Resources.Msg_InitFail, ex.Message));
         }
         finally
         {
@@ -170,13 +171,13 @@ public partial class MainViewModel : ObservableObject
 
         if (failCount > 0)
         {
-            await _dialogService.ShowMessageAsync("Resultado", $"Concluído com erros.\nSucessos: {successCount}\nFalhas: {failCount}\nErro: {lastError}");
+            await _dialogService.ShowMessageAsync(Resources.Msg_ResultTitle, string.Format(Resources.Msg_CompletedWithErrors, successCount, failCount, lastError));
         }
         else if (successCount > 0)
         {
-            string msg = applying ? "Otimizações aplicadas." : "Configurações restauradas.";
-            if (rebootNeeded) msg += "\n\nREINICIE o computador.";
-            await _dialogService.ShowMessageAsync("Sucesso", msg);
+            string msg = applying ? Resources.Msg_Applied : Resources.Msg_Restored;
+            if (rebootNeeded) msg += Resources.Msg_RebootNeeded;
+            await _dialogService.ShowMessageAsync(Resources.Msg_SuccessTitle, msg);
         }
     }
 
