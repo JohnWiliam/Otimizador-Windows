@@ -46,49 +46,51 @@ public class DialogService : IDialogService
                 break;
         }
 
-        // 2. Constrói o Layout Interno (Compacto)
+        // 2. Determina o Tema e a Cor de Fundo Base
+        var currentTheme = ApplicationThemeManager.GetAppTheme();
+        Color baseColor = currentTheme == ApplicationTheme.Dark 
+            ? Color.FromRgb(32, 32, 32)  // Cinza escuro para Dark Mode
+            : Color.FromRgb(248, 248, 248); // Branco gelo para Light Mode
+
+        // Cria o efeito "Fake Acrylic" (Cor sólida com transparência)
+        var acrylicBrush = new SolidColorBrush(baseColor) { Opacity = 0.85 };
+
+        // 3. Constrói o Layout Interno (Ultra Compacto)
         var contentGrid = new Grid
         {
-            Margin = new Thickness(0), // Sem margens externas extras
+            Margin = new Thickness(0, 5, 0, 5), // Margens internas mínimas
             Background = Brushes.Transparent
         };
         
         contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-        // Ícone (Tamanho reduzido para 32 para ficar proporcional)
         var iconControl = new SymbolIcon
         {
             Symbol = iconSymbol,
-            FontSize = 32,
+            FontSize = 28, // Ícone ligeiramente menor
             Foreground = iconColor,
-            VerticalAlignment = VerticalAlignment.Center, // Centralizado com o bloco de texto
-            Margin = new Thickness(0, 0, 12, 0)
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, 2, 12, 0)
         };
 
-        // StackPanel para Título e Mensagem juntos
-        var textStack = new StackPanel
-        {
-            VerticalAlignment = VerticalAlignment.Center
-        };
+        var textStack = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
 
-        // Título (Manual)
         var titleBlock = new System.Windows.Controls.TextBlock
         {
             Text = title,
-            FontSize = 16,
+            FontSize = 15, // Título compacto
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 2),
+            Margin = new Thickness(0, 0, 0, 3),
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] ?? Brushes.White
         };
 
-        // Mensagem (Tamanho 13 para ser mais delicado)
         var messageBlock = new System.Windows.Controls.TextBlock
         {
             Text = message,
             TextWrapping = TextWrapping.Wrap,
-            FontSize = 13,
-            Opacity = 0.9, // Leve transparência para hierarquia visual
+            FontSize = 13, // Texto do corpo menor
+            Opacity = 0.85,
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] ?? Brushes.White
         };
 
@@ -101,27 +103,34 @@ public class DialogService : IDialogService
         contentGrid.Children.Add(iconControl);
         contentGrid.Children.Add(textStack);
 
-        // 3. Fundo "Acrílico" Uniforme
-        var currentTheme = ApplicationThemeManager.GetAppTheme();
-        Color baseColor = currentTheme == ApplicationTheme.Dark 
-            ? Color.FromRgb(30, 30, 30) 
-            : Color.FromRgb(250, 250, 250);
-
-        var acrylicBrush = new SolidColorBrush(baseColor) { Opacity = 0.85 };
-
         // 4. Configuração da Caixa de Diálogo
         var dialog = new ContentDialog
         {
-            Title = null, // IMPORTANTE: Remove o cabeçalho nativo para evitar o fundo branco
+            Title = null, // Remove cabeçalho nativo
             Content = contentGrid,
             CloseButtonText = "OK",
             DefaultButton = ContentDialogButton.Close,
-            DialogMaxWidth = 400, // Tamanho reduzido (antes era 500 ou padrão)
-            Padding = new Thickness(20), // Padding interno balanceado
+            
+            // Dimensões Compactas
+            DialogMaxWidth = 340, 
+            DialogMaxHeight = 200, // Limita altura vertical
+            
+            // Remove espaçamentos padrão do controle que incham a caixa
+            Padding = new Thickness(20, 20, 20, 15), 
+            
             BorderThickness = new Thickness(1),
-            BorderBrush = new SolidColorBrush(Color.FromArgb(30, 128, 128, 128)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
+            
+            // Aplica o fundo acrílico em TUDO
             Background = acrylicBrush 
         };
+
+        // 5. TRUQUE CRÍTICO: Sobrescrever os Brushes internos do ContentDialog
+        // Isso remove o fundo branco/sólido que a biblioteca aplica automaticamente na área de conteúdo
+        // forçando-a a ser transparente para revelar nosso fundo acrílico.
+        dialog.Resources["ContentDialogTopOverlay"] = Brushes.Transparent;
+        dialog.Resources["ContentDialogContentBackground"] = Brushes.Transparent;
+        dialog.Resources["ContentDialogBackground"] = Brushes.Transparent; // Fallback
 
         await _contentDialogService.ShowAsync(dialog, CancellationToken.None);
     }
