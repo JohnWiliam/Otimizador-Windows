@@ -137,5 +137,40 @@ namespace SystemOptimizer.Properties {
         public static string Nav_Cleanup => ResourceManager.GetString("Nav_Cleanup", resourceCulture);
         public static string Status_Applying => ResourceManager.GetString("Status_Applying", resourceCulture);
         public static string Status_Loading => ResourceManager.GetString("Status_Loading", resourceCulture);
+        
+        // Novas propriedades adicionadas agora
+        public static string Btn_Apply => ResourceManager.GetString("Btn_Apply", resourceCulture);
+        public static string Btn_Restore => ResourceManager.GetString("Btn_Restore", resourceCulture);
+        public static string Btn_RunCleanup => ResourceManager.GetString("Btn_RunCleanup", resourceCulture);
+        
+        public static string Status_Optimized => ResourceManager.GetString("Status_Optimized", resourceCulture);
+        public static string Status_Default => ResourceManager.GetString("Status_Default", resourceCulture);
+        public static string Status_Modified => ResourceManager.GetString("Status_Modified", resourceCulture);
+        public static string Status_Unknown => ResourceManager.GetString("Status_Unknown", resourceCulture);
+        public static string Status_Undefined => ResourceManager.GetString("Status_Undefined", resourceCulture);
+
+        public static string Cleanup_Title => ResourceManager.GetString("Cleanup_Title", resourceCulture);
+        public static string Cleanup_CacheTitle => ResourceManager.GetString("Cleanup_CacheTitle", resourceCulture);
+        public static string Cleanup_CacheDesc => ResourceManager.GetString("Cleanup_CacheDesc", resourceCulture);
+        public static string Cleanup_LogTitle => ResourceManager.GetString("Cleanup_LogTitle", resourceCulture);
+
+        public static string Log_Starting => ResourceManager.GetString("Log_Starting", resourceCulture);
+        public static string Log_Finished => ResourceManager.GetString("Log_Finished", resourceCulture);
+        public static string Log_DNS => ResourceManager.GetString("Log_DNS", resourceCulture);
+        public static string Log_Removed => ResourceManager.GetString("Log_Removed", resourceCulture);
+        public static string Log_Clean => ResourceManager.GetString("Log_Clean", resourceCulture);
+        public static string Log_WUServicesStopped => ResourceManager.GetString("Log_WUServicesStopped", resourceCulture);
+        public static string Log_WUServicesRestarted => ResourceManager.GetString("Log_WUServicesRestarted", resourceCulture);
+        public static string Log_WUError => ResourceManager.GetString("Log_WUError", resourceCulture);
+        public static string Log_WUFailStop => ResourceManager.GetString("Log_WUFailStop", resourceCulture);
+
+        public static string Msg_SuccessTitle => ResourceManager.GetString("Msg_SuccessTitle", resourceCulture);
+        public static string Msg_ResultTitle => ResourceManager.GetString("Msg_ResultTitle", resourceCulture);
+        public static string Msg_Applied => ResourceManager.GetString("Msg_Applied", resourceCulture);
+        public static string Msg_Restored => ResourceManager.GetString("Msg_Restored", resourceCulture);
+        public static string Msg_RebootNeeded => ResourceManager.GetString("Msg_RebootNeeded", resourceCulture);
+        public static string Msg_CompletedWithErrors => ResourceManager.GetString("Msg_CompletedWithErrors", resourceCulture);
+        public static string Msg_ErrorTitle => ResourceManager.GetString("Msg_ErrorTitle", resourceCulture);
+        public static string Msg_InitFail => ResourceManager.GetString("Msg_InitFail", resourceCulture);
     }
 }
