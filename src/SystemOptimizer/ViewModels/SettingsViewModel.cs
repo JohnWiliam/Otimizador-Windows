@@ -4,7 +4,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using SystemOptimizer.Helpers;
+using SystemOptimizer.Services;
 using Wpf.Ui.Appearance;
 
 namespace SystemOptimizer.ViewModels;
@@ -14,6 +16,9 @@ public record ThemeOption(string Name, ApplicationTheme Theme);
 
 public partial class SettingsViewModel : ObservableObject
 {
+    // --- Dependências ---
+    private readonly TweakService _tweakService;
+
     // --- Constantes para Persistência ---
     private const string TaskName = "SystemOptimizer_AutoRun";
     private readonly string _appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "SystemOptimizer");
@@ -39,8 +44,11 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isPersistenceEnabled;
 
-    public SettingsViewModel()
+    // Construtor atualizado com Injeção de Dependência
+    public SettingsViewModel(TweakService tweakService)
     {
+        _tweakService = tweakService;
+
         // Define o caminho do executável de destino
         _targetExePath = Path.Combine(_appDataPath, "SystemOptimizer.exe");
 
@@ -95,14 +103,14 @@ public partial class SettingsViewModel : ObservableObject
                       !res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) &&
                       !res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase);
         
-        // CORREÇÃO: Suprimimos o aviso MVVMTK0034 porque queremos atualizar a UI 
-        // sem disparar o evento OnIsPersistenceEnabledChanged (para evitar loops).
+        // CORREÇÃO: Suprimimos o aviso MVVMTK0034 para atualizar a UI sem disparar o evento
 #pragma warning disable MVVMTK0034
         SetProperty(ref _isPersistenceEnabled, exists, nameof(IsPersistenceEnabled));
 #pragma warning restore MVVMTK0034
     }
 
-    private void EnablePersistence()
+    // Transformado em async void para permitir aguardar a verificação de status
+    private async void EnablePersistence()
     {
         try
         {
@@ -116,7 +124,16 @@ public partial class SettingsViewModel : ObservableObject
             // 2. Copiar executável
             File.Copy(currentExe, _targetExePath, true);
 
-            // 3. Criar a tarefa agendada
+            // 3. Salvar o estado atual dos tweaks (Snapshot)
+            if (_tweakService.Tweaks.Count == 0) 
+                _tweakService.LoadTweaks();
+
+            // Atualiza status real para garantir que salvamos apenas o que está aplicado
+            await _tweakService.RefreshStatusesAsync();
+            
+            TweakPersistence.SaveState(_tweakService.Tweaks);
+
+            // 4. Criar a tarefa agendada
             string cmd = $"/create /tn \"{TaskName}\" /tr \"\\\"{_targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
             var res = CommandHelper.RunCommand("schtasks", cmd);
 
@@ -126,13 +143,13 @@ public partial class SettingsViewModel : ObservableObject
                 throw new Exception("Falha ao criar tarefa agendada: " + res);
             }
             
-            Logger.Log("Persistência ativada com sucesso.");
+            Logger.Log("Persistência ativada e configurações salvas com sucesso.");
         }
         catch (Exception ex)
         {
             Logger.Log($"Erro ao habilitar persistência: {ex.Message}", "ERROR");
             
-            // CORREÇÃO: Reverte o switch visualmente sem disparar a lógica de desativação novamente.
+            // Reverte o switch visualmente
 #pragma warning disable MVVMTK0034
             SetProperty(ref _isPersistenceEnabled, false, nameof(IsPersistenceEnabled));
 #pragma warning restore MVVMTK0034
