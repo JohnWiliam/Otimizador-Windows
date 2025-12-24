@@ -20,7 +20,6 @@ public class DialogService : IDialogService
 
     public async Task ShowMessageAsync(string title, string message, DialogType type = DialogType.Info)
     {
-        // Define o ícone e a cor baseados no tipo de mensagem
         SymbolRegular iconSymbol = SymbolRegular.Info24;
         Brush iconColor = Brushes.White;
 
@@ -28,25 +27,28 @@ public class DialogService : IDialogService
         {
             case DialogType.Success:
                 iconSymbol = SymbolRegular.CheckmarkCircle24;
-                iconColor = new SolidColorBrush(Color.FromRgb(0x10, 0x7C, 0x10)); // Verde
+                iconColor = new SolidColorBrush(Color.FromRgb(0x10, 0x7C, 0x10)); 
                 break;
             case DialogType.Warning:
                 iconSymbol = SymbolRegular.Warning24;
-                iconColor = new SolidColorBrush(Color.FromRgb(0xD8, 0x3B, 0x01)); // Laranja
+                iconColor = new SolidColorBrush(Color.FromRgb(0xD8, 0x3B, 0x01)); 
                 break;
             case DialogType.Error:
                 iconSymbol = SymbolRegular.DismissCircle24;
-                iconColor = new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23)); // Vermelho
+                iconColor = new SolidColorBrush(Color.FromRgb(0xE8, 0x11, 0x23)); 
                 break;
             case DialogType.Info:
             default:
                 iconSymbol = SymbolRegular.Info24;
-                iconColor = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD7)); // Azul
+                iconColor = new SolidColorBrush(Color.FromRgb(0x00, 0x78, 0xD7)); 
                 break;
         }
 
-        // Constrói o layout visual
-        var contentGrid = new Grid { Margin = new Thickness(0, 10, 0, 0) };
+        var contentGrid = new Grid 
+        { 
+            Margin = new Thickness(0, 10, 0, 0),
+            Background = Brushes.Transparent // Garante que o grid não bloqueie o fundo acrílico
+        };
         contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         contentGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
@@ -55,7 +57,7 @@ public class DialogService : IDialogService
             Symbol = iconSymbol,
             FontSize = 40,
             Foreground = iconColor,
-            VerticalAlignment = VerticalAlignment.Center, 
+            VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(0, 0, 15, 0)
         };
 
@@ -74,7 +76,13 @@ public class DialogService : IDialogService
         contentGrid.Children.Add(iconControl);
         contentGrid.Children.Add(textBlock);
 
-        // Configuração do Dialog para estética Mica/Moderno
+        // CORREÇÃO: "Efeito Acrílico Fake"
+        // Pegamos a cor de fundo padrão da janela (geralmente cinza escuro ou claro)
+        // e aplicamos uma opacidade mais forte (0.75).
+        // Isso cria um visual de "vidro fumê" uniforme em toda a caixa.
+        var baseBrush = (Brush)Application.Current.Resources["ApplicationBackgroundBrush"] 
+                        ?? new SolidColorBrush(Color.FromRgb(32, 32, 32));
+
         var dialog = new ContentDialog
         {
             Title = title,
@@ -82,18 +90,14 @@ public class DialogService : IDialogService
             CloseButtonText = "OK",
             DefaultButton = ContentDialogButton.Close,
             DialogMaxWidth = 500,
-            
-            // CORREÇÃO VISUAL: Usa a cor de controle padrão do tema com leve transparência
-            // Isso simula o efeito Mica integrado, evitando o bloco sólido opaco.
-            Background = ApplyOpacity(
-                (Brush)Application.Current.Resources["ControlFillColorDefaultBrush"] ?? new SolidColorBrush(Color.FromRgb(32, 32, 32)), 
-                0.95)
+            BorderThickness = new Thickness(1), // Borda fina para definição
+            BorderBrush = new SolidColorBrush(Color.FromArgb(40, 255, 255, 255)), // Borda sutil
+            Background = ApplyOpacity(baseBrush, 0.75) // 75% opaco = efeito translúcido
         };
 
         await _contentDialogService.ShowAsync(dialog, CancellationToken.None);
     }
 
-    // Método auxiliar para adicionar transparência a um Brush existente
     private Brush ApplyOpacity(Brush brush, double opacity)
     {
         if (brush.Clone() is Brush clone)
