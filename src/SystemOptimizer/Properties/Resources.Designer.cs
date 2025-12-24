@@ -126,5 +126,16 @@ namespace SystemOptimizer.Properties {
         public static string Theme_Dark => ResourceManager.GetString("Theme_Dark", resourceCulture);
         public static string Msg_RestartRequired => ResourceManager.GetString("Msg_RestartRequired", resourceCulture);
         public static string Msg_RestartTitle => ResourceManager.GetString("Msg_RestartTitle", resourceCulture);
+
+        // Propriedades adicionadas manualmente para corrigir erro MC3011
+        public static string Nav_Privacy => ResourceManager.GetString("Nav_Privacy", resourceCulture);
+        public static string Nav_Performance => ResourceManager.GetString("Nav_Performance", resourceCulture);
+        public static string Nav_Network => ResourceManager.GetString("Nav_Network", resourceCulture);
+        public static string Nav_Security => ResourceManager.GetString("Nav_Security", resourceCulture);
+        public static string Nav_Visual => ResourceManager.GetString("Nav_Visual", resourceCulture);
+        public static string Nav_Tweaks => ResourceManager.GetString("Nav_Tweaks", resourceCulture);
+        public static string Nav_Cleanup => ResourceManager.GetString("Nav_Cleanup", resourceCulture);
+        public static string Status_Applying => ResourceManager.GetString("Status_Applying", resourceCulture);
+        public static string Status_Loading => ResourceManager.GetString("Status_Loading", resourceCulture);
     }
 }
