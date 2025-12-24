@@ -8,6 +8,7 @@ using SystemOptimizer.Helpers;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
+using SystemOptimizer.Properties;
 
 namespace SystemOptimizer.Services;
 
@@ -42,18 +43,18 @@ public class TweakService
 
     private void AddPrivacyTweaks()
     {
-         Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, "Desativar Telemetria", "Impede o envio de dados diagnósticos para a Microsoft.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, "DELETE"));
-        Tweaks.Add(new RegistryTweak("P2", TweakCategory.Privacy, "Desativar DiagTrack", "Desabilita o serviço de Experiência do Usuário Conectado.", @"HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack", "Start", 4, 2));
-        Tweaks.Add(new RegistryTweak("P3", TweakCategory.Privacy, "Desativar Cortana", "Bloqueia o assistente de voz legado e pesquisa web.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0, "DELETE"));
-        Tweaks.Add(new RegistryTweak("P4", TweakCategory.Privacy, "Desativar ID de Anúncio", "Impede rastreamento comercial entre aplicativos.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, "DELETE"));
-        Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, "Desativar Geolocalização", "Bloqueia o rastreamento de localização global do OS.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, "DELETE"));
-        Tweaks.Add(new RegistryTweak("P6", TweakCategory.Privacy, "Desativar Dicas do Windows", "Remove sugestões 'irritantes' no Menu Iniciar.", @"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338393Enabled", 0, 1));
-        Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, "Desativar Dados OOBE", "Privacidade durante a configuração inicial do sistema.", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, "DELETE"));
+         Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, Resources.P1_Title, Resources.P1_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P2", TweakCategory.Privacy, Resources.P2_Title, Resources.P2_Desc, @"HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack", "Start", 4, 2));
+        Tweaks.Add(new RegistryTweak("P3", TweakCategory.Privacy, Resources.P3_Title, Resources.P3_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P4", TweakCategory.Privacy, Resources.P4_Title, Resources.P4_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, Resources.P5_Title, Resources.P5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P6", TweakCategory.Privacy, Resources.P6_Title, Resources.P6_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338393Enabled", 0, 1));
+        Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, Resources.P7_Title, Resources.P7_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, "DELETE"));
     }
 
     private void AddPerformanceTweaks()
     {
-         Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, "Plano de Energia Ultimate", "Força o plano de desempenho máximo (Ultimate/High).",
+         Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, Resources.PF1_Title, Resources.PF1_Desc,
             () => {
                 var list = CommandHelper.RunCommand("powercfg", "/list");
                 string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
@@ -67,7 +68,7 @@ public class TweakService
             () => { var res = CommandHelper.RunCommand("powercfg", "/getactivescheme"); return res.Contains("e9a42b02") || res.Contains("8c5e7fda"); }
         ));
 
-        Tweaks.Add(new CustomTweak("PF2", TweakCategory.Performance, "Desativar GameDVR", "Remove gravação em segundo plano (Aumenta FPS).",
+        Tweaks.Add(new CustomTweak("PF2", TweakCategory.Performance, Resources.PF2_Title, Resources.PF2_Desc,
             () => {
                 Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", 0, RegistryValueKind.DWord);
                 using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", true)) { key.SetValue("AllowGameDVR", 0, RegistryValueKind.DWord); }
@@ -85,7 +86,7 @@ public class TweakService
             }
         ));
 
-        Tweaks.Add(new CustomTweak("PF3", TweakCategory.Performance, "Input Mouse 1:1", "Remove aprimoramento de precisão (Aceleração).",
+        Tweaks.Add(new CustomTweak("PF3", TweakCategory.Performance, Resources.PF3_Title, Resources.PF3_Desc,
             () => {
                 Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", "0", RegistryValueKind.String);
                 Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold1", "0", RegistryValueKind.String);
@@ -96,20 +97,20 @@ public class TweakService
             () => { var val = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", null); return val != null && val.ToString() == "0"; }
         ));
 
-        Tweaks.Add(new RegistryTweak("PF5", TweakCategory.Performance, "Prioridade de CPU", "Ajusta prioridade para Programas vs Serviços (26 hex).",
+        Tweaks.Add(new RegistryTweak("PF5", TweakCategory.Performance, Resources.PF5_Title, Resources.PF5_Desc,
             @"HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl", "Win32PrioritySeparation", 38, 2));
-        Tweaks.Add(new RegistryTweak("PF6", TweakCategory.Performance, "Throttling de Rede", "Remove limite de processamento de pacotes (Index FFFFFF).",
+        Tweaks.Add(new RegistryTweak("PF6", TweakCategory.Performance, Resources.PF6_Title, Resources.PF6_Desc,
             @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", "NetworkThrottlingIndex", -1, 10));
-        Tweaks.Add(new RegistryTweak("PF7", TweakCategory.Performance, "Agendamento GPU", "Habilita agendamento acelerado por hardware (Requer Reinício).",
+        Tweaks.Add(new RegistryTweak("PF7", TweakCategory.Performance, Resources.PF7_Title, Resources.PF7_Desc,
             @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1));
 
-        Tweaks.Add(new CustomTweak("PF8", TweakCategory.Performance, "Desativar VBS / HVCI", "Aumenta FPS, mas reduz a segurança do sistema (REQUER REINÍCIO).",
+        Tweaks.Add(new CustomTweak("PF8", TweakCategory.Performance, Resources.PF8_Title, Resources.PF8_Desc,
             () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 0, RegistryValueKind.DWord); } return true; },
             () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 1, RegistryValueKind.DWord); } return true; },
             () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", -1); return val is int i && i == 0; }
         ));
 
-        Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, "Desativar Hibernação", "Libera GBs de espaço em disco (Remove hiberfil.sys).",
+        Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, Resources.PF9_Title, Resources.PF9_Desc,
             () => { CommandHelper.RunCommand("powercfg", "/hibernate off"); return true; },
             () => { CommandHelper.RunCommand("powercfg", "/hibernate on"); return true; },
             () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled", -1); return val is int i && i == 0; }
@@ -118,13 +119,13 @@ public class TweakService
 
     private void AddNetworkTweaks()
     {
-        Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, "TCP Auto-Tuning", "Janela TCP Dinâmica (Essencial para >100Mbps).",
+        Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, Resources.N1_Title, Resources.N1_Desc,
             () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
             () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).AutoTuningLevelLocal").Trim(); return res.Equals("Normal", StringComparison.OrdinalIgnoreCase); }
         ));
 
-        Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, "Algoritmo CUBIC", "Gestão moderna de congestionamento para alta velocidade.",
+        Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, Resources.N2_Title, Resources.N2_Desc,
             () => {
                 var res = CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=cubic");
                 if (res.Contains("falha") || res.Contains("failed")) CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
@@ -134,38 +135,38 @@ public class TweakService
             () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).CongestionProvider").Trim().ToUpper(); return res == "CUBIC" || res == "CTCP"; }
         ));
 
-        Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, "Ativar ECN", "Notificação Explícita de Congestionamento (Menos Perda).",
+        Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, Resources.N3_Title, Resources.N3_Desc,
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
             () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).EcnCapability").Trim(); return res.Equals("Enabled", StringComparison.OrdinalIgnoreCase); }
         ));
 
-        Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, "Desativar RSS", "Receive Side Scaling (Teste de estabilidade/driver).",
+        Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, Resources.N4_Title, Resources.N4_Desc,
             () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled"); return true; },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
             () => { var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower(); return res.Contains("rss") && (res.Contains("disabled") || res.Contains("desabilitado")); }
         ));
 
-        Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, "Desativar QoS Limit", "Remove reserva de banda (Packet Scheduler).", @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, "DELETE"));
+        Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, Resources.N5_Title, Resources.N5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, "DELETE"));
     }
 
     private void AddSecurityTweaks()
     {
-        Tweaks.Add(new RegistryTweak("S1", TweakCategory.Security, "Mostrar Extensões", "Segurança: Exibe extensões reais (.exe, .bat).", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0, 1));
-        Tweaks.Add(new RegistryTweak("S2", TweakCategory.Security, "Desativar AutoRun", "Segurança: Bloqueia execução automática de USB.", @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDriveTypeAutoRun", 255, "DELETE"));
+        Tweaks.Add(new RegistryTweak("S1", TweakCategory.Security, Resources.S1_Title, Resources.S1_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0, 1));
+        Tweaks.Add(new RegistryTweak("S2", TweakCategory.Security, Resources.S2_Title, Resources.S2_Desc, @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDriveTypeAutoRun", 255, "DELETE"));
     }
 
     private void AddAppearanceTweaks()
     {
-        Tweaks.Add(new RegistryTweak("A1", TweakCategory.Appearance, "Desativar Transparência", "Aumenta a resposta da UI removendo Acrylic/Mica.", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 0, 1));
-        Tweaks.Add(new RegistryTweak("A2", TweakCategory.Appearance, "Modo Escuro", "Força tema escuro para aplicativos.", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0, 1));
-        Tweaks.Add(new RegistryTweak("A3", TweakCategory.Appearance, "Efeitos Visuais", "Ajusta para 'Melhor Desempenho' (Parcial).", @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting", 2, 3));
+        Tweaks.Add(new RegistryTweak("A1", TweakCategory.Appearance, Resources.A1_Title, Resources.A1_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 0, 1));
+        Tweaks.Add(new RegistryTweak("A2", TweakCategory.Appearance, Resources.A2_Title, Resources.A2_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 0, 1));
+        Tweaks.Add(new RegistryTweak("A3", TweakCategory.Appearance, Resources.A3_Title, Resources.A3_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting", 2, 3));
     }
 
     private void AddCustomTweaks()
     {
         // SE1: SysMain
-        Tweaks.Add(new CustomTweak("SE1", TweakCategory.Tweaks, "Desativar SysMain", "Otimiza uso de disco para SSDs (Superfetch).",
+        Tweaks.Add(new CustomTweak("SE1", TweakCategory.Tweaks, Resources.SE1_Title, Resources.SE1_Desc,
             () => {
                 CommandHelper.RunCommand("sc", "config SysMain start= disabled");
                 CommandHelper.RunCommandNoWait("sc", "stop SysMain");
@@ -180,7 +181,7 @@ public class TweakService
         ));
 
         // SE2: Prefetch
-        Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, "Desativar Prefetch", "Impede criação de rastros de inicialização (RegWrite).",
+        Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, Resources.SE2_Title, Resources.SE2_Desc,
             @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
         
         // O Tweak SE3 (Persistência) foi removido daqui e movido para SettingsViewModel

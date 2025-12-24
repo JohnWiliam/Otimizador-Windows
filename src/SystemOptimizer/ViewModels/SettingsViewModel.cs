@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using SystemOptimizer.Helpers;
+using SystemOptimizer.Properties;
 using SystemOptimizer.Services;
 using Wpf.Ui.Appearance;
 
@@ -29,16 +31,16 @@ public partial class SettingsViewModel : ObservableObject
     private readonly string _startMenuShortcutPath;
 
     [ObservableProperty]
-    private string _currentLanguage = "Português";
+    private string _currentLanguage;
 
-    public ObservableCollection<string> Languages { get; } = ["Português"];
+    public ObservableCollection<string> Languages { get; } = ["Português", "English"];
 
     // Lista de opções de tema para o ComboBox
     public ObservableCollection<ThemeOption> ThemeOptions { get; } = 
     [
-        new("Padrão do Sistema", ApplicationTheme.Unknown),
-        new("Claro", ApplicationTheme.Light),
-        new("Escuro", ApplicationTheme.Dark)
+        new(Resources.Theme_System, ApplicationTheme.Unknown),
+        new(Resources.Theme_Light, ApplicationTheme.Light),
+        new(Resources.Theme_Dark, ApplicationTheme.Dark)
     ];
 
     [ObservableProperty]
@@ -56,6 +58,9 @@ public partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(TweakService tweakService)
     {
         _tweakService = tweakService;
+
+        // Inicializa o idioma atual com base na configuração carregada
+        _currentLanguage = AppSettings.Current.Language == "en-US" ? "English" : "Português";
 
         // Define o caminho do executável de destino (C:\ProgramData\SystemOptimizer\SystemOptimizer.exe)
         _targetExePath = Path.Combine(_appDataPath, "SystemOptimizer.exe");
@@ -76,6 +81,31 @@ public partial class SettingsViewModel : ObservableObject
         // Verifica o estado atual das funcionalidades ao abrir
         CheckPersistenceStatus();
         CheckKeepInstalledStatus();
+    }
+
+    // Chamado quando a linguagem muda
+    partial void OnCurrentLanguageChanged(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return;
+
+        string cultureCode = value == "English" ? "en-US" : "pt-BR";
+
+        // Se a cultura for diferente da salva, salva e avisa
+        if (AppSettings.Current.Language != cultureCode)
+        {
+            AppSettings.Current.Language = cultureCode;
+            AppSettings.Save();
+
+            // Mensagem de reinício necessário
+            var result = MessageBox.Show(Resources.Msg_RestartRequired, Resources.Msg_RestartTitle, MessageBoxButton.YesNo, MessageBoxImage.Information);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                // Reinicia a aplicação
+                Process.Start(Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty);
+                Application.Current.Shutdown();
+            }
+        }
     }
 
     // Este método é chamado automaticamente sempre que o usuário muda a seleção no ComboBox
