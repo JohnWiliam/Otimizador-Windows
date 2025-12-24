@@ -1,5 +1,33 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/JohnWiliam/Otimizador-Windows/total?color=green&logo=github)](https://github.com/JohnWiliam/Otimizador-Windows/releases/)
 
+**🚀 Otimizador de Sistema v2.0.0**
+
+Esta é a maior atualização da história do projeto, marcando uma reescrita completa da arquitetura para tecnologias de ponta e introduzindo um painel de controlo centralizado.
+
+**✨ O Que Há de Novo?**
+
+* **🏗️ Salto Tecnológico (Refatoração Core)**
+>
+> O motor da aplicação foi completamente atualizado para garantir o máximo desempenho e compatibilidade futura.
+>
+> * **.NET 10 & C# 14:** Migração completa do código base para o **.NET 10** utilizando as sintaxes mais modernas do **C# 14**. Isso resulta numa aplicação mais leve, rápida e com gestão de memória superior.
+> * **WPF-UI 4.1:** Adoção da versão mais recente da biblioteca gráfica, trazendo componentes **Fluent Design** nativos, animações mais fluidas e melhor suporte a resoluções altas (DPI Awareness).
+
+* **⚙️ Nova Página de Configurações**
+>
+> Implementação de uma aba dedicada (`SettingsPage.xaml`) para gerir o comportamento da aplicação, centralizando preferências que antes estavam dispersas.
+>
+> * **📌 Funcionalidade "Manter Instalado":** Agora é possível transformar o executável portátil numa "instalação" fixa com um clique.
+>    * *Como funciona:* O sistema copia automaticamente o executável para `ProgramData` e gera atalhos inteligentes na Área de Trabalho e Menu Iniciar, sem depender de instaladores externos.
+> * **🌗 Gestor de Temas Dedicado:** Além da deteção automática, agora pode forçar manualmente os temas **Claro**, **Escuro** ou seguir o **Padrão do Sistema** diretamente pela interface.
+> * **🚀 Persistência Simplificada:** O controlo para iniciar com o Windows foi movido para esta aba, permitindo ativar o "Modo Silencioso" no login através de um *Toggle Switch* intuitivo.
+
+* **🛠️ Melhorias de Código e Projeto**
+>
+> * **Zero Dependências COM:** A criação de atalhos foi reescrita para não depender de bibliotecas legadas (WScript), utilizando chamadas diretas de PowerShell para maior compatibilidade e segurança.
+> * **Arquitetura MVVM Pura:** Refatoração profunda nos `ViewModels` (especialmente `SettingsViewModel`), utilizando `ObservableProperty` e Injeção de Dependência para um código mais limpo e testável.
+>
+---
 **🚀 Otimizador de Sistema v1.2.0**
 
 Esta atualização foca na experiência visual e integração com o sistema, trazendo o tão aguardado suporte nativo ao Modo Escuro.
