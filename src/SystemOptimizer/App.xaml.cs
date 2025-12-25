@@ -10,6 +10,7 @@ using SystemOptimizer.ViewModels;
 using SystemOptimizer.Views.Pages;
 using SystemOptimizer.Helpers;
 using Wpf.Ui;
+using System; // Necessário para AppContext
 
 namespace SystemOptimizer;
 
@@ -18,15 +19,14 @@ namespace SystemOptimizer;
 /// </summary>
 public partial class App : Application
 {
-    // The.NET Generic Host provides dependency injection, configuration, logging, and other services.
+    // O Host Genérico fornece injeção de dependência, configuração, logging, etc.
     private static readonly IHost _host = Host
         .CreateDefaultBuilder()
-        .ConfigureAppConfiguration(c => { c.SetBasePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!); })
+        // CORREÇÃO CRÍTICA: Usar AppContext.BaseDirectory em vez de Assembly.Location
+        // Isso impede o erro de inicialização em builds de Arquivo Único (Single File)
+        .ConfigureAppConfiguration(c => { c.SetBasePath(AppContext.BaseDirectory); })
         .ConfigureServices((context, services) =>
         {
-            // Remover ApplicationHostService pois não está presente no projeto
-            // services.AddHostedService<ApplicationHostService>();
-
             // Main window container with navigation
             services.AddSingleton<MainWindow>();
             services.AddSingleton<MainViewModel>();
@@ -40,9 +40,9 @@ public partial class App : Application
             services.AddSingleton<TweakService>();
             services.AddSingleton<CleanupService>();
             
-            // --- NOVO: Search Fix Services ---
+            // --- Serviços da Correção de Pesquisa ---
             services.AddSingleton<SearchRegistryService>();
-            // ---------------------------------
+            // ----------------------------------------
 
             // Views and ViewModels
             services.AddSingleton<PrivacyPage>();
@@ -54,10 +54,10 @@ public partial class App : Application
             services.AddSingleton<CleanupPage>();
             services.AddSingleton<SettingsPage>();
             
-            // --- NOVO: Search Fix View & ViewModel ---
+            // --- Página da Correção de Pesquisa ---
             services.AddSingleton<SearchFixPage>();
             services.AddSingleton<SearchFixViewModel>();
-            // -----------------------------------------
+            // --------------------------------------
 
             services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<TweakViewModel>();
@@ -66,8 +66,6 @@ public partial class App : Application
     /// <summary>
     /// Gets registered service.
     /// </summary>
-    /// <typeparam name="T">Type of the service to get.</typeparam>
-    /// <returns>Instance of the service or <see langword="null"/>.</returns>
     public static T GetService<T>()
         where T : class
     {
@@ -77,7 +75,6 @@ public partial class App : Application
     /// <summary>
     /// Occurs when the application is loading.
     /// </summary>
-    // CORREÇÃO: Usamos 'protected override' em vez de 'private' para garantir a execução
     protected override async void OnStartup(StartupEventArgs e)
     {
         await _host.StartAsync();
@@ -92,7 +89,6 @@ public partial class App : Application
     /// <summary>
     /// Occurs when the application is closing.
     /// </summary>
-    // CORREÇÃO: Usamos 'protected override' para garantir o encerramento correto do Host
     protected override async void OnExit(ExitEventArgs e)
     {
         await _host.StopAsync();
@@ -101,11 +97,8 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    /// <summary>
-    /// Occurs when an exception is thrown by an application but not handled.
-    /// </summary>
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        // For more info see https://docs.microsoft.com/en-us/dotnet/api/system.windows.application.dispatcherunhandledexception?view=netcore-3.0
+        // Tratamento global de erros (opcional)
     }
 }
