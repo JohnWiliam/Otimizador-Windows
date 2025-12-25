@@ -1,159 +1,105 @@
-using System;
 using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Reflection;
 using System.Windows;
+using System.Windows.Threading;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
-using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
-using SystemOptimizer.Properties;
+using SystemOptimizer.Helpers;
 using Wpf.Ui;
-using Wpf.Ui.Abstractions; 
 
 namespace SystemOptimizer;
 
+/// <summary>
+/// Interaction logic for App.xaml
+/// </summary>
 public partial class App : Application
 {
-    private readonly IHost _host;
+    // The.NET Generic Host provides dependency injection, configuration, logging, and other services.
+    // https://docs.microsoft.com/dotnet/core/extensions/generic-host
+    // https://docs.microsoft.com/dotnet/core/extensions/dependency-injection
+    // https://docs.microsoft.com/dotnet/core/extensions/configuration
+    // https://docs.microsoft.com/dotnet/core/extensions/logging
+    private static readonly IHost _host = Host
+        .CreateDefaultBuilder()
+        .ConfigureAppConfiguration(c => { c.SetBasePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)); })
+        .ConfigureServices((context, services) =>
+        {
+            // App Host
+            services.AddHostedService<ApplicationHostService>();
 
-    public App()
+            // Main window container with navigation
+            services.AddSingleton<MainWindow>();
+            services.AddSingleton<MainViewModel>();
+            services.AddSingleton<INavigationService, NavigationService>();
+            services.AddSingleton<ISnackbarService, SnackbarService>();
+            services.AddSingleton<IContentDialogService, ContentDialogService>();
+            services.AddSingleton<IDialogService, DialogService>();
+            services.AddSingleton<SystemOptimizer.Services.PageService>();
+
+            // Services
+            services.AddSingleton<TweakService>();
+            services.AddSingleton<CleanupService>();
+            
+            // --- NOVO: Search Fix Services ---
+            services.AddSingleton<SearchRegistryService>();
+            // ---------------------------------
+
+            // Views and ViewModels
+            services.AddSingleton<PrivacyPage>();
+            services.AddSingleton<PerformancePage>();
+            services.AddSingleton<NetworkPage>();
+            services.AddSingleton<SecurityPage>();
+            services.AddSingleton<AppearancePage>();
+            services.AddSingleton<TweaksPage>();
+            services.AddSingleton<CleanupPage>();
+            services.AddSingleton<SettingsPage>();
+            
+            // --- NOVO: Search Fix View & ViewModel ---
+            services.AddSingleton<SearchFixPage>();
+            services.AddSingleton<SearchFixViewModel>();
+            // -----------------------------------------
+
+            services.AddSingleton<SettingsViewModel>();
+            services.AddSingleton<TweakViewModel>();
+        }).Build();
+
+    /// <summary>
+    /// Gets registered service.
+    /// </summary>
+    /// <typeparam name="T">Type of the service to get.</typeparam>
+    /// <returns>Instance of the service or <see langword="null"/>.</returns>
+    public static T GetService<T>()
+        where T : class
     {
-        _host = Host.CreateDefaultBuilder()
-            .ConfigureServices((context, services) =>
-            {
-                // 1. ViewModels
-                services.AddSingleton<MainViewModel>();
-                
-                // Registo do SettingsViewModel (A injeção do TweakService será automática aqui)
-                services.AddSingleton<SettingsViewModel>();
-                
-                services.AddTransient<TweakViewModel>();
-
-                // 2. Core Services
-                services.AddSingleton<TweakService>();
-                services.AddSingleton<CleanupService>();
-
-                // 3. UI Services
-                services.AddSingleton<INavigationViewPageProvider, PageService>();
-                services.AddSingleton<INavigationService, NavigationService>();
-                services.AddSingleton<IDialogService, DialogService>();
-                services.AddSingleton<ISnackbarService, SnackbarService>();
-                services.AddSingleton<IContentDialogService, ContentDialogService>();
-
-                // 4. Windows & Pages
-                services.AddSingleton<MainWindow>();
-                services.AddTransient<TweaksPage>();
-                services.AddTransient<PerformancePage>();
-                services.AddTransient<PrivacyPage>();
-                services.AddTransient<NetworkPage>();
-                services.AddTransient<SecurityPage>();
-                services.AddTransient<CleanupPage>();
-                services.AddTransient<AppearancePage>();
-                
-                services.AddTransient<SettingsPage>();
-            })
-            .Build();
+        return _host.Services.GetService(typeof(T)) as T;
     }
 
-    protected override async void OnStartup(StartupEventArgs e)
+    /// <summary>
+    /// Occurs when the application is loading.
+    /// </summary>
+    private async void OnStartup(object sender, StartupEventArgs e)
     {
-        // Carrega configurações de idioma antes de inicializar a UI
-        AppSettings.Load();
-        var culture = new System.Globalization.CultureInfo(AppSettings.Current.Language);
-        Thread.CurrentThread.CurrentCulture = culture;
-        Thread.CurrentThread.CurrentUICulture = culture;
-
-        // Atualiza a cultura do ResourceManager
-        SystemOptimizer.Properties.Resources.Culture = culture;
-
-        // Configura tratamento global de erros para evitar fechamento repentino
-        this.DispatcherUnhandledException += OnDispatcherUnhandledException;
-
         await _host.StartAsync();
-
-        if (e.Args.Contains("--silent"))
-        {
-            // Agora aguardamos a execução completa do modo silencioso
-            await RunSilentMode();
-        }
-        else
-        {
-            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-            mainWindow.Show();
-        }
-
-        base.OnStartup(e);
     }
 
-    protected override async void OnExit(ExitEventArgs e)
+    /// <summary>
+    /// Occurs when the application is closing.
+    /// </summary>
+    private async void OnExit(object sender, ExitEventArgs e)
     {
         await _host.StopAsync();
         _host.Dispose();
-        base.OnExit(e);
     }
 
-    private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    /// <summary>
+    /// Occurs when an exception is thrown by an application but not handled.
+    /// </summary>
+    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        // Captura erros que acontecerem na UI (ex: clique de botão que falha)
-        string errorMsg = $"Ocorreu um erro inesperado: {e.Exception.Message}";
-        Logger.Log(errorMsg, "ERROR");
-        MessageBox.Show(errorMsg, "Erro do Sistema", MessageBoxButton.OK, MessageBoxImage.Error);
-        e.Handled = true; // Impede o crash total se possível
-    }
-
-    private async Task RunSilentMode()
-    {
-        try
-        {
-            Logger.Log("Iniciando Modo Silencioso (Auto-Run)...");
-
-            var tweakService = _host.Services.GetRequiredService<TweakService>();
-            
-            // 1. Carrega todos os tweaks disponíveis na memória
-            tweakService.LoadTweaks();
-
-            // 2. Verifica o estado atual real do sistema
-            // (Isso é importante para não tentar aplicar algo que já está aplicado)
-            await tweakService.RefreshStatusesAsync();
-
-            // 3. Carrega a lista de desejos (o que estava ativo quando o user ativou a persistência)
-            var savedTweakIds = TweakPersistence.LoadState();
-
-            if (savedTweakIds.Count == 0)
-            {
-                Logger.Log("Nenhum tweak salvo para persistência.");
-            }
-            else
-            {
-                int appliedCount = 0;
-                foreach (var id in savedTweakIds)
-                {
-                    var tweak = tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
-                    
-                    // Se o tweak existe E AINDA NÃO está otimizado no sistema atual
-                    if (tweak != null && !tweak.IsOptimized)
-                    {
-                        Logger.Log($"Reaplicando tweak persistente: {tweak.Title} ({tweak.Id})");
-                        var result = tweak.Apply();
-                        if (result.Success) appliedCount++;
-                        else Logger.Log($"Falha ao aplicar {tweak.Id}: {result.Message}", "ERROR");
-                    }
-                }
-                Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Erro crítico no modo silencioso: {ex.Message}", "ERROR");
-        }
-        finally
-        {
-            // Fecha a aplicação após concluir o trabalho em background
-            Shutdown();
-        }
+        // For more info see https://docs.microsoft.com/en-us/dotnet/api/system.windows.application.dispatcherunhandledexception?view=netcore-3.0
     }
 }
