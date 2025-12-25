@@ -18,6 +18,7 @@ namespace SystemOptimizer;
 /// </summary>
 public partial class App : Application
 {
+    // The.NET Generic Host provides dependency injection, configuration, logging, and other services.
     private static readonly IHost _host = Host
         .CreateDefaultBuilder()
         .ConfigureAppConfiguration(c => { c.SetBasePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!); })
@@ -76,22 +77,28 @@ public partial class App : Application
     /// <summary>
     /// Occurs when the application is loading.
     /// </summary>
-    private async void OnStartup(object sender, StartupEventArgs e)
+    // CORREÇÃO: Usamos 'protected override' em vez de 'private' para garantir a execução
+    protected override async void OnStartup(StartupEventArgs e)
     {
         await _host.StartAsync();
 
         // Inicializa manualmente a janela principal
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
+
+        base.OnStartup(e);
     }
 
     /// <summary>
     /// Occurs when the application is closing.
     /// </summary>
-    private async void OnExit(object sender, ExitEventArgs e)
+    // CORREÇÃO: Usamos 'protected override' para garantir o encerramento correto do Host
+    protected override async void OnExit(ExitEventArgs e)
     {
         await _host.StopAsync();
         _host.Dispose();
+
+        base.OnExit(e);
     }
 
     /// <summary>
