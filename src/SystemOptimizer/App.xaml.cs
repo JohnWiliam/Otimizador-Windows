@@ -18,18 +18,13 @@ namespace SystemOptimizer;
 /// </summary>
 public partial class App : Application
 {
-    // The.NET Generic Host provides dependency injection, configuration, logging, and other services.
-    // https://docs.microsoft.com/dotnet/core/extensions/generic-host
-    // https://docs.microsoft.com/dotnet/core/extensions/dependency-injection
-    // https://docs.microsoft.com/dotnet/core/extensions/configuration
-    // https://docs.microsoft.com/dotnet/core/extensions/logging
     private static readonly IHost _host = Host
         .CreateDefaultBuilder()
-        .ConfigureAppConfiguration(c => { c.SetBasePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)); })
+        .ConfigureAppConfiguration(c => { c.SetBasePath(Path.GetDirectoryName(Assembly.GetEntryAssembly()!.Location)!); })
         .ConfigureServices((context, services) =>
         {
-            // App Host
-            services.AddHostedService<ApplicationHostService>();
+            // Remover ApplicationHostService pois não está presente no projeto
+            // services.AddHostedService<ApplicationHostService>();
 
             // Main window container with navigation
             services.AddSingleton<MainWindow>();
@@ -75,7 +70,7 @@ public partial class App : Application
     public static T GetService<T>()
         where T : class
     {
-        return _host.Services.GetService(typeof(T)) as T;
+        return (_host.Services.GetService(typeof(T)) as T)!;
     }
 
     /// <summary>
@@ -84,6 +79,10 @@ public partial class App : Application
     private async void OnStartup(object sender, StartupEventArgs e)
     {
         await _host.StartAsync();
+
+        // Inicializa manualmente a janela principal
+        var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+        mainWindow.Show();
     }
 
     /// <summary>
