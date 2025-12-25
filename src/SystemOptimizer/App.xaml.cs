@@ -10,7 +10,8 @@ using SystemOptimizer.ViewModels;
 using SystemOptimizer.Views.Pages;
 using SystemOptimizer.Helpers;
 using Wpf.Ui;
-using System; // Necessário para AppContext
+using Wpf.Ui.Abstractions; // Necessário para INavigationViewPageProvider
+using System;
 
 namespace SystemOptimizer;
 
@@ -19,11 +20,8 @@ namespace SystemOptimizer;
 /// </summary>
 public partial class App : Application
 {
-    // O Host Genérico fornece injeção de dependência, configuração, logging, etc.
     private static readonly IHost _host = Host
         .CreateDefaultBuilder()
-        // CORREÇÃO CRÍTICA: Usar AppContext.BaseDirectory em vez de Assembly.Location
-        // Isso impede o erro de inicialização em builds de Arquivo Único (Single File)
         .ConfigureAppConfiguration(c => { c.SetBasePath(AppContext.BaseDirectory); })
         .ConfigureServices((context, services) =>
         {
@@ -34,15 +32,16 @@ public partial class App : Application
             services.AddSingleton<ISnackbarService, SnackbarService>();
             services.AddSingleton<IContentDialogService, ContentDialogService>();
             services.AddSingleton<IDialogService, DialogService>();
-            services.AddSingleton<SystemOptimizer.Services.PageService>();
+
+            // --- CORREÇÃO AQUI ---
+            // Registar o PageService como a implementação da interface INavigationViewPageProvider
+            services.AddSingleton<INavigationViewPageProvider, PageService>();
+            // ---------------------
 
             // Services
             services.AddSingleton<TweakService>();
             services.AddSingleton<CleanupService>();
-            
-            // --- Serviços da Correção de Pesquisa ---
             services.AddSingleton<SearchRegistryService>();
-            // ----------------------------------------
 
             // Views and ViewModels
             services.AddSingleton<PrivacyPage>();
@@ -54,41 +53,30 @@ public partial class App : Application
             services.AddSingleton<CleanupPage>();
             services.AddSingleton<SettingsPage>();
             
-            // --- Página da Correção de Pesquisa ---
+            // Search Fix Page
             services.AddSingleton<SearchFixPage>();
             services.AddSingleton<SearchFixViewModel>();
-            // --------------------------------------
 
             services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<TweakViewModel>();
         }).Build();
 
-    /// <summary>
-    /// Gets registered service.
-    /// </summary>
     public static T GetService<T>()
         where T : class
     {
         return (_host.Services.GetService(typeof(T)) as T)!;
     }
 
-    /// <summary>
-    /// Occurs when the application is loading.
-    /// </summary>
     protected override async void OnStartup(StartupEventArgs e)
     {
         await _host.StartAsync();
 
-        // Inicializa manualmente a janela principal
         var mainWindow = _host.Services.GetRequiredService<MainWindow>();
         mainWindow.Show();
 
         base.OnStartup(e);
     }
 
-    /// <summary>
-    /// Occurs when the application is closing.
-    /// </summary>
     protected override async void OnExit(ExitEventArgs e)
     {
         await _host.StopAsync();
@@ -99,6 +87,6 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        // Tratamento global de erros (opcional)
+        // Tratamento global de erros
     }
 }
