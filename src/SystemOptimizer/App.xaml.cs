@@ -5,13 +5,17 @@ using System.Windows.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
+
+// Namespaces do projeto
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
 using SystemOptimizer.Views.Pages;
 using SystemOptimizer.Helpers;
+
+// Namespaces da biblioteca Wpf.Ui
 using Wpf.Ui;
-using Wpf.Ui.Abstractions; // Necessário para INavigationViewPageProvider e IPageService
-using System;
+using Wpf.Ui.Abstractions; 
 
 namespace SystemOptimizer;
 
@@ -33,23 +37,21 @@ public partial class App : Application
             services.AddSingleton<IContentDialogService, ContentDialogService>();
             services.AddSingleton<IDialogService, DialogService>();
 
-            // --- CORREÇÃO COMPLETA DO PAGE SERVICE ---
-            // 1. Registar o PageService concreto
+            // --- CORREÇÃO: PageService ---
+            // Regista o serviço concreto
             services.AddSingleton<PageService>();
             
-            // 2. Registar a interface IPageService (usada pelo NavigationService)
-            // Redireciona para a instância única criada acima
+            // Regista a interface IPageService (Necessária para o erro CS0246)
             services.AddSingleton<IPageService>(provider => provider.GetRequiredService<PageService>());
 
-            // 3. Registar a interface INavigationViewPageProvider (usada pelo FluentWindow/NavigationView)
-            // Redireciona para a mesma instância única
+            // Regista a interface INavigationViewPageProvider
             services.AddSingleton<INavigationViewPageProvider>(provider => provider.GetRequiredService<PageService>());
-            // -----------------------------------------
+            // -----------------------------
 
             // Services
             services.AddSingleton<TweakService>();
             services.AddSingleton<CleanupService>();
-            services.AddSingleton<SearchRegistryService>();
+            services.AddSingleton<SearchRegistryService>(); // Certifique-se que SearchRegistryService.cs está na pasta Services
 
             // Views and ViewModels
             services.AddSingleton<PrivacyPage>();
@@ -61,7 +63,7 @@ public partial class App : Application
             services.AddSingleton<CleanupPage>();
             services.AddSingleton<SettingsPage>();
             
-            // Search Fix Page
+            // Search Fix Page (Certifique-se que os arquivos .cs e .xaml existem nas pastas corretas)
             services.AddSingleton<SearchFixPage>();
             services.AddSingleton<SearchFixViewModel>();
 
