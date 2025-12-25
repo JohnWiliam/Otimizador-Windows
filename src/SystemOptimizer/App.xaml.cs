@@ -1,88 +1,72 @@
+using System;
 using System.IO;
-using System.Reflection;
 using System.Windows;
-using System.Windows.Threading;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System;
-
-// Namespaces do projeto
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
-using SystemOptimizer.Views.Pages;
 using SystemOptimizer.Helpers;
-
-// Namespaces da biblioteca Wpf.Ui
+using SystemOptimizer.Views.Pages;
 using Wpf.Ui;
-using Wpf.Ui.Abstractions; 
+using Wpf.Ui.Abstractions; // Adicionado para corrigir o erro CS0246
 
 namespace SystemOptimizer;
 
-/// <summary>
-/// Interaction logic for App.xaml
-/// </summary>
 public partial class App : Application
 {
-    private static readonly IHost _host = Host
-        .CreateDefaultBuilder()
-        .ConfigureAppConfiguration(c => { c.SetBasePath(AppContext.BaseDirectory); })
-        .ConfigureServices((context, services) =>
-        {
-            // Main window container with navigation
-            services.AddSingleton<MainWindow>();
-            services.AddSingleton<MainViewModel>();
-            services.AddSingleton<INavigationService, NavigationService>();
-            services.AddSingleton<ISnackbarService, SnackbarService>();
-            services.AddSingleton<IContentDialogService, ContentDialogService>();
-            services.AddSingleton<IDialogService, DialogService>();
+    private readonly IHost _host;
 
-            // --- CORREÇÃO: PageService ---
-            // Regista o serviço concreto
-            services.AddSingleton<PageService>();
-            
-            // Regista a interface IPageService (Necessária para o erro CS0246)
-            services.AddSingleton<IPageService>(provider => provider.GetRequiredService<PageService>());
-
-            // Regista a interface INavigationViewPageProvider
-            services.AddSingleton<INavigationViewPageProvider>(provider => provider.GetRequiredService<PageService>());
-            // -----------------------------
-
-            // Services
-            services.AddSingleton<TweakService>();
-            services.AddSingleton<CleanupService>();
-            services.AddSingleton<SearchRegistryService>(); // Certifique-se que SearchRegistryService.cs está na pasta Services
-
-            // Views and ViewModels
-            services.AddSingleton<PrivacyPage>();
-            services.AddSingleton<PerformancePage>();
-            services.AddSingleton<NetworkPage>();
-            services.AddSingleton<SecurityPage>();
-            services.AddSingleton<AppearancePage>();
-            services.AddSingleton<TweaksPage>();
-            services.AddSingleton<CleanupPage>();
-            services.AddSingleton<SettingsPage>();
-            
-            // Search Fix Page (Certifique-se que os arquivos .cs e .xaml existem nas pastas corretas)
-            services.AddSingleton<SearchFixPage>();
-            services.AddSingleton<SearchFixViewModel>();
-
-            services.AddSingleton<SettingsViewModel>();
-            services.AddSingleton<TweakViewModel>();
-        }).Build();
-
-    public static T GetService<T>()
-        where T : class
+    public App()
     {
-        return (_host.Services.GetService(typeof(T)) as T)!;
+        _host = Host.CreateDefaultBuilder()
+            .ConfigureServices((context, services) =>
+            {
+                // 1. ViewModels
+                services.AddSingleton<MainViewModel>();
+                services.AddTransient<TweakViewModel>();
+
+                // 2. Core Services
+                services.AddSingleton<TweakService>();
+                services.AddSingleton<CleanupService>();
+
+                // 3. UI Services
+                // CORREÇÃO: IPageService substituído por INavigationViewPageProvider
+                services.AddSingleton<INavigationViewPageProvider, PageService>();
+                
+                services.AddSingleton<INavigationService, NavigationService>();
+                services.AddSingleton<IDialogService, DialogService>();
+                services.AddSingleton<ISnackbarService, SnackbarService>();
+                services.AddSingleton<IContentDialogService, ContentDialogService>();
+
+                // 4. Windows & Pages
+                services.AddSingleton<MainWindow>();
+                services.AddTransient<TweaksPage>();
+                services.AddTransient<PerformancePage>();
+                services.AddTransient<PrivacyPage>();
+                services.AddTransient<NetworkPage>();
+                services.AddTransient<SecurityPage>();
+                services.AddTransient<CleanupPage>();
+                services.AddTransient<AppearancePage>();
+            })
+            .Build();
     }
 
     protected override async void OnStartup(StartupEventArgs e)
     {
+        // Configura tratamento global de erros para evitar fechamento repentino
+        this.DispatcherUnhandledException += OnDispatcherUnhandledException;
+
         await _host.StartAsync();
 
-        var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-        mainWindow.Show();
+        if (e.Args.Contains("--silent"))
+        {
+            RunSilentMode();
+        }
+        else
+        {
+            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+            mainWindow.Show();
+        }
 
         base.OnStartup(e);
     }
@@ -91,12 +75,37 @@ public partial class App : Application
     {
         await _host.StopAsync();
         _host.Dispose();
-
         base.OnExit(e);
     }
 
-    private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
     {
-        // Tratamento global de erros
+        // Captura erros que acontecerem na UI (ex: clique de botão que falha)
+        string errorMsg = $"Ocorreu um erro inesperado: {e.Exception.Message}";
+        Logger.Log(errorMsg, "ERROR");
+        MessageBox.Show(errorMsg, "Erro do Sistema", MessageBoxButton.OK, MessageBoxImage.Error);
+        e.Handled = true; // Impede o crash total se possível
+    }
+
+    private void RunSilentMode()
+    {
+        try
+        {
+            Logger.Log("Iniciando Modo Silencioso...");
+
+            var tweakService = _host.Services.GetRequiredService<TweakService>();
+            tweakService.LoadTweaks();
+
+            // Lógica adicional de persistência se necessário
+            Logger.Log("Modo Silencioso Concluído.");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Erro no modo silencioso: {ex.Message}", "ERROR");
+        }
+        finally
+        {
+            Shutdown();
+        }
     }
 }
