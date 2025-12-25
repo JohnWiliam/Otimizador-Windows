@@ -127,7 +127,7 @@ namespace SystemOptimizer.Properties {
         public static string Msg_RestartRequired => ResourceManager.GetString("Msg_RestartRequired", resourceCulture);
         public static string Msg_RestartTitle => ResourceManager.GetString("Msg_RestartTitle", resourceCulture);
 
-        // Propriedades adicionadas manualmente para corrigir erro MC3011
+        // Propriedades existentes
         public static string Nav_Privacy => ResourceManager.GetString("Nav_Privacy", resourceCulture);
         public static string Nav_Performance => ResourceManager.GetString("Nav_Performance", resourceCulture);
         public static string Nav_Network => ResourceManager.GetString("Nav_Network", resourceCulture);
@@ -138,7 +138,6 @@ namespace SystemOptimizer.Properties {
         public static string Status_Applying => ResourceManager.GetString("Status_Applying", resourceCulture);
         public static string Status_Loading => ResourceManager.GetString("Status_Loading", resourceCulture);
         
-        // Novas propriedades adicionadas agora
         public static string Btn_Apply => ResourceManager.GetString("Btn_Apply", resourceCulture);
         public static string Btn_Restore => ResourceManager.GetString("Btn_Restore", resourceCulture);
         public static string Btn_RunCleanup => ResourceManager.GetString("Btn_RunCleanup", resourceCulture);
@@ -174,5 +173,22 @@ namespace SystemOptimizer.Properties {
         public static string Msg_InitFail => ResourceManager.GetString("Msg_InitFail", resourceCulture);
         
         public static string App_Title => ResourceManager.GetString("App_Title", resourceCulture);
+
+        // --- NOVAS PROPRIEDADES (Search Fix) ---
+        public static string Nav_SearchFix => ResourceManager.GetString("Nav_SearchFix", resourceCulture);
+        public static string SearchFix_Title => ResourceManager.GetString("SearchFix_Title", resourceCulture);
+        public static string SearchFix_Subtitle => ResourceManager.GetString("SearchFix_Subtitle", resourceCulture);
+        public static string SearchFix_Card1_Header => ResourceManager.GetString("SearchFix_Card1_Header", resourceCulture);
+        public static string SearchFix_Card1_Desc => ResourceManager.GetString("SearchFix_Card1_Desc", resourceCulture);
+        public static string SearchFix_Card2_Header => ResourceManager.GetString("SearchFix_Card2_Header", resourceCulture);
+        public static string SearchFix_Card2_Desc => ResourceManager.GetString("SearchFix_Card2_Desc", resourceCulture);
+        public static string SearchFix_Card3_Header => ResourceManager.GetString("SearchFix_Card3_Header", resourceCulture);
+        public static string SearchFix_Card3_Desc => ResourceManager.GetString("SearchFix_Card3_Desc", resourceCulture);
+        public static string SearchFix_Status_Optimized => ResourceManager.GetString("SearchFix_Status_Optimized", resourceCulture);
+        public static string SearchFix_Status_Default => ResourceManager.GetString("SearchFix_Status_Default", resourceCulture);
+        public static string SearchFix_Footer => ResourceManager.GetString("SearchFix_Footer", resourceCulture);
+        public static string SearchFix_Btn_Restart => ResourceManager.GetString("SearchFix_Btn_Restart", resourceCulture);
+        public static string SearchFix_Apply => ResourceManager.GetString("SearchFix_Apply", resourceCulture);
+        public static string SearchFix_Revert => ResourceManager.GetString("SearchFix_Revert", resourceCulture);
     }
 }
