@@ -25,6 +25,7 @@ public class TweakService
         AddNetworkTweaks();
         AddSecurityTweaks();
         AddAppearanceTweaks();
+        AddSearchTweaks();
         AddCustomTweaks();
         Logger.Log($"LoadTweaks finished. Loaded {Tweaks.Count} tweaks.");
     }
@@ -163,6 +164,21 @@ public class TweakService
         Tweaks.Add(new RegistryTweak("A3", TweakCategory.Appearance, Resources.A3_Title, Resources.A3_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects", "VisualFXSetting", 2, 3));
     }
 
+    private void AddSearchTweaks()
+    {
+        // SCH1: DisableSearchBoxSuggestions
+        Tweaks.Add(new RegistryTweak("SCH1", TweakCategory.Search, Resources.S_1_Title, Resources.S_1_Desc,
+            @"HKCU\Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions", 1, "DELETE"));
+
+        // SCH2: DisableCloudSearch
+        Tweaks.Add(new RegistryTweak("SCH2", TweakCategory.Search, Resources.S_2_Title, Resources.S_2_Desc,
+            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "DisableCloudSearch", 1, "DELETE"));
+
+        // SCH3: BingSearchEnabled
+        Tweaks.Add(new RegistryTweak("SCH3", TweakCategory.Search, Resources.S_3_Title, Resources.S_3_Desc,
+            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0, "DELETE"));
+    }
+
     private void AddCustomTweaks()
     {
         // SE1: SysMain
@@ -183,7 +199,5 @@ public class TweakService
         // SE2: Prefetch
         Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, Resources.SE2_Title, Resources.SE2_Desc,
             @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
-        
-        // O Tweak SE3 (Persistência) foi removido daqui e movido para SettingsViewModel
     }
 }
