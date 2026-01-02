@@ -51,12 +51,14 @@
                            Appearance="Primary" 
                            Height="40" 
                            Padding="15,0" 
+                           Margin="16,0,0,0">
                            Margin="16,0,0,0"
                            HitTestVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}">
                     <ui:Button.Style>
                         <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="IsHitTestVisible" Value="False"/>
                                     <Setter Property="Cursor" Value="Wait"/>
                                 </DataTrigger>
                             </Style.Triggers>
