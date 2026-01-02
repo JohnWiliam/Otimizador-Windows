@@ -8,8 +8,10 @@ using SystemOptimizer.Models;
 using SystemOptimizer.Services;
 using System.Collections.Generic;
 using System;
+using System.Diagnostics; // Necessário para Process
+using System.Threading;   // Necessário para Thread.Sleep
 using SystemOptimizer.Helpers;
-using SystemOptimizer.Properties; // Namespace dos Resources
+using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 
@@ -65,7 +67,6 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Log($"Error during initialization: {ex.Message}", "CRITICAL");
-            // Passando DialogType.Error para ícone vermelho
             await _dialogService.ShowMessageAsync(Resources.Msg_ErrorTitle, string.Format(Resources.Msg_InitFail, ex.Message), DialogType.Error);
         }
         finally
@@ -153,6 +154,64 @@ public partial class MainViewModel : ObservableObject
         await ProcessTweaks(list, false);
     }
 
+    // --- NOVOS COMANDOS PARA A PÁGINA DE PESQUISA (Controle Individual) ---
+
+    [RelayCommand]
+    private async Task ApplySingle(string tweakId)
+    {
+        if (IsBusy) return;
+        
+        var vm = GetAllTweakViewModels().FirstOrDefault(x => x.Id == tweakId);
+        if (vm == null) return;
+
+        // Marca como selecionado apenas para o processamento, se necessário, 
+        // ou passa diretamente para o ProcessTweaks (que filtra por IsSelected).
+        // Aqui vamos forçar o processamento de apenas 1 item.
+        vm.IsSelected = true; 
+        
+        IsBusy = true;
+        await ProcessTweaks(new[] { vm }, true);
+    }
+
+    [RelayCommand]
+    private async Task RevertSingle(string tweakId)
+    {
+        if (IsBusy) return;
+
+        var vm = GetAllTweakViewModels().FirstOrDefault(x => x.Id == tweakId);
+        if (vm == null) return;
+
+        vm.IsSelected = true;
+        
+        IsBusy = true;
+        await ProcessTweaks(new[] { vm }, false);
+    }
+
+    [RelayCommand]
+    private void RestartExplorer()
+    {
+        try
+        {
+            foreach (var process in Process.GetProcessesByName("explorer"))
+            {
+                try { process.Kill(); } catch { }
+            }
+            
+            // Pequena pausa para garantir que o processo morreu
+            Thread.Sleep(500);
+
+            // Reinicia
+            Process.Start("explorer.exe");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao reiniciar Explorer: {ex.Message}", "ERROR");
+            _dialogService.ShowMessageAsync("Erro", "Não foi possível reiniciar o Windows Explorer automaticamente.", DialogType.Error);
+        }
+    }
+
+    // ----------------------------------------------------------------------
+
     private async Task ProcessTweaks(IEnumerable<TweakViewModel> list, bool applying)
     {
         int successCount = 0;
@@ -164,6 +223,7 @@ public partial class MainViewModel : ObservableObject
         {
             await Task.Run(() =>
             {
+                // Processa apenas os selecionados (ou passados manualmente como selecionados)
                 foreach (var item in list.Where(x => x.IsSelected))
                 {
                     if (IsRebootRequired(item.Id)) rebootNeeded = true;
@@ -173,7 +233,12 @@ public partial class MainViewModel : ObservableObject
                 }
             });
 
-            foreach (var item in list) { item.IsSelected = false; item.UpdateStatusUI(); }
+            // Atualiza UI
+            foreach (var item in list) 
+            { 
+                item.IsSelected = false; 
+                item.UpdateStatusUI(); 
+            }
         }
         finally
         {
@@ -182,7 +247,6 @@ public partial class MainViewModel : ObservableObject
 
         if (failCount > 0)
         {
-            // DialogType.Warning para avisar que houve falhas parciais
             await _dialogService.ShowMessageAsync(Resources.Msg_ResultTitle, string.Format(Resources.Msg_CompletedWithErrors, successCount, failCount, lastError), DialogType.Warning);
         }
         else if (successCount > 0)
@@ -190,7 +254,6 @@ public partial class MainViewModel : ObservableObject
             string msg = applying ? Resources.Msg_Applied : Resources.Msg_Restored;
             if (rebootNeeded) msg += Resources.Msg_RebootNeeded;
             
-            // DialogType.Success para sucesso
             await _dialogService.ShowMessageAsync(Resources.Msg_SuccessTitle, msg, DialogType.Success);
         }
     }
