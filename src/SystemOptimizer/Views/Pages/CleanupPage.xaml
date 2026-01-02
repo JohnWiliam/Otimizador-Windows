@@ -6,6 +6,7 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
       xmlns:p="clr-namespace:SystemOptimizer.Properties"
+      xmlns:helpers="clr-namespace:SystemOptimizer.Helpers"
       mc:Ignorable="d" 
       d:DesignHeight="550" d:DesignWidth="800"
       Title="CleanupPage"
@@ -47,15 +48,30 @@
 
                 <ui:Button Grid.Column="1" 
                            Command="{Binding RunCleanupCommand}"
-                           IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
                            Appearance="Primary" 
                            Height="40" 
                            Padding="15,0" 
-                           Margin="16,0,0,0">
-                    <ui:Button.Icon>
-                        <ui:SymbolIcon Symbol="Broom24"/>
-                    </ui:Button.Icon>
-                    <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
+                           Margin="16,0,0,0"
+                           IsHitTestVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}">
+                    <ui:Button.Style>
+                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
+                                    <Setter Property="Cursor" Value="Wait"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:Button.Style>
+                    <Grid>
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding IsBusy, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                            <ui:SymbolIcon Symbol="Broom24" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static p:Resources.Status_Applying}"/>
+                        </StackPanel>
+                    </Grid>
                 </ui:Button>
             </Grid>
         </ui:Card>
