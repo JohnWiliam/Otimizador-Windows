@@ -8,8 +8,8 @@ using SystemOptimizer.Models;
 using SystemOptimizer.Services;
 using System.Collections.Generic;
 using System;
-using System.Diagnostics; // Necessário para Process
-using System.Threading;   // Necessário para Thread.Sleep
+using System.Diagnostics;
+using System.Threading;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Properties;
 using Wpf.Ui;
@@ -154,21 +154,15 @@ public partial class MainViewModel : ObservableObject
         await ProcessTweaks(list, false);
     }
 
-    // --- NOVOS COMANDOS PARA A PÁGINA DE PESQUISA (Controle Individual) ---
+    // --- NOVOS COMANDOS (SearchPage) ---
 
     [RelayCommand]
     private async Task ApplySingle(string tweakId)
     {
         if (IsBusy) return;
-        
         var vm = GetAllTweakViewModels().FirstOrDefault(x => x.Id == tweakId);
         if (vm == null) return;
-
-        // Marca como selecionado apenas para o processamento, se necessário, 
-        // ou passa diretamente para o ProcessTweaks (que filtra por IsSelected).
-        // Aqui vamos forçar o processamento de apenas 1 item.
         vm.IsSelected = true; 
-        
         IsBusy = true;
         await ProcessTweaks(new[] { vm }, true);
     }
@@ -177,12 +171,9 @@ public partial class MainViewModel : ObservableObject
     private async Task RevertSingle(string tweakId)
     {
         if (IsBusy) return;
-
         var vm = GetAllTweakViewModels().FirstOrDefault(x => x.Id == tweakId);
         if (vm == null) return;
-
         vm.IsSelected = true;
-        
         IsBusy = true;
         await ProcessTweaks(new[] { vm }, false);
     }
@@ -196,11 +187,7 @@ public partial class MainViewModel : ObservableObject
             {
                 try { process.Kill(); } catch { }
             }
-            
-            // Pequena pausa para garantir que o processo morreu
             Thread.Sleep(500);
-
-            // Reinicia
             Process.Start("explorer.exe");
         }
         catch (Exception ex)
@@ -223,7 +210,6 @@ public partial class MainViewModel : ObservableObject
         {
             await Task.Run(() =>
             {
-                // Processa apenas os selecionados (ou passados manualmente como selecionados)
                 foreach (var item in list.Where(x => x.IsSelected))
                 {
                     if (IsRebootRequired(item.Id)) rebootNeeded = true;
@@ -233,12 +219,7 @@ public partial class MainViewModel : ObservableObject
                 }
             });
 
-            // Atualiza UI
-            foreach (var item in list) 
-            { 
-                item.IsSelected = false; 
-                item.UpdateStatusUI(); 
-            }
+            foreach (var item in list) { item.IsSelected = false; item.UpdateStatusUI(); }
         }
         finally
         {
