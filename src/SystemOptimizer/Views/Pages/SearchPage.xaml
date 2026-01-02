@@ -6,7 +6,6 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
       xmlns:p="clr-namespace:SystemOptimizer.Properties"
-      xmlns:models="clr-namespace:SystemOptimizer.Models"
       mc:Ignorable="d" 
       d:DesignHeight="600" d:DesignWidth="800"
       Title="SearchPage">
@@ -76,13 +75,13 @@
                        Content="Reiniciar Explorer" 
                        Appearance="Danger" 
                        Icon="{ui:SymbolIcon Symbol=ArrowClockwise20}" 
-                       Command="{Binding RestartExplorerCommand}" />
+                       Command="{Binding ViewModel.RestartExplorerCommand}" />
         </Grid>
 
         <ui:DynamicScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="8">
+            <StackPanel>
                 
-                <ui:CardExpander IsExpanded="True" DataContext="{Binding SearchTweaks[0]}">
+                <ui:CardExpander IsExpanded="True" DataContext="{Binding ViewModel.SearchTweaks[0], RelativeSource={RelativeSource AncestorType=Page}}" Margin="0,0,0,8">
                     <ui:CardExpander.Icon>
                         <ui:SymbolIcon Symbol="Search24" />
                     </ui:CardExpander.Icon>
@@ -112,20 +111,21 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
+                            
                             <ui:Button Grid.Column="0" Content="{x:Static p:Resources.Btn_Apply}" Appearance="Primary" 
-                                       Command="{Binding DataContext.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       Command="{Binding ViewModel.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
                                        CommandParameter="{Binding Id}"
                                        Margin="0,0,8,0" Icon="{ui:SymbolIcon Symbol=Checkmark20}" />
                             
                             <ui:Button Grid.Column="1" Content="{x:Static p:Resources.Btn_Restore}" Appearance="Secondary" 
-                                       Command="{Binding DataContext.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       Command="{Binding ViewModel.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
                                        CommandParameter="{Binding Id}"
                                        Icon="{ui:SymbolIcon Symbol=ArrowUndo20}" />
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
 
-                <ui:CardExpander IsExpanded="True" DataContext="{Binding SearchTweaks[1]}">
+                <ui:CardExpander IsExpanded="True" DataContext="{Binding ViewModel.SearchTweaks[1], RelativeSource={RelativeSource AncestorType=Page}}" Margin="0,0,0,8">
                     <ui:CardExpander.Icon>
                         <ui:SymbolIcon Symbol="CloudOff24" />
                     </ui:CardExpander.Icon>
@@ -156,19 +156,19 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <ui:Button Grid.Column="0" Content="{x:Static p:Resources.Btn_Apply}" Appearance="Primary" 
-                                       Command="{Binding DataContext.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       Command="{Binding ViewModel.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
                                        CommandParameter="{Binding Id}"
                                        Margin="0,0,8,0" Icon="{ui:SymbolIcon Symbol=Checkmark20}" />
                             
                             <ui:Button Grid.Column="1" Content="{x:Static p:Resources.Btn_Restore}" Appearance="Secondary" 
-                                       Command="{Binding DataContext.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       Command="{Binding ViewModel.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
                                        CommandParameter="{Binding Id}"
                                        Icon="{ui:SymbolIcon Symbol=ArrowUndo20}" />
                         </Grid>
                     </StackPanel>
                 </ui:CardExpander>
 
-                <ui:CardExpander IsExpanded="True" DataContext="{Binding SearchTweaks[2]}">
+                <ui:CardExpander IsExpanded="True" DataContext="{Binding ViewModel.SearchTweaks[2], RelativeSource={RelativeSource AncestorType=Page}}" Margin="0,0,0,0">
                     <ui:CardExpander.Icon>
                         <ui:SymbolIcon Symbol="DismissCircle24" />
                     </ui:CardExpander.Icon>
@@ -199,12 +199,12 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <ui:Button Grid.Column="0" Content="{x:Static p:Resources.Btn_Apply}" Appearance="Primary" 
-                                       Command="{Binding DataContext.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       Command="{Binding ViewModel.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
                                        CommandParameter="{Binding Id}"
                                        Margin="0,0,8,0" Icon="{ui:SymbolIcon Symbol=Checkmark20}" />
                             
                             <ui:Button Grid.Column="1" Content="{x:Static p:Resources.Btn_Restore}" Appearance="Secondary" 
-                                       Command="{Binding DataContext.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       Command="{Binding ViewModel.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
                                        CommandParameter="{Binding Id}"
                                        Icon="{ui:SymbolIcon Symbol=ArrowUndo20}" />
                         </Grid>
