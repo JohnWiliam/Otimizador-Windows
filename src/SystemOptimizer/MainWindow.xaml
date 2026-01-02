@@ -102,22 +102,6 @@
                 ClipToBounds="True">
             <ContentPresenter x:Name="RootContentDialogPresenter" />
         </Border>
-
-         <Grid Grid.Row="0" Grid.RowSpan="2" 
-              Panel.ZIndex="1001"
-              Background="#99000000" 
-              Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
-              d:Visibility="Collapsed">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                <ui:ProgressRing IsIndeterminate="True" Width="60" Height="60" />
-                 <TextBlock Text="{x:Static p:Resources.Status_Applying}"
-                           Foreground="White" 
-                           FontSize="16" 
-                           FontWeight="SemiBold" 
-                           Margin="0,20,0,0" 
-                           HorizontalAlignment="Center"/>
-            </StackPanel>
-        </Grid>
         
         <Grid Grid.Row="0" Grid.RowSpan="2" 
               Panel.ZIndex="1002"
