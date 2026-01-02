@@ -50,23 +50,24 @@
                     <ui:Button Command="{Binding RunCleanupCommand}"
                                Appearance="Primary"
                                Height="40"
-                               Padding="15,0">
-                        <Grid>
-                            <StackPanel Orientation="Horizontal" Visibility="{Binding IsBusy, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                                <ui:SymbolIcon Symbol="Broom24" Margin="0,0,8,0"/>
-                                <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
-                                <TextBlock Text="{x:Static p:Resources.Status_Applying}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
-                            </StackPanel>
-                        </Grid>
+                               Padding="15,0"
+                               Visibility="{Binding IsBusy, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Broom24" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
+                        </StackPanel>
                     </ui:Button>
 
-                    <Border Background="Transparent"
-                            Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            Cursor="Wait"
-                            CornerRadius="4"/>
+                    <ui:Button Appearance="Primary"
+                               Height="40"
+                               Padding="15,0"
+                               Cursor="Wait"
+                               Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                            <TextBlock Text="{x:Static p:Resources.Status_Applying}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                        </StackPanel>
+                    </ui:Button>
                 </Grid>
             </Grid>
         </ui:Card>
