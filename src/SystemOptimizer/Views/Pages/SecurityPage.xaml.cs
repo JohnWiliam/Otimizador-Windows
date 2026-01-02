@@ -1,13 +1,17 @@
-using System.Windows.Controls;
 using SystemOptimizer.ViewModels;
+using Wpf.Ui.Abstractions.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class SecurityPage : Page
+public partial class SearchPage : INavigableView<MainViewModel>
 {
-    public SecurityPage(MainViewModel viewModel)
+    public MainViewModel ViewModel { get; }
+
+    public SearchPage(MainViewModel viewModel)
     {
+        ViewModel = viewModel;
+        DataContext = this;
+
         InitializeComponent();
-        DataContext = viewModel;
     }
 }
