@@ -6,32 +6,212 @@
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
       xmlns:p="clr-namespace:SystemOptimizer.Properties"
+      xmlns:models="clr-namespace:SystemOptimizer.Models"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
+      d:DesignHeight="600" d:DesignWidth="800"
       Title="SearchPage">
+
+    <Page.Resources>
+        <Style x:Key="StatusIconStyle" TargetType="ui:SymbolIcon">
+            <Setter Property="Symbol" Value="Circle24" />
+            <Setter Property="Filled" Value="True" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="0,1,6,0" />
+            <Setter Property="Foreground" Value="{DynamicResource PaletteAmberBrush}" />
+            
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tweak.Status}" Value="Optimized">
+                    <Setter Property="Foreground" Value="{DynamicResource PaletteGreenBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tweak.Status}" Value="Default">
+                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorTertiaryBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="StatusTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="FontWeight" Value="Medium" />
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            <Setter Property="Text" Value="{x:Static p:Resources.Status_Unknown}" />
+
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tweak.Status}" Value="Optimized">
+                    <Setter Property="Text" Value="{x:Static p:Resources.Status_Optimized}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tweak.Status}" Value="Default">
+                    <Setter Property="Text" Value="{x:Static p:Resources.Status_Default}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tweak.Status}" Value="Modified">
+                    <Setter Property="Text" Value="{x:Static p:Resources.Status_Modified}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
 
     <Grid Margin="20,10,20,20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" 
-                   Text="{x:Static p:Resources.Nav_Search}" 
-                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                   FontSize="24" 
-                   FontWeight="SemiBold" 
-                   Margin="0,0,0,10" />
+        <Grid Grid.Row="0" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{x:Static p:Resources.Nav_Search}" 
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                           FontSize="24" 
+                           FontWeight="SemiBold" />
+                <TextBlock Text="Otimize sua privacidade e desempenho do menu Iniciar" 
+                           FontSize="12" 
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                           Margin="0,2,0,0" />
+            </StackPanel>
+
+            <ui:Button Grid.Column="1" 
+                       Content="Reiniciar Explorer" 
+                       Appearance="Danger" 
+                       Icon="{ui:SymbolIcon Symbol=ArrowClockwise20}" 
+                       Command="{Binding RestartExplorerCommand}" />
+        </Grid>
 
         <ui:DynamicScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding SearchTweaks}" 
-                          ItemTemplate="{StaticResource TweakItemTemplate}" />
-        </ui:DynamicScrollViewer>
+            <StackPanel Spacing="8">
+                
+                <ui:CardExpander IsExpanded="True" DataContext="{Binding SearchTweaks[0]}">
+                    <ui:CardExpander.Icon>
+                        <ui:SymbolIcon Symbol="Search24" />
+                    </ui:CardExpander.Icon>
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Static p:Resources.S_1_Title}" FontSize="14" FontWeight="Medium" />
+                            </StackPanel>
+                            <Border Grid.Column="1" Background="Transparent" Padding="8,4" CornerRadius="4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:SymbolIcon Style="{StaticResource StatusIconStyle}" />
+                                    <TextBlock Style="{StaticResource StatusTextStyle}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Text="{x:Static p:Resources.S_1_Desc}"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" 
+                                   Margin="0,0,0,12" FontSize="11" TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ui:Button Grid.Column="0" Content="{x:Static p:Resources.Btn_Apply}" Appearance="Primary" 
+                                       Command="{Binding DataContext.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       CommandParameter="{Binding Id}"
+                                       Margin="0,0,8,0" Icon="{ui:SymbolIcon Symbol=Checkmark20}" />
+                            
+                            <ui:Button Grid.Column="1" Content="{x:Static p:Resources.Btn_Restore}" Appearance="Secondary" 
+                                       Command="{Binding DataContext.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       CommandParameter="{Binding Id}"
+                                       Icon="{ui:SymbolIcon Symbol=ArrowUndo20}" />
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <ui:Button Content="{x:Static p:Resources.Btn_Restore}" Command="{Binding RevertSelectedCommand}" CommandParameter="Search" Appearance="Secondary" Margin="0,0,10,0" Width="150" />
-            <ui:Button Content="{x:Static p:Resources.Btn_Apply}" Command="{Binding ApplySelectedCommand}" CommandParameter="Search" Appearance="Primary" Width="150" />
-        </StackPanel>
+                <ui:CardExpander IsExpanded="True" DataContext="{Binding SearchTweaks[1]}">
+                    <ui:CardExpander.Icon>
+                        <ui:SymbolIcon Symbol="CloudOff24" />
+                    </ui:CardExpander.Icon>
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Static p:Resources.S_2_Title}" FontSize="14" FontWeight="Medium" />
+                            </StackPanel>
+                            <Border Grid.Column="1" Background="Transparent" Padding="8,4" CornerRadius="4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:SymbolIcon Style="{StaticResource StatusIconStyle}" />
+                                    <TextBlock Style="{StaticResource StatusTextStyle}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Text="{x:Static p:Resources.S_2_Desc}"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" 
+                                   Margin="0,0,0,12" FontSize="11" TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ui:Button Grid.Column="0" Content="{x:Static p:Resources.Btn_Apply}" Appearance="Primary" 
+                                       Command="{Binding DataContext.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       CommandParameter="{Binding Id}"
+                                       Margin="0,0,8,0" Icon="{ui:SymbolIcon Symbol=Checkmark20}" />
+                            
+                            <ui:Button Grid.Column="1" Content="{x:Static p:Resources.Btn_Restore}" Appearance="Secondary" 
+                                       Command="{Binding DataContext.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       CommandParameter="{Binding Id}"
+                                       Icon="{ui:SymbolIcon Symbol=ArrowUndo20}" />
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
+                <ui:CardExpander IsExpanded="True" DataContext="{Binding SearchTweaks[2]}">
+                    <ui:CardExpander.Icon>
+                        <ui:SymbolIcon Symbol="DismissCircle24" />
+                    </ui:CardExpander.Icon>
+                    <ui:CardExpander.Header>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                <TextBlock Text="{x:Static p:Resources.S_3_Title}" FontSize="14" FontWeight="Medium" />
+                            </StackPanel>
+                            <Border Grid.Column="1" Background="Transparent" Padding="8,4" CornerRadius="4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <ui:SymbolIcon Style="{StaticResource StatusIconStyle}" />
+                                    <TextBlock Style="{StaticResource StatusTextStyle}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </ui:CardExpander.Header>
+                    <StackPanel>
+                        <TextBlock Text="{x:Static p:Resources.S_3_Desc}"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" 
+                                   Margin="0,0,0,12" FontSize="11" TextWrapping="Wrap"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ui:Button Grid.Column="0" Content="{x:Static p:Resources.Btn_Apply}" Appearance="Primary" 
+                                       Command="{Binding DataContext.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       CommandParameter="{Binding Id}"
+                                       Margin="0,0,8,0" Icon="{ui:SymbolIcon Symbol=Checkmark20}" />
+                            
+                            <ui:Button Grid.Column="1" Content="{x:Static p:Resources.Btn_Restore}" Appearance="Secondary" 
+                                       Command="{Binding DataContext.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                       CommandParameter="{Binding Id}"
+                                       Icon="{ui:SymbolIcon Symbol=ArrowUndo20}" />
+                        </Grid>
+                    </StackPanel>
+                </ui:CardExpander>
+
+            </StackPanel>
+        </ui:DynamicScrollViewer>
     </Grid>
 </Page>
