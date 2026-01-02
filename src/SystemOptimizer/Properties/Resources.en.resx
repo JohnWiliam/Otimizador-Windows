@@ -336,7 +336,8 @@ Do you want to restart now?</value>
     <value>Starting scan and cleanup...</value>
   </data>
   <data name="Log_Finished" xml:space="preserve">
-    <value>CLEANUP FINISHED! Freed: {0} MB</value>
+    <value>CLEANUP FINISHED!
+Freed: {0} MB</value>
   </data>
   <data name="Log_DNS" xml:space="preserve">
     <value>DNS Cache: Cleared</value>
@@ -348,7 +349,8 @@ Do you want to restart now?</value>
     <value>{0} : Clean</value>
   </data>
   <data name="Log_WUServicesStopped" xml:space="preserve">
-    <value>WU Services: Stopped. Attempting cleanup...</value>
+    <value>WU Services: Stopped.
+Attempting cleanup...</value>
   </data>
   <data name="Log_WUServicesRestarted" xml:space="preserve">
     <value>WU Services: Restarted.</value>
@@ -388,6 +390,27 @@ Error: {2}</value>
     <value>Failed to initialize: {0}</value>
   </data>
   <data name="App_Title" xml:space="preserve">
-    <value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.0.0</value>
+    <value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.1.0</value>
+  </data>
+  <data name="Nav_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="S_1_Title" xml:space="preserve">
+    <value>Search Box Suggestions</value>
+  </data>
+  <data name="S_1_Desc" xml:space="preserve">
+    <value>Disables online and recent suggestions when typing in the search bar.</value>
+  </data>
+  <data name="S_2_Title" xml:space="preserve">
+    <value>Cloud Search</value>
+  </data>
+  <data name="S_2_Desc" xml:space="preserve">
+    <value>Prevents Windows from searching content in cloud accounts.</value>
+  </data>
+  <data name="S_3_Title" xml:space="preserve">
+    <value>Bing Web Results</value>
+  </data>
+  <data name="S_3_Desc" xml:space="preserve">
+    <value>Removes web results and Bing news from the Start Menu.</value>
   </data>
 </root>
