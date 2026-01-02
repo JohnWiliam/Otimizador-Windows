@@ -413,4 +413,10 @@ Error: {2}</value>
   <data name="S_3_Desc" xml:space="preserve">
     <value>Removes web results and Bing news from the Start Menu.</value>
   </data>
+  <data name="Search_Subtitle" xml:space="preserve">
+    <value>Optimize your privacy and Start menu performance</value>
+  </data>
+  <data name="Btn_RestartExplorer" xml:space="preserve">
+    <value>Restart Explorer</value>
+  </data>
 </root>
