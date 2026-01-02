@@ -43,9 +43,23 @@ Otimize sua conexão para menor latência e maior estabilidade.
 * 📦 **Algoritmo CUBIC**: Gestão moderna de congestionamento para alta velocidade.
 * 🔔 **ECN & RSS**: Notificação de congestionamento e escalonamento de recepção.
 
-#### 🔒 Segurança e Visual (Security & Appearance)
-* 🛡️ **Segurança**: Exibir extensões de arquivos reais e bloquear AutoRun de USB.
-* 🎨 **Visual**: Forçar Modo Escuro, desativar transparências (para PCs fracos) e ajustes de efeitos visuais.
+#### 🔒 Segurança (Security)
+Fortaleça a proteção básica do sistema.
+* 📄 **Extensões de Arquivo**: Exibe as extensões reais (.exe, .bat) para evitar malwares disfarçados.
+* 🚫 **AutoRun**: Bloqueia a execução automática de dispositivos USB.
+
+#### 🔎 Pesquisa (Search)
+Remova integrações web e limpe o Menu Iniciar.
+* ⌨️ **Sugestões de Pesquisa**: Desativa sugestões online e histórico recente ao digitar.
+* ☁️ **Busca na Nuvem**: Impede que o Windows pesquise conteúdo nas suas contas (OneDrive, Outlook).
+* 🌎 **Bing**: Remove resultados da web, notícias e anúncios do Menu Iniciar.
+* 🔄 **Reiniciar Explorer**: Botão dedicado para aplicar as alterações instantaneamente.
+
+#### 🎨 Visual (Appearance)
+Ajuste a aparência para focar em desempenho ou estética.
+* 🌑 **Modo Escuro**: Força o tema escuro em aplicativos compatíveis.
+* 🪟 **Transparência**: Desativa efeitos de transparência para economizar recursos (útil em PCs modestos).
+* ✨ **Efeitos Visuais**: Ajusta as configurações do sistema para "Melhor Desempenho" (parcial).
 
 #### 🛠️ Ajustes Finos (Tweaks)
 Funcionalidades avançadas com foco na longevidade do hardware (SSDs) e automação.
@@ -118,9 +132,23 @@ Optimize your connection for lower latency and better stability.
 * 📦 **CUBIC Algorithm**: Modern congestion management for high speeds.
 * 🔔 **ECN & RSS**: Explicit Congestion Notification and Receive Side Scaling.
 
-#### 🔒 Security & Appearance
-* 🛡️ **Security**: Show real file extensions and block USB AutoRun.
-* 🎨 **Visual**: Force Dark Mode, disable transparency (for low-end PCs), and adjust visual effects.
+#### 🔒 Security
+Strengthen basic system protection.
+* 📄 **File Extensions**: Displays real file extensions (.exe, .bat) to avoid disguised malware.
+* 🚫 **AutoRun**: Blocks automatic execution of USB devices.
+
+#### 🔎 Search
+Remove web integrations and clean up the Start Menu.
+* ⌨️ **Search Suggestions**: Disables online suggestions and recent history when typing.
+* ☁️ **Cloud Search**: Prevents Windows from searching content in your cloud accounts (OneDrive, Outlook).
+* 🌎 **Bing**: Removes web results, news, and ads from the Start Menu.
+* 🔄 **Restart Explorer**: Dedicated button to apply changes instantly.
+
+#### 🎨 Appearance
+Adjust the look and feel to focus on performance or aesthetics.
+* 🌑 **Dark Mode**: Forces dark theme on compatible apps.
+* 🪟 **Transparency**: Disables transparency effects to save resources (useful for low-end PCs).
+* ✨ **Visual Effects**: Adjusts system settings for "Best Performance" (partial).
 
 #### 🛠️ Tweaks
 Advanced features focused on hardware longevity (SSDs) and automation.

@@ -23,7 +23,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+       </Grid.RowDefinitions>
        
         <ui:TitleBar Grid.Row="0" Title="{Binding ApplicationTitle}" />
 
@@ -44,28 +44,34 @@
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Gauge24" />
                     </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
+                 </ui:NavigationViewItem>
                  
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Network}" TargetPageType="{x:Type pages:NetworkPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Globe24" />
-                    </ui:NavigationViewItem.Icon>
+                     </ui:NavigationViewItem.Icon>
                  </ui:NavigationViewItem>
                  
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Security}" TargetPageType="{x:Type pages:SecurityPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="LockClosed24" />
+                       <ui:SymbolIcon Symbol="LockClosed24" />
                      </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Search}" TargetPageType="{x:Type pages:SearchPage}">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:SymbolIcon Symbol="Search24" />
+                    </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Visual}" TargetPageType="{x:Type pages:AppearancePage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="PaintBrush24" />
+                       <ui:SymbolIcon Symbol="PaintBrush24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Tweaks}" TargetPageType="{x:Type pages:TweaksPage}">
-                    <ui:NavigationViewItem.Icon>
+                     <ui:NavigationViewItem.Icon>
                          <ui:SymbolIcon Symbol="WrenchScrewdriver24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
@@ -82,7 +88,7 @@
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Settings24" />
                     </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
+                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
 
             <ui:NavigationView.ContentOverlay>

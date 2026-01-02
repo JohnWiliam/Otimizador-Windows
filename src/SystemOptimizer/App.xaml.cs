@@ -51,6 +51,7 @@ public partial class App : Application
                 services.AddTransient<PrivacyPage>();
                 services.AddTransient<NetworkPage>();
                 services.AddTransient<SecurityPage>();
+                services.AddTransient<SearchPage>(); // ADICIONADO AQUI
                 services.AddTransient<CleanupPage>();
                 services.AddTransient<AppearancePage>();
                 

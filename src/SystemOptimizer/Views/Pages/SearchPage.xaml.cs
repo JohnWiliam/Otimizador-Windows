@@ -3,11 +3,11 @@ using Wpf.Ui.Abstractions.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class SecurityPage : INavigableView<MainViewModel>
+public partial class SearchPage : INavigableView<MainViewModel>
 {
     public MainViewModel ViewModel { get; }
 
-    public SecurityPage(MainViewModel viewModel)
+    public SearchPage(MainViewModel viewModel)
     {
         ViewModel = viewModel;
         DataContext = this;

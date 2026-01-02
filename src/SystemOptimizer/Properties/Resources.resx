@@ -336,7 +336,8 @@ Deseja reiniciar agora?</value>
     <value>Iniciando varredura e limpeza...</value>
   </data>
   <data name="Log_Finished" xml:space="preserve">
-    <value>LIMPEZA CONCLUÍDA! Liberado: {0} MB</value>
+    <value>LIMPEZA CONCLUÍDA!
+Liberado: {0} MB</value>
   </data>
   <data name="Log_DNS" xml:space="preserve">
     <value>Cache DNS: Limpo</value>
@@ -348,7 +349,8 @@ Deseja reiniciar agora?</value>
     <value>{0} : Limpo</value>
   </data>
   <data name="Log_WUServicesStopped" xml:space="preserve">
-    <value>Serviços WU: Parados. Tentando limpeza...</value>
+    <value>Serviços WU: Parados.
+Tentando limpeza...</value>
   </data>
   <data name="Log_WUServicesRestarted" xml:space="preserve">
     <value>Serviços WU: Reiniciados.</value>
@@ -388,6 +390,33 @@ Erro: {2}</value>
     <value>Falha ao iniciar: {0}</value>
   </data>
   <data name="App_Title" xml:space="preserve">
-    <value>Otimizador de Sistema - Criado e Idealizado por John Wiliam &amp; IA v2.0.0</value>
+    <value>Otimizador de Sistema - Criado e Idealizado por John Wiliam &amp; IA v2.1.0</value>
+  </data>
+  <data name="Nav_Search" xml:space="preserve">
+    <value>Pesquisa</value>
+  </data>
+  <data name="S_1_Title" xml:space="preserve">
+    <value>Sugestões na Caixa de Pesquisa</value>
+  </data>
+  <data name="S_1_Desc" xml:space="preserve">
+    <value>Desativa as sugestões online e recentes ao digitar na barra de pesquisa.</value>
+  </data>
+  <data name="S_2_Title" xml:space="preserve">
+    <value>Pesquisa na Nuvem</value>
+  </data>
+  <data name="S_2_Desc" xml:space="preserve">
+    <value>Impede que o Windows pesquise conteúdo em contas na nuvem (OneDrive/Outlook).</value>
+  </data>
+  <data name="S_3_Title" xml:space="preserve">
+    <value>Resultados do Bing</value>
+  </data>
+  <data name="S_3_Desc" xml:space="preserve">
+    <value>Remove resultados da web e notícias do Bing do Menu Iniciar.</value>
+  </data>
+  <data name="Search_Subtitle" xml:space="preserve">
+    <value>Otimize sua privacidade e desempenho do menu Iniciar</value>
+  </data>
+  <data name="Btn_RestartExplorer" xml:space="preserve">
+    <value>Reiniciar Explorer</value>
   </data>
 </root>

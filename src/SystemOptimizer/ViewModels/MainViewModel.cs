@@ -8,8 +8,10 @@ using SystemOptimizer.Models;
 using SystemOptimizer.Services;
 using System.Collections.Generic;
 using System;
+using System.Diagnostics;
+using System.Threading;
 using SystemOptimizer.Helpers;
-using SystemOptimizer.Properties; // Namespace dos Resources
+using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 
@@ -29,6 +31,7 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<TweakViewModel> NetworkTweaks { get; } = [];
     public ObservableCollection<TweakViewModel> SecurityTweaks { get; } = [];
     public ObservableCollection<TweakViewModel> AppearanceTweaks { get; } = [];
+    public ObservableCollection<TweakViewModel> SearchTweaks { get; } = [];
     public ObservableCollection<TweakViewModel> TweaksPageItems { get; } = [];
 
     public ObservableCollection<CleanupLogItem> CleanupLogs { get; } = [];
@@ -64,7 +67,6 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Log($"Error during initialization: {ex.Message}", "CRITICAL");
-            // Passando DialogType.Error para ícone vermelho
             await _dialogService.ShowMessageAsync(Resources.Msg_ErrorTitle, string.Format(Resources.Msg_InitFail, ex.Message), DialogType.Error);
         }
         finally
@@ -75,7 +77,7 @@ public partial class MainViewModel : ObservableObject
 
     private IEnumerable<TweakViewModel> GetAllTweakViewModels()
     {
-        return [..PrivacyTweaks, ..PerformanceTweaks, ..NetworkTweaks, ..SecurityTweaks, ..AppearanceTweaks, ..TweaksPageItems];
+        return [..PrivacyTweaks, ..PerformanceTweaks, ..NetworkTweaks, ..SecurityTweaks, ..AppearanceTweaks, ..SearchTweaks, ..TweaksPageItems];
     }
 
     private void PopulateCategories()
@@ -85,6 +87,7 @@ public partial class MainViewModel : ObservableObject
         NetworkTweaks.Clear();
         SecurityTweaks.Clear();
         AppearanceTweaks.Clear();
+        SearchTweaks.Clear();
         TweaksPageItems.Clear();
 
         foreach (var tweak in _tweakService.Tweaks)
@@ -97,6 +100,7 @@ public partial class MainViewModel : ObservableObject
                 case TweakCategory.Network: NetworkTweaks.Add(vm); break;
                 case TweakCategory.Security: SecurityTweaks.Add(vm); break;
                 case TweakCategory.Appearance: AppearanceTweaks.Add(vm); break;
+                case TweakCategory.Search: SearchTweaks.Add(vm); break;
                 case TweakCategory.Tweaks: TweaksPageItems.Add(vm); break;
             }
         }
@@ -104,7 +108,7 @@ public partial class MainViewModel : ObservableObject
 
     private bool IsRebootRequired(string tweakId)
     {
-        HashSet<string> rebootIds = ["PF4", "PF7", "PF8", "A1", "P1", "SE1"];
+        HashSet<string> rebootIds = ["PF4", "PF7", "PF8", "A1", "P1", "SE1", "SCH1", "SCH2", "SCH3"];
         return rebootIds.Contains(tweakId);
     }
 
@@ -121,6 +125,7 @@ public partial class MainViewModel : ObservableObject
             "Network" => NetworkTweaks,
             "Security" => SecurityTweaks,
             "Appearance" => AppearanceTweaks,
+            "Search" => SearchTweaks,
             "Tweaks" => TweaksPageItems,
             _ => []
         };
@@ -141,12 +146,58 @@ public partial class MainViewModel : ObservableObject
             "Network" => NetworkTweaks,
             "Security" => SecurityTweaks,
             "Appearance" => AppearanceTweaks,
+            "Search" => SearchTweaks,
             "Tweaks" => TweaksPageItems,
             _ => []
         };
 
         await ProcessTweaks(list, false);
     }
+
+    // --- NOVOS COMANDOS (SearchPage) ---
+
+    [RelayCommand]
+    private async Task ApplySingle(string tweakId)
+    {
+        if (IsBusy) return;
+        var vm = GetAllTweakViewModels().FirstOrDefault(x => x.Id == tweakId);
+        if (vm == null) return;
+        vm.IsSelected = true; 
+        IsBusy = true;
+        await ProcessTweaks(new[] { vm }, true);
+    }
+
+    [RelayCommand]
+    private async Task RevertSingle(string tweakId)
+    {
+        if (IsBusy) return;
+        var vm = GetAllTweakViewModels().FirstOrDefault(x => x.Id == tweakId);
+        if (vm == null) return;
+        vm.IsSelected = true;
+        IsBusy = true;
+        await ProcessTweaks(new[] { vm }, false);
+    }
+
+    [RelayCommand]
+    private void RestartExplorer()
+    {
+        try
+        {
+            foreach (var process in Process.GetProcessesByName("explorer"))
+            {
+                try { process.Kill(); } catch { }
+            }
+            Thread.Sleep(500);
+            Process.Start("explorer.exe");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao reiniciar Explorer: {ex.Message}", "ERROR");
+            _dialogService.ShowMessageAsync("Erro", "Não foi possível reiniciar o Windows Explorer automaticamente.", DialogType.Error);
+        }
+    }
+
+    // ----------------------------------------------------------------------
 
     private async Task ProcessTweaks(IEnumerable<TweakViewModel> list, bool applying)
     {
@@ -177,7 +228,6 @@ public partial class MainViewModel : ObservableObject
 
         if (failCount > 0)
         {
-            // DialogType.Warning para avisar que houve falhas parciais
             await _dialogService.ShowMessageAsync(Resources.Msg_ResultTitle, string.Format(Resources.Msg_CompletedWithErrors, successCount, failCount, lastError), DialogType.Warning);
         }
         else if (successCount > 0)
@@ -185,7 +235,6 @@ public partial class MainViewModel : ObservableObject
             string msg = applying ? Resources.Msg_Applied : Resources.Msg_Restored;
             if (rebootNeeded) msg += Resources.Msg_RebootNeeded;
             
-            // DialogType.Success para sucesso
             await _dialogService.ShowMessageAsync(Resources.Msg_SuccessTitle, msg, DialogType.Success);
         }
     }
