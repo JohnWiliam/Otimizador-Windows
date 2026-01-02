@@ -3,9 +3,32 @@
 
 $ErrorActionPreference = "Stop"
 
+# --- Verificação e Correção do PATH do .NET ---
 Write-Host "Checking for .NET SDK..."
+
+# 1. Verifica se o comando já existe no PATH
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    Write-Host "The .NET SDK is not found. Please install .NET 8 SDK or later." -ForegroundColor Red
+    # 2. Se não encontrar, procura nos locais padrão (x64 e x86)
+    $possiblePaths = @(
+        "C:\Program Files\dotnet",
+        "C:\Program Files (x86)\dotnet"
+    )
+
+    foreach ($path in $possiblePaths) {
+        if (Test-Path "$path\dotnet.exe") {
+            Write-Host "O comando 'dotnet' não estava no PATH, mas foi encontrado em: $path" -ForegroundColor Yellow
+            Write-Host "Adicionando ao PATH temporariamente..." -ForegroundColor Yellow
+            $env:PATH = "$env:PATH;$path"
+            break
+        }
+    }
+}
+
+# 3. Verificação Final (Se falhar aqui, realmente não está acessível)
+if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+    Write-Host "ERRO CRÍTICO: O SDK do .NET não foi encontrado." -ForegroundColor Red
+    Write-Host "Certifique-se de que o .NET 10 SDK está instalado corretamente."
+    Write-Host "Dica: Tente fechar e abrir novamente este terminal ou reiniciar o PC."
     Write-Host "Pressione Enter para sair..."
     Read-Host
     exit 1
@@ -28,14 +51,12 @@ Write-Host "`n[1/3] Building Internal Tools (IconResizer)..."
 dotnet build $iconResizerProj -c Release -v q
 
 # Locate the compiled tool
-# ANTES (Errado):
-# $resizerExe = Join-Path $root "src\IconResizer\bin\Release\net8.0-windows\IconResizer.exe"
-
-# DEPOIS (Correto):
+# Caminho ajustado para .NET 10 conforme sua estrutura
 $resizerExe = Join-Path $root "src\IconResizer\bin\Release\net10.0-windows\IconResizer.exe"
 
 if (-not (Test-Path $resizerExe)) {
     Write-Host "Failed to build IconResizer tool." -ForegroundColor Red
+    Write-Host "Verifique se o caminho de saída está correto em: $resizerExe"
     Write-Host "Pressione Enter para sair..."
     Read-Host
     exit 1
@@ -62,7 +83,7 @@ Write-Host "Restoring dependencies..."
 dotnet restore $mainProj -r win-x64
 
 Write-Host "Publishing..."
-# Flags explicadas (Correção: Removemos PublishTrimmed para compatibilidade com WPF):
+# Flags explicadas:
 # -p:PublishSingleFile=true            : Gera um único EXE.
 # -p:EnableCompressionInSingleFile=true : Comprime o conteúdo dentro do EXE (Reduz tamanho).
 # -p:PublishReadyToRun=false           : Desativa pré-compilação nativa (Reduz tamanho significativamente).
@@ -77,7 +98,7 @@ dotnet publish $mainProj -c Release -r win-x64 --self-contained `
     -o $outputDir
 
 # --- Optional Step: UPX Compression ---
-# Se o upx.exe estiver disponível no PATH ou na pasta, aplica compressão extra.
+# Se o upx.exe estiver disponível no PATH, aplica compressão extra.
 if ($LASTEXITCODE -eq 0) {
     $exePath = Join-Path $outputDir "SystemOptimizer.exe"
     
