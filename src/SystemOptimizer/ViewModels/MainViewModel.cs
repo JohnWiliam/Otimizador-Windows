@@ -29,6 +29,7 @@ public partial class MainViewModel : ObservableObject
     public ObservableCollection<TweakViewModel> NetworkTweaks { get; } = [];
     public ObservableCollection<TweakViewModel> SecurityTweaks { get; } = [];
     public ObservableCollection<TweakViewModel> AppearanceTweaks { get; } = [];
+    public ObservableCollection<TweakViewModel> SearchTweaks { get; } = [];
     public ObservableCollection<TweakViewModel> TweaksPageItems { get; } = [];
 
     public ObservableCollection<CleanupLogItem> CleanupLogs { get; } = [];
@@ -75,7 +76,7 @@ public partial class MainViewModel : ObservableObject
 
     private IEnumerable<TweakViewModel> GetAllTweakViewModels()
     {
-        return [..PrivacyTweaks, ..PerformanceTweaks, ..NetworkTweaks, ..SecurityTweaks, ..AppearanceTweaks, ..TweaksPageItems];
+        return [..PrivacyTweaks, ..PerformanceTweaks, ..NetworkTweaks, ..SecurityTweaks, ..AppearanceTweaks, ..SearchTweaks, ..TweaksPageItems];
     }
 
     private void PopulateCategories()
@@ -85,6 +86,7 @@ public partial class MainViewModel : ObservableObject
         NetworkTweaks.Clear();
         SecurityTweaks.Clear();
         AppearanceTweaks.Clear();
+        SearchTweaks.Clear();
         TweaksPageItems.Clear();
 
         foreach (var tweak in _tweakService.Tweaks)
@@ -97,6 +99,7 @@ public partial class MainViewModel : ObservableObject
                 case TweakCategory.Network: NetworkTweaks.Add(vm); break;
                 case TweakCategory.Security: SecurityTweaks.Add(vm); break;
                 case TweakCategory.Appearance: AppearanceTweaks.Add(vm); break;
+                case TweakCategory.Search: SearchTweaks.Add(vm); break;
                 case TweakCategory.Tweaks: TweaksPageItems.Add(vm); break;
             }
         }
@@ -104,7 +107,7 @@ public partial class MainViewModel : ObservableObject
 
     private bool IsRebootRequired(string tweakId)
     {
-        HashSet<string> rebootIds = ["PF4", "PF7", "PF8", "A1", "P1", "SE1"];
+        HashSet<string> rebootIds = ["PF4", "PF7", "PF8", "A1", "P1", "SE1", "SCH1", "SCH2", "SCH3"];
         return rebootIds.Contains(tweakId);
     }
 
@@ -121,6 +124,7 @@ public partial class MainViewModel : ObservableObject
             "Network" => NetworkTweaks,
             "Security" => SecurityTweaks,
             "Appearance" => AppearanceTweaks,
+            "Search" => SearchTweaks,
             "Tweaks" => TweaksPageItems,
             _ => []
         };
@@ -141,6 +145,7 @@ public partial class MainViewModel : ObservableObject
             "Network" => NetworkTweaks,
             "Security" => SecurityTweaks,
             "Appearance" => AppearanceTweaks,
+            "Search" => SearchTweaks,
             "Tweaks" => TweaksPageItems,
             _ => []
         };
