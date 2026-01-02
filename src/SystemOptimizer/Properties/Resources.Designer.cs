@@ -127,7 +127,6 @@ namespace SystemOptimizer.Properties {
         public static string Msg_RestartRequired => ResourceManager.GetString("Msg_RestartRequired", resourceCulture);
         public static string Msg_RestartTitle => ResourceManager.GetString("Msg_RestartTitle", resourceCulture);
 
-        // Propriedades adicionadas manualmente para corrigir erro MC3011
         public static string Nav_Privacy => ResourceManager.GetString("Nav_Privacy", resourceCulture);
         public static string Nav_Performance => ResourceManager.GetString("Nav_Performance", resourceCulture);
         public static string Nav_Network => ResourceManager.GetString("Nav_Network", resourceCulture);
@@ -138,7 +137,6 @@ namespace SystemOptimizer.Properties {
         public static string Status_Applying => ResourceManager.GetString("Status_Applying", resourceCulture);
         public static string Status_Loading => ResourceManager.GetString("Status_Loading", resourceCulture);
         
-        // Novas propriedades (Existentes no código anterior)
         public static string Btn_Apply => ResourceManager.GetString("Btn_Apply", resourceCulture);
         public static string Btn_Restore => ResourceManager.GetString("Btn_Restore", resourceCulture);
         public static string Btn_RunCleanup => ResourceManager.GetString("Btn_RunCleanup", resourceCulture);
@@ -175,26 +173,16 @@ namespace SystemOptimizer.Properties {
         
         public static string App_Title => ResourceManager.GetString("App_Title", resourceCulture);
 
-        // --- ADICIONADO AGORA: Propriedades para a Página de Pesquisa ---
-        // Estas propriedades faltavam no Designer.cs e causavam o erro de compilação.
-        
         public static string Nav_Search => ResourceManager.GetString("Nav_Search", resourceCulture);
-        public static string S_1_Title_New => ResourceManager.GetString("S_1_Title", resourceCulture); // Atenção: S_1 já existe acima para "Show Extensions". 
-        // ERRO IDENTIFICADO: As chaves S_1, S_2 já existem para "Security".
-        // Vamos usar as chaves corretas definidas no TweakService: S_1_Title (Resources.resx) vs S1_Title (Security)
-        
-        // CORREÇÃO:
-        // No TweakService.cs (Search), usamos: Resources.S_1_Title (com underline)
-        // No Resources.resx anterior, definimos: <data name="S_1_Title"...>
-        // No Resources.Designer.cs existente, temos S1_Title (sem underline) para SecurityPage.
-        
         public static string S_1_Title => ResourceManager.GetString("S_1_Title", resourceCulture);
         public static string S_1_Desc => ResourceManager.GetString("S_1_Desc", resourceCulture);
-        
         public static string S_2_Title => ResourceManager.GetString("S_2_Title", resourceCulture);
         public static string S_2_Desc => ResourceManager.GetString("S_2_Desc", resourceCulture);
-        
         public static string S_3_Title => ResourceManager.GetString("S_3_Title", resourceCulture);
         public static string S_3_Desc => ResourceManager.GetString("S_3_Desc", resourceCulture);
+
+        // NOVAS PROPRIEDADES ADICIONADAS
+        public static string Search_Subtitle => ResourceManager.GetString("Search_Subtitle", resourceCulture);
+        public static string Btn_RestartExplorer => ResourceManager.GetString("Btn_RestartExplorer", resourceCulture);
     }
 }
