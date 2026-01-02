@@ -1,5 +1,28 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/JohnWiliam/Otimizador-Windows/total?color=green&logo=github)](https://github.com/JohnWiliam/Otimizador-Windows/releases/)
 
+**🚀 Otimizador de Sistema v2.1.0**
+
+Esta versão foca na privacidade e limpeza da experiência de busca do Windows, além de melhorias na robustez do sistema de compilação.
+
+**✨ O Que Há de Novo?**
+
+* **🔎 Nova Aba: Pesquisa (Search Privacy)**
+>
+> Adicionada uma nova categoria dedicada a remover as integrações web e publicitárias do Menu Iniciar e da Barra de Tarefas.
+>
+> * **Bloqueio de Sugestões:** Opção para desativar sugestões online e histórico recente ao digitar na caixa de pesquisa.
+> * **Desativar Cloud Search:** Impede que o Windows pesquise conteúdo nas suas contas na nuvem (OneDrive, Outlook, etc.).
+> * **Remover Bing:** Bloqueia a exibição de resultados da web, notícias e anúncios do Bing no Menu Iniciar.
+> * **Controle Instantâneo:** Adicionado um botão dedicado "Reiniciar Explorer" no topo da página para aplicar as alterações imediatamente sem precisar reiniciar o PC.
+
+* **🛠️ Melhorias Técnicas e Correções**
+>
+> * **Build System Inteligente:** O script `build.ps1` foi aprimorado para detetar e corrigir automaticamente o caminho do SDK do .NET 10, resolvendo erros de ambiente ("SDK not found").
+> * **Correções de Interface:** Resolução de conflitos de *Binding* na página de Segurança e ajustes de layout (CardExpander) para manter a consistência visual.
+> * **Expansão da Internacionalização:** Todas as novas funcionalidades de pesquisa foram devidamente traduzidas para Inglês e Português, mantendo o suporte a múltiplos idiomas.
+>
+---
+
 **🚀 Otimizador de Sistema v2.0.0**
 
 Esta é a maior atualização da história do projeto, marcando uma reescrita completa da arquitetura para tecnologias de ponta, introduzindo um painel de controlo centralizado e expandindo o alcance do software globalmente.
