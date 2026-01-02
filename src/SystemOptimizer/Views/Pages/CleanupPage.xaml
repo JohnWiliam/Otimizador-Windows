@@ -57,8 +57,8 @@
                                 <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0" Foreground="White"/>
-                                <TextBlock Text="{x:Static p:Resources.Status_Applying}" Foreground="White"/>
+                                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                                <TextBlock Text="{x:Static p:Resources.Status_Applying}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
                             </StackPanel>
                         </Grid>
                     </ui:Button>
