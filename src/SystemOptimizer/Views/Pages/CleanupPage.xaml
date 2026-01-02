@@ -46,35 +46,28 @@
                                TextWrapping="Wrap"/>
                 </StackPanel>
 
-                <ui:Button Grid.Column="1" 
-                           Command="{Binding RunCleanupCommand}"
-                           Appearance="Primary" 
-                           Height="40" 
-                           Padding="15,0" 
-                           Margin="16,0,0,0">
-                           Margin="16,0,0,0"
-                           HitTestVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}">
-                    <ui:Button.Style>
-                        <Style TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsBusy}" Value="True">
-                                    <Setter Property="IsHitTestVisible" Value="False"/>
-                                    <Setter Property="Cursor" Value="Wait"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </ui:Button.Style>
-                    <Grid>
-                        <StackPanel Orientation="Horizontal" Visibility="{Binding IsBusy, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                            <ui:SymbolIcon Symbol="Broom24" Margin="0,0,8,0"/>
-                            <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
-                        </StackPanel>
-                        <StackPanel Orientation="Horizontal" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0"/>
-                            <TextBlock Text="{x:Static p:Resources.Status_Applying}"/>
-                        </StackPanel>
-                    </Grid>
-                </ui:Button>
+                <Grid Grid.Column="1" Margin="16,0,0,0">
+                    <ui:Button Command="{Binding RunCleanupCommand}"
+                               Appearance="Primary"
+                               Height="40"
+                               Padding="15,0">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding IsBusy, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                <ui:SymbolIcon Symbol="Broom24" Margin="0,0,8,0"/>
+                                <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0"/>
+                                <TextBlock Text="{x:Static p:Resources.Status_Applying}"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:Button>
+
+                    <Border Background="Transparent"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Cursor="Wait"
+                            CornerRadius="4"/>
+                </Grid>
             </Grid>
         </ui:Card>
 
