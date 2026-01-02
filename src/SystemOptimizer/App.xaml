@@ -13,6 +13,7 @@
                 
                 <ResourceDictionary>
                      <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+                     <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter" />
                      <helpers:InverseBoolConverter x:Key="InverseBoolConverter" />
                      <helpers:MathConverter x:Key="MathConverter" />
                 </ResourceDictionary>
