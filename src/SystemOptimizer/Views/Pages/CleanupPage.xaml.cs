@@ -12,7 +12,7 @@ using SystemOptimizer.Models;
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
 using Wpf.Ui.Controls;
-using CommunityToolkit.Mvvm.Input; // Adicionado namespace correto
+using CommunityToolkit.Mvvm.Input;
 
 namespace SystemOptimizer.Views.Pages;
 
@@ -49,7 +49,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         _cleanupService = new CleanupService();
         _cleanupService.OnLogItem += Service_OnLogItem;
         
-        // Inicializa comando usando AsyncRelayCommand do CommunityToolkit
+        // Inicializa comando usando AsyncRelayCommand
         ExecuteSelectedCleanupCommand = new AsyncRelayCommand(ExecuteCleanupAsync);
 
         // Ouve logs do ViewModel (caso outros processos escrevam lá)
@@ -72,7 +72,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         try
         {
             IsBusyLocal = true;
-            IsOptionsExpanded = false; // Colapsa o card conforme solicitado
+            IsOptionsExpanded = false; // Colapsa o card
             
             Application.Current.Dispatcher.Invoke(() => _viewModel.CleanupLogs.Clear());
 
@@ -88,6 +88,20 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             };
 
             await _cleanupService.RunCleanupAsync(options);
+        }
+        catch (Exception ex)
+        {
+            // Loga erro crítico na tela se algo falhar
+            Application.Current.Dispatcher.Invoke(() => 
+            {
+                _viewModel.CleanupLogs.Add(new CleanupLogItem 
+                { 
+                    Message = $"ERRO CRÍTICO AO INICIAR LIMPEZA: {ex.Message}", 
+                    Icon = "ErrorCircle24", 
+                    StatusColor = "#FF0000",
+                    IsBold = true 
+                });
+            });
         }
         finally
         {
