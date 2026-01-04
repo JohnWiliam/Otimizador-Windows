@@ -390,8 +390,7 @@ Erro: {2}</value>
     <value>Falha ao iniciar: {0}</value>
   </data>
   <data name="App_Title" xml:space="preserve">
-    <value>Otimizador de Sistema - Criado e Idealizado por John Wiliam &amp;
-IA v2.1.0</value>
+    <value>Otimizador de Sistema - Criado e Idealizado por John Wiliam &amp; IA v2.1.0</value>
   </data>
   <data name="Nav_Search" xml:space="preserve">
     <value>Pesquisa</value>
@@ -420,7 +419,6 @@ IA v2.1.0</value>
   <data name="Btn_RestartExplorer" xml:space="preserve">
     <value>Reiniciar Explorer</value>
   </data>
-  
   <data name="Cleanup_SelectOptions" xml:space="preserve">
     <value>Selecione os itens para limpar</value>
   </data>
