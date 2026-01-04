@@ -101,5 +101,8 @@ Tentando limpeza...</value></data>
   
   <data name="Btn_RunCleanup" xml:space="preserve"><value>Executar Limpeza</value></data>
   <data name="Status_Applying" xml:space="preserve"><value>Aplicando alterações...</value></data>
-
-  </root>
+  
+  <data name="P1_Title" xml:space="preserve"><value>Desativar Telemetria</value></data>
+  <data name="P1_Desc" xml:space="preserve"><value>Impede o envio de dados diagnósticos para a Microsoft.</value></data>
+  <data name="App_Title" xml:space="preserve"><value>Otimizador de Sistema</value></data>
+</root>
