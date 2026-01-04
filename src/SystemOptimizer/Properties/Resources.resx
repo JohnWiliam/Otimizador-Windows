@@ -45,7 +45,6 @@
         </xsd:choice>
       </xsd:complexType>
     </xsd:element>
-  </xsd:schema>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
   </resheader>
@@ -390,7 +389,8 @@ Erro: {2}</value>
     <value>Falha ao iniciar: {0}</value>
   </data>
   <data name="App_Title" xml:space="preserve">
-    <value>Otimizador de Sistema - Criado e Idealizado por John Wiliam &amp; IA v2.1.0</value>
+    <value>Otimizador de Sistema - Criado e Idealizado por John Wiliam &amp;
+IA v2.1.0</value>
   </data>
   <data name="Nav_Search" xml:space="preserve">
     <value>Pesquisa</value>
@@ -418,5 +418,33 @@ Erro: {2}</value>
   </data>
   <data name="Btn_RestartExplorer" xml:space="preserve">
     <value>Reiniciar Explorer</value>
+  </data>
+  
+  <data name="Cleanup_SelectOptions" xml:space="preserve">
+    <value>Selecione os itens para limpar</value>
+  </data>
+  <data name="Cleanup_OptionTemp" xml:space="preserve">
+    <value>Arquivos Temporários (Usuário)</value>
+  </data>
+  <data name="Cleanup_OptionSystemTemp" xml:space="preserve">
+    <value>Arquivos Temporários (Sistema)</value>
+  </data>
+  <data name="Cleanup_OptionPrefetch" xml:space="preserve">
+    <value>Prefetch do Windows</value>
+  </data>
+  <data name="Cleanup_OptionBrowser" xml:space="preserve">
+    <value>Cache de Navegadores</value>
+  </data>
+  <data name="Cleanup_OptionDNS" xml:space="preserve">
+    <value>Cache de DNS</value>
+  </data>
+  <data name="Cleanup_OptionRecycleBin" xml:space="preserve">
+    <value>Esvaziar Lixeira</value>
+  </data>
+  <data name="Cleanup_OptionWindowsUpdate" xml:space="preserve">
+    <value>Cache do Windows Update</value>
+  </data>
+  <data name="Log_RecycleBin" xml:space="preserve">
+    <value>Lixeira: Esvaziada</value>
   </data>
 </root>
