@@ -181,8 +181,18 @@ namespace SystemOptimizer.Properties {
         public static string S_3_Title => ResourceManager.GetString("S_3_Title", resourceCulture);
         public static string S_3_Desc => ResourceManager.GetString("S_3_Desc", resourceCulture);
 
-        // NOVAS PROPRIEDADES ADICIONADAS
+        // --- NOVAS PROPRIEDADES ADICIONADAS PARA AS CHAVES DO XML ---
         public static string Search_Subtitle => ResourceManager.GetString("Search_Subtitle", resourceCulture);
         public static string Btn_RestartExplorer => ResourceManager.GetString("Btn_RestartExplorer", resourceCulture);
+        
+        public static string Cleanup_SelectOptions => ResourceManager.GetString("Cleanup_SelectOptions", resourceCulture);
+        public static string Cleanup_OptionTemp => ResourceManager.GetString("Cleanup_OptionTemp", resourceCulture);
+        public static string Cleanup_OptionSystemTemp => ResourceManager.GetString("Cleanup_OptionSystemTemp", resourceCulture);
+        public static string Cleanup_OptionPrefetch => ResourceManager.GetString("Cleanup_OptionPrefetch", resourceCulture);
+        public static string Cleanup_OptionBrowser => ResourceManager.GetString("Cleanup_OptionBrowser", resourceCulture);
+        public static string Cleanup_OptionDNS => ResourceManager.GetString("Cleanup_OptionDNS", resourceCulture);
+        public static string Cleanup_OptionRecycleBin => ResourceManager.GetString("Cleanup_OptionRecycleBin", resourceCulture);
+        public static string Cleanup_OptionWindowsUpdate => ResourceManager.GetString("Cleanup_OptionWindowsUpdate", resourceCulture);
+        public static string Log_RecycleBin => ResourceManager.GetString("Log_RecycleBin", resourceCulture);
     }
 }
