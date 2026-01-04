@@ -390,7 +390,7 @@ Error: {2}</value>
     <value>Failed to initialize: {0}</value>
   </data>
   <data name="App_Title" xml:space="preserve">
-    <value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.1.0</value>
+    <value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.1.1</value>
   </data>
   <data name="Nav_Search" xml:space="preserve">
     <value>Search</value>
@@ -418,5 +418,32 @@ Error: {2}</value>
   </data>
   <data name="Btn_RestartExplorer" xml:space="preserve">
     <value>Restart Explorer</value>
+  </data>
+  <data name="Cleanup_SelectOptions" xml:space="preserve">
+    <value>Select items to clean</value>
+  </data>
+  <data name="Cleanup_OptionTemp" xml:space="preserve">
+    <value>Temporary Files (User)</value>
+  </data>
+  <data name="Cleanup_OptionSystemTemp" xml:space="preserve">
+    <value>Temporary Files (System)</value>
+  </data>
+  <data name="Cleanup_OptionPrefetch" xml:space="preserve">
+    <value>Windows Prefetch</value>
+  </data>
+  <data name="Cleanup_OptionBrowser" xml:space="preserve">
+    <value>Browser Cache</value>
+  </data>
+  <data name="Cleanup_OptionDNS" xml:space="preserve">
+    <value>DNS Cache</value>
+  </data>
+  <data name="Cleanup_OptionRecycleBin" xml:space="preserve">
+    <value>Empty Recycle Bin</value>
+  </data>
+  <data name="Cleanup_OptionWindowsUpdate" xml:space="preserve">
+    <value>Windows Update Cache</value>
+  </data>
+  <data name="Log_RecycleBin" xml:space="preserve">
+    <value>Recycle Bin: Emptied</value>
   </data>
 </root>
