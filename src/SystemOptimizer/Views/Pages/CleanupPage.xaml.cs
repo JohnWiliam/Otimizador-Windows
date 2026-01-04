@@ -39,28 +39,26 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     // Comando
     public ICommand ExecuteSelectedCleanupCommand { get; }
 
-    // CORREÇÃO: Recebe CleanupService via Injeção de Dependência
-    public CleanupPage(MainViewModel viewModel, CleanupService cleanupService)
+    public CleanupPage(MainViewModel viewModel)
     {
         InitializeComponent();
         _viewModel = viewModel;
-        _cleanupService = cleanupService;
+        DataContext = viewModel; // Mantém o VM global como contexto principal
         
-        DataContext = viewModel;
-        
-        // Inscreve no evento do serviço injetado (Evita memory leak removendo antes de adicionar)
-        _cleanupService.OnLogItem -= Service_OnLogItem;
+        // Serviço Local para controle granular
+        _cleanupService = new CleanupService();
         _cleanupService.OnLogItem += Service_OnLogItem;
         
-        // Inicializa comando
+        // Inicializa comando usando AsyncRelayCommand
         ExecuteSelectedCleanupCommand = new AsyncRelayCommand(ExecuteCleanupAsync);
 
-        // Ouve logs do ViewModel
+        // Ouve logs do ViewModel (caso outros processos escrevam lá)
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
     }
 
     private void Service_OnLogItem(CleanupLogItem item)
     {
+        // Redireciona logs do serviço local para o ViewModel
         Application.Current.Dispatcher.Invoke(() => 
         {
             _viewModel.CleanupLogs.Add(item);
@@ -93,6 +91,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         catch (Exception ex)
         {
+            // Loga erro crítico na tela se algo falhar
             Application.Current.Dispatcher.Invoke(() => 
             {
                 _viewModel.CleanupLogs.Add(new CleanupLogItem 
@@ -137,7 +136,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-    // --- Lógica de Log Visual ---
+    // --- Lógica Existente de Log Visual ---
 
     private void CleanupLogs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -157,6 +156,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private void AppendLog(CleanupLogItem item)
     {
         var paragraph = new Paragraph();
+
         paragraph.FontFamily = new FontFamily("Segoe UI");
         paragraph.TextAlignment = TextAlignment.Left;
         paragraph.Margin = new Thickness(0, 0, 0, 2);
@@ -186,7 +186,10 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             Foreground = statusBrush
         };
 
-        var iconContainer = new InlineUIContainer(icon) { BaselineAlignment = BaselineAlignment.Center };
+        var iconContainer = new InlineUIContainer(icon)
+        {
+            BaselineAlignment = BaselineAlignment.Center
+        };
         paragraph.Inlines.Add(iconContainer);
         paragraph.Inlines.Add(new Run("  "));
 
@@ -194,12 +197,18 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         {
             BaselineAlignment = BaselineAlignment.Center,
             FontFamily = new FontFamily("Segoe UI"),
-            FontSize = 12,
-            Foreground = statusBrush,
-            FontWeight = item.IsBold ? FontWeights.SemiBold : FontWeights.Normal
+            FontSize = 12
         };
 
+        run.Foreground = statusBrush;
+
+        if (item.IsBold)
+        {
+            run.FontWeight = FontWeights.SemiBold;
+        }
+
         paragraph.Inlines.Add(run);
+
         LogOutput.Document.Blocks.Add(paragraph);
         LogOutput.ScrollToEnd();
     }
@@ -209,12 +218,27 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         string msg = message?.ToLower() ?? "";
         string colorKey = originalColorName?.ToLower() ?? "";
 
-        if (msg.Contains("update") || msg.Contains("wu") || msg.Contains("serviço")) return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#A9DFBF")); 
-        if (msg.Contains("temp") || msg.Contains("lixeira") || msg.Contains("cache")) return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EDBB99"));
-        if (msg.Contains("chrome") || msg.Contains("browser")) return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F9E79F")); 
-        if (msg.Contains("dns") || msg.Contains("rede")) return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D7BDE2"));
-        if (msg.Contains("concluída") || msg.Contains("sucesso") || colorKey.Contains("green")) return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#82E0AA")); 
-        if (msg.Contains("erro") || colorKey.Contains("red")) return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1948A")); 
+        if (msg.Contains("update") || msg.Contains("wu") || msg.Contains("serviço") || msg.Contains("service"))
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#A9DFBF")); 
+
+        if (msg.Contains("temp") || msg.Contains("tmp") || msg.Contains("lixeira") ||
+            msg.Contains("trash") || msg.Contains("cache") || msg.Contains("prefetch") ||
+            msg.Contains("log") || msg.Contains("old"))
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EDBB99"));
+
+        if (msg.Contains("chrome") || msg.Contains("edge") || msg.Contains("firefox") ||
+            msg.Contains("browser") || msg.Contains("navegador") || msg.Contains("cookie") || msg.Contains("histórico"))
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F9E79F")); 
+
+        if (msg.Contains("dns") || msg.Contains("ip") || msg.Contains("rede") ||
+            msg.Contains("explorer") || msg.Contains("sistema") || msg.Contains("system"))
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D7BDE2"));
+
+        if (msg.Contains("concluída") || msg.Contains("sucesso") || colorKey.Contains("green"))
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#82E0AA")); 
+
+        if (msg.Contains("erro") || msg.Contains("falha") || msg.Contains("negado") || colorKey.Contains("red"))
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1948A")); 
 
         return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AED6F1"));
     }
