@@ -9,6 +9,7 @@
       xmlns:helpers="clr-namespace:SystemOptimizer.Helpers"
       mc:Ignorable="d" 
       d:DesignHeight="550" d:DesignWidth="800"
+      x:Name="RootPage"
       Title="CleanupPage"
       FontFamily="Segoe UI">
 
@@ -26,51 +27,86 @@
                    FontWeight="SemiBold" 
                    Margin="0,0,0,16" />
 
-        <ui:Card Grid.Row="1" Margin="0,0,0,16" Padding="20">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="{x:Static p:Resources.Cleanup_CacheTitle}" 
-                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                               FontSize="15" 
-                               FontWeight="Medium" />
+        <ui:CardExpander Grid.Row="1" Margin="0,0,0,16" 
+                         IsExpanded="{Binding IsOptionsExpanded, ElementName=RootPage, Mode=TwoWay}">
+            <ui:CardExpander.Header>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
                     
-                    <TextBlock Text="{x:Static p:Resources.Cleanup_CacheDesc}"
-                               FontSize="13" 
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                               Margin="0,4,0,0" 
-                               TextWrapping="Wrap"/>
-                </StackPanel>
+                    <ui:SymbolIcon Symbol="Broom24" FontSize="24" Margin="0,0,12,0" />
+                    
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{x:Static p:Resources.Cleanup_CacheTitle}" 
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                   FontSize="15" 
+                                   FontWeight="Medium" />
+                        <TextBlock Text="{x:Static p:Resources.Cleanup_CacheDesc}"
+                                   FontSize="13" 
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                   Margin="0,4,0,0" 
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Grid>
+            </ui:CardExpander.Header>
 
-                <Grid Grid.Column="1" Margin="16,0,0,0">
-                    <ui:Button Command="{Binding RunCleanupCommand}"
+            <StackPanel Padding="0,8,0,0">
+                <TextBlock Text="{x:Static p:Resources.Cleanup_SelectOptions}" 
+                           FontWeight="SemiBold" Margin="0,0,0,12" 
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                
+                <WrapPanel Orientation="Horizontal">
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionTemp}" 
+                              IsChecked="{Binding CleanTemp, ElementName=RootPage}" Margin="0,0,16,8" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionSystemTemp}" 
+                              IsChecked="{Binding CleanSystemTemp, ElementName=RootPage}" Margin="0,0,16,8" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionPrefetch}" 
+                              IsChecked="{Binding CleanPrefetch, ElementName=RootPage}" Margin="0,0,16,8" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionWindowsUpdate}" 
+                              IsChecked="{Binding CleanWindowsUpdate, ElementName=RootPage}" Margin="0,0,16,8" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionBrowser}" 
+                              IsChecked="{Binding CleanBrowser, ElementName=RootPage}" Margin="0,0,16,8" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionDNS}" 
+                              IsChecked="{Binding CleanDns, ElementName=RootPage}" Margin="0,0,16,8" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionRecycleBin}" 
+                              IsChecked="{Binding CleanRecycleBin, ElementName=RootPage}" Margin="0,0,16,8"
+                              Foreground="{DynamicResource PaletteRedBrush}"/>
+                </WrapPanel>
+
+                <Grid Margin="0,16,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <ui:Button Grid.Column="1" 
+                               Command="{Binding ExecuteSelectedCleanupCommand, ElementName=RootPage}"
                                Appearance="Primary"
                                Height="40"
-                               Padding="15,0"
-                               Visibility="{Binding IsBusy, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                               Padding="20,0"
+                               Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Broom24" Margin="0,0,8,0"/>
+                            <ui:SymbolIcon Symbol="Play24" Margin="0,0,8,0"/>
                             <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
                         </StackPanel>
                     </ui:Button>
 
-                    <ui:Button Appearance="Primary"
+                    <ui:Button Grid.Column="1" 
+                               Appearance="Primary"
                                Height="40"
-                               Padding="15,0"
+                               Padding="20,0"
                                Cursor="Wait"
-                               Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+                               Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal">
                             <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
                             <TextBlock Text="{x:Static p:Resources.Status_Applying}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
                         </StackPanel>
                     </ui:Button>
                 </Grid>
-            </Grid>
-        </ui:Card>
+            </StackPanel>
+        </ui:CardExpander>
 
         <ui:Card Grid.Row="2" 
                  Padding="0" 
