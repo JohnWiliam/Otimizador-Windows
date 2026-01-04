@@ -34,7 +34,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
-                    </Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" /> </Grid.ColumnDefinitions>
                     
                     <ui:SymbolIcon Symbol="Broom24" FontSize="24" Margin="0,0,12,0" />
                     
@@ -49,6 +49,31 @@
                                    Margin="0,4,0,0" 
                                    TextWrapping="Wrap"/>
                     </StackPanel>
+
+                    <Grid Grid.Column="2" VerticalAlignment="Center" Margin="16,0,8,0">
+                        
+                        <ui:Button Command="{Binding ExecuteSelectedCleanupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                                   Appearance="Primary"
+                                   Height="36"
+                                   Padding="16,0"
+                                   Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Play24" Margin="0,0,8,0"/>
+                                <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
+                            </StackPanel>
+                        </ui:Button>
+
+                        <ui:Button Appearance="Primary"
+                                   Height="36"
+                                   Padding="16,0"
+                                   Cursor="Wait"
+                                   Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                                <TextBlock Text="{x:Static p:Resources.Status_Applying}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                            </StackPanel>
+                        </ui:Button>
+                    </Grid>
                 </Grid>
             </ui:CardExpander.Header>
 
@@ -74,37 +99,6 @@
                               IsChecked="{Binding CleanRecycleBin, ElementName=RootPage}" Margin="0,0,8,12"
                               Foreground="{DynamicResource PaletteRedBrush}"/>
                 </UniformGrid>
-
-                <Grid Margin="0,16,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-
-                    <ui:Button Grid.Column="1" 
-                               Command="{Binding ExecuteSelectedCleanupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                               Appearance="Primary"
-                               Height="40"
-                               Padding="20,0"
-                               Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Play24" Margin="0,0,8,0"/>
-                            <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
-                        </StackPanel>
-                    </ui:Button>
-
-                    <ui:Button Grid.Column="1" 
-                               Appearance="Primary"
-                               Height="40"
-                               Padding="20,0"
-                               Cursor="Wait"
-                               Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
-                            <TextBlock Text="{x:Static p:Resources.Status_Applying}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
-                        </StackPanel>
-                    </ui:Button>
-                </Grid>
             </StackPanel>
         </ui:CardExpander>
 
