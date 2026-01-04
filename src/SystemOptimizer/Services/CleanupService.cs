@@ -22,10 +22,8 @@ public class CleanupService
     const uint SHERB_NOPROGRESSUI = 0x00000002;
     const uint SHERB_NOSOUND = 0x00000004;
 
-    // Sobrecarga padrão para manter compatibilidade se necessário, mas idealmente usa-se a nova com Options
     public async Task RunCleanupAsync()
     {
-        // Executa tudo por padrão
         await RunCleanupAsync(new CleanupOptions 
         { 
             CleanUserTemp = true, 
@@ -34,7 +32,7 @@ public class CleanupService
             CleanBrowserCache = true,
             CleanDns = true,
             CleanWindowsUpdate = true,
-            CleanRecycleBin = false // Default seguro
+            CleanRecycleBin = false 
         });
     }
 
@@ -57,7 +55,6 @@ public class CleanupService
             if (options.CleanUserTemp)
             {
                 pathsToClean.Add("Arquivos Temp", Path.GetTempPath());
-                // Caches adicionais de usuário
                 pathsToClean.Add("Shader Cache (DX)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA", "DXCache"));
                 pathsToClean.Add("Shader Cache (D3D)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache"));
                 pathsToClean.Add("Relatórios de Erro (WER)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER"));
@@ -124,13 +121,12 @@ public class CleanupService
             {
                 try
                 {
-                    // SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND
                     SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
                     OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_RecycleBin, Icon = "Delete24", StatusColor = "Green" });
                 }
-                catch (Exception ex) 
+                catch
                 {
-                     // Opcional: Logar erro se falhar
+                     // Ignora erros ao tentar limpar a lixeira
                 }
             }
 
