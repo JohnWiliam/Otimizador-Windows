@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Models;
-using SystemOptimizer.Properties; // Namespace dos Resources
+using SystemOptimizer.Properties; 
 
 namespace SystemOptimizer.Services;
 
@@ -13,31 +14,68 @@ public class CleanupService
 {
     public event Action<CleanupLogItem>? OnLogItem;
 
+    // P/Invoke para Lixeira
+    [DllImport("shell32.dll")]
+    static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint dwFlags);
+
+    const uint SHERB_NOCONFIRMATION = 0x00000001;
+    const uint SHERB_NOPROGRESSUI = 0x00000002;
+    const uint SHERB_NOSOUND = 0x00000004;
+
+    // Sobrecarga padrão para manter compatibilidade se necessário, mas idealmente usa-se a nova com Options
     public async Task RunCleanupAsync()
+    {
+        // Executa tudo por padrão
+        await RunCleanupAsync(new CleanupOptions 
+        { 
+            CleanUserTemp = true, 
+            CleanSystemTemp = true,
+            CleanPrefetch = true,
+            CleanBrowserCache = true,
+            CleanDns = true,
+            CleanWindowsUpdate = true,
+            CleanRecycleBin = false // Default seguro
+        });
+    }
+
+    public async Task RunCleanupAsync(CleanupOptions options)
     {
         await Task.Run(async () =>
         {
             OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_Starting, Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
-
-            // 1. Windows Update Cleanup (Smart com Retry)
-            await CleanWindowsUpdateAsync();
-
-            // 2. File Cleanup Genérico
-            var paths = new Dictionary<string, string>
-            {
-                { "Arquivos Temp", Path.GetTempPath() },
-                { "Temp Sistema", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp") },
-                { "Prefetch", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch") },
-                { "Shader Cache (DX)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA", "DXCache") },
-                { "Shader Cache (D3D)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache") },
-                { "Relatórios de Erro (WER)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER") },
-                { "CrashDumps", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps") },
-                { "Windows Logs", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs") }
-            };
-
             long totalBytes = 0;
 
-            foreach (var kvp in paths)
+            // 1. Windows Update Cleanup
+            if (options.CleanWindowsUpdate)
+            {
+                await CleanWindowsUpdateAsync();
+            }
+
+            // 2. File Cleanup Genérico
+            var pathsToClean = new Dictionary<string, string>();
+
+            if (options.CleanUserTemp)
+            {
+                pathsToClean.Add("Arquivos Temp", Path.GetTempPath());
+                // Caches adicionais de usuário
+                pathsToClean.Add("Shader Cache (DX)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA", "DXCache"));
+                pathsToClean.Add("Shader Cache (D3D)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache"));
+                pathsToClean.Add("Relatórios de Erro (WER)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER"));
+                pathsToClean.Add("CrashDumps", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps"));
+            }
+
+            if (options.CleanSystemTemp)
+            {
+                pathsToClean.Add("Temp Sistema", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"));
+                pathsToClean.Add("Windows Logs", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs"));
+            }
+
+            if (options.CleanPrefetch)
+            {
+                pathsToClean.Add("Prefetch", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch"));
+            }
+
+            foreach (var kvp in pathsToClean)
             {
                 if (Directory.Exists(kvp.Value))
                 {
@@ -45,36 +83,56 @@ public class CleanupService
                 }
             }
 
-            // 3. Limpeza Especial: Chrome (Suporte a múltiplos perfis)
-            string chromeUserData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data");
-            if (Directory.Exists(chromeUserData))
+            // 3. Limpeza Especial: Chrome
+            if (options.CleanBrowserCache)
             {
-                try
+                string chromeUserData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data");
+                if (Directory.Exists(chromeUserData))
                 {
-                    foreach (var dir in Directory.GetDirectories(chromeUserData))
+                    try
                     {
-                        // Validação Extra: Verifica se parece um perfil real para evitar deletar pastas de sistema do Chrome
-                        if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
+                        foreach (var dir in Directory.GetDirectories(chromeUserData))
                         {
-                            string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
-                            if (Directory.Exists(cachePath))
+                            if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
                             {
-                                string profileName = new DirectoryInfo(dir).Name;
-                                totalBytes += CleanDirectory(cachePath, $"Chrome Cache ({profileName})");
+                                string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
+                                if (Directory.Exists(cachePath))
+                                {
+                                    string profileName = new DirectoryInfo(dir).Name;
+                                    totalBytes += CleanDirectory(cachePath, $"Chrome Cache ({profileName})");
+                                }
                             }
                         }
                     }
+                    catch { }
+                }
+            }
+
+            // 4. DNS Cache
+            if (options.CleanDns)
+            {
+                try
+                {
+                    CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNS, Icon = "Globe24", StatusColor = "Green" });
                 }
                 catch { }
             }
 
-            // 4. DNS Cache
-            try
+            // 5. Lixeira
+            if (options.CleanRecycleBin)
             {
-                CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
-                OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNS, Icon = "Globe24", StatusColor = "Green" });
+                try
+                {
+                    // SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND
+                    SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_RecycleBin, Icon = "Delete24", StatusColor = "Green" });
+                }
+                catch (Exception ex) 
+                {
+                     // Opcional: Logar erro se falhar
+                }
             }
-            catch { }
 
             double totalMb = Math.Round(totalBytes / 1024.0 / 1024.0, 2);
             OnLogItem?.Invoke(new CleanupLogItem
@@ -145,7 +203,6 @@ public class CleanupService
         {
             OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUServicesStopped, Icon = "Pause24", StatusColor = "#CA5010" });
 
-            // CORREÇÃO: Retry Pattern ao invés de Delay fixo
             bool success = false;
             int attempts = 0;
             while (!success && attempts < 5)
@@ -158,7 +215,7 @@ public class CleanupService
                 catch
                 {
                     attempts++;
-                    await Task.Delay(500); // Espera 500ms entre tentativas
+                    await Task.Delay(500); 
                 }
             }
 
@@ -210,4 +267,15 @@ public class CleanupService
             }
         });
     }
+}
+
+public class CleanupOptions
+{
+    public bool CleanUserTemp { get; set; } = true;
+    public bool CleanSystemTemp { get; set; } = true;
+    public bool CleanPrefetch { get; set; } = true;
+    public bool CleanBrowserCache { get; set; } = true;
+    public bool CleanDns { get; set; } = true;
+    public bool CleanWindowsUpdate { get; set; } = true;
+    public bool CleanRecycleBin { get; set; } = false;
 }
