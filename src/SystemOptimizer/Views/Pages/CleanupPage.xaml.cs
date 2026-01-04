@@ -11,7 +11,8 @@ using System.Windows.Input;
 using SystemOptimizer.Models;
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
-using Wpf.Ui.Controls; 
+using Wpf.Ui.Controls;
+using CommunityToolkit.Mvvm.Input; // Adicionado namespace correto
 
 namespace SystemOptimizer.Views.Pages;
 
@@ -48,8 +49,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         _cleanupService = new CleanupService();
         _cleanupService.OnLogItem += Service_OnLogItem;
         
-        // Inicializa comando
-        ExecuteSelectedCleanupCommand = new Helpers.RelayCommand(async _ => await ExecuteCleanupAsync());
+        // Inicializa comando usando AsyncRelayCommand do CommunityToolkit
+        ExecuteSelectedCleanupCommand = new AsyncRelayCommand(ExecuteCleanupAsync);
 
         // Ouve logs do ViewModel (caso outros processos escrevam lá)
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
@@ -57,8 +58,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     private void Service_OnLogItem(CleanupLogItem item)
     {
-        // Redireciona logs do serviço local para o ViewModel (que atualiza a UI via Binding se necessário, mas aqui atualizamos o RichTextBox)
-        // Precisamos do Dispatcher pois o evento vem de outra Thread
+        // Redireciona logs do serviço local para o ViewModel
         Application.Current.Dispatcher.Invoke(() => 
         {
             _viewModel.CleanupLogs.Add(item);
