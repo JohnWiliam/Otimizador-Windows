@@ -37,12 +37,12 @@
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Visual}" Icon="Color24" TargetPageType="{x:Type pages:AppearancePage}" />
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Search}" Icon="Search24" TargetPageType="{x:Type pages:SearchPage}" />
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Cleanup}" Icon="Broom24" TargetPageType="{x:Type pages:CleanupPage}" />
+                
+                <ui:NavigationViewItemSeparator />
+                
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Tweaks}" Icon="Wrench24" TargetPageType="{x:Type pages:TweaksPage}" />
             </ui:NavigationView.MenuItems>
             
-                <ui:NavigationViewItemSeparator />
-                
-
             <ui:NavigationView.FooterMenuItems>
                  <ui:NavigationViewItem Content="{x:Static p:Resources.Settings_Title}" Icon="Settings24" TargetPageType="{x:Type pages:SettingsPage}" />
             </ui:NavigationView.FooterMenuItems>
