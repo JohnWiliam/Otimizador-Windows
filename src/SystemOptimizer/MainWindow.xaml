@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
+        xmlns:pages="clr-namespace:SystemOptimizer.Views.Pages" 
         xmlns:p="clr-namespace:SystemOptimizer.Properties"
         mc:Ignorable="d"
         Title="{x:Static p:Resources.App_Title}"
@@ -29,26 +30,29 @@
                            IsPaneOpen="True"
                            IsBackButtonVisible="Collapsed">
             <ui:NavigationView.MenuItems>
-                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Privacy}" Icon="Shield24" TargetPageType="{x:Type vm:PrivacyViewModel}" />
-                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Performance}" Icon="TopSpeed24" TargetPageType="{x:Type vm:PerformanceViewModel}" />
-                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Network}" Icon="Globe24" TargetPageType="{x:Type vm:NetworkViewModel}" />
-                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Security}" Icon="LockClosed24" TargetPageType="{x:Type vm:SecurityViewModel}" />
-                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Visual}" Icon="Color24" TargetPageType="{x:Type vm:AppearanceViewModel}" />
-                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Search}" Icon="Search24" TargetPageType="{x:Type vm:SearchViewModel}" />
-                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Cleanup}" Icon="Broom24" TargetPageType="{x:Type vm:CleanupViewModel}" />
-                <ui:NavigationViewItemSeparator />
-                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Tweaks}" Icon="Wrench24" TargetPageType="{x:Type vm:TweakViewModel}" />
+                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Privacy}" Icon="Shield24" TargetPageType="{x:Type pages:PrivacyPage}" />
+                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Performance}" Icon="TopSpeed24" TargetPageType="{x:Type pages:PerformancePage}" />
+                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Network}" Icon="Globe24" TargetPageType="{x:Type pages:NetworkPage}" />
+                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Security}" Icon="LockClosed24" TargetPageType="{x:Type pages:SecurityPage}" />
+                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Visual}" Icon="Color24" TargetPageType="{x:Type pages:AppearancePage}" />
+                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Search}" Icon="Search24" TargetPageType="{x:Type pages:SearchPage}" />
+                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Cleanup}" Icon="Broom24" TargetPageType="{x:Type pages:CleanupPage}" />
+                <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Tweaks}" Icon="Wrench24" TargetPageType="{x:Type pages:TweaksPage}" />
             </ui:NavigationView.MenuItems>
             
+                <ui:NavigationViewItemSeparator />
+                
+
             <ui:NavigationView.FooterMenuItems>
-                 <ui:NavigationViewItem Content="{x:Static p:Resources.Settings_Title}" Icon="Settings24" TargetPageType="{x:Type vm:SettingsViewModel}" />
+                 <ui:NavigationViewItem Content="{x:Static p:Resources.Settings_Title}" Icon="Settings24" TargetPageType="{x:Type pages:SettingsPage}" />
             </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
 
+        <ContentPresenter x:Name="RootContentDialogPresenter" 
+                          Grid.Row="0" Grid.RowSpan="2" />
+
         <ui:SnackbarPresenter x:Name="SnackbarPresenter" 
                               Grid.Row="0" Grid.RowSpan="2" />
-                              
-        <ui:ContentDialogPresenter x:Name="RootContentDialogPresenter" 
-                                   Grid.Row="0" Grid.RowSpan="2" />
+
     </Grid>
 </ui:FluentWindow>
