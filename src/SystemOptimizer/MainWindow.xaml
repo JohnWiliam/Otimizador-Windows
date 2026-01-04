@@ -44,5 +44,11 @@
                  <ui:NavigationViewItem Content="{x:Static p:Resources.Settings_Title}" Icon="Settings24" TargetPageType="{x:Type vm:SettingsViewModel}" />
             </ui:NavigationView.FooterMenuItems>
         </ui:NavigationView>
+
+        <ui:SnackbarPresenter x:Name="SnackbarPresenter" 
+                              Grid.Row="0" Grid.RowSpan="2" />
+                              
+        <ui:ContentDialogPresenter x:Name="RootContentDialogPresenter" 
+                                   Grid.Row="0" Grid.RowSpan="2" />
     </Grid>
 </ui:FluentWindow>
