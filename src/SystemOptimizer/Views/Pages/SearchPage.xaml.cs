@@ -1,17 +1,16 @@
+using System.Windows.Controls;
 using SystemOptimizer.ViewModels;
-using Wpf.Ui.Abstractions.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class SearchPage : INavigableView<MainViewModel>
+public partial class SearchPage : Page
 {
-    public MainViewModel ViewModel { get; }
-
     public SearchPage(MainViewModel viewModel)
     {
-        ViewModel = viewModel;
-        DataContext = this;
-
         InitializeComponent();
+        
+        // Define o DataContext para o ViewModel injetado.
+        // Isso permite que os Bindings do XAML (ex: {Binding SearchTweaks}) funcionem corretamente.
+        DataContext = viewModel;
     }
 }

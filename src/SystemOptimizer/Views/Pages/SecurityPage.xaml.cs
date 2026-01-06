@@ -1,17 +1,16 @@
+using System.Windows.Controls;
 using SystemOptimizer.ViewModels;
-using Wpf.Ui.Abstractions.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class SecurityPage : INavigableView<MainViewModel>
+public partial class SecurityPage : Page
 {
-    public MainViewModel ViewModel { get; }
-
     public SecurityPage(MainViewModel viewModel)
     {
-        ViewModel = viewModel;
-        DataContext = this;
-
         InitializeComponent();
+
+        // Define o DataContext para o ViewModel injetado.
+        // Garante consistência com as outras páginas e funcionamento dos comandos.
+        DataContext = viewModel;
     }
 }
