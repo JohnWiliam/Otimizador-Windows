@@ -18,7 +18,7 @@ namespace SystemOptimizer.Views.Pages;
 
 public partial class CleanupPage : Page, INotifyPropertyChanged
 {
-    private MainViewModel _viewModel;
+    private readonly MainViewModel _viewModel;
     private readonly CleanupService _cleanupService;
     
     // Propriedades de Estado da UI
@@ -39,30 +39,20 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     // Comando
     public ICommand ExecuteSelectedCleanupCommand { get; }
 
-    public CleanupPage(MainViewModel viewModel)
+    // Construtor atualizado para receber o CleanupService via Injeção de Dependência
+    public CleanupPage(MainViewModel viewModel, CleanupService cleanupService)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _cleanupService = cleanupService; // Recebe a instância Singleton correta
         DataContext = viewModel; // Mantém o VM global como contexto principal
-        
-        // Serviço Local para controle granular
-        _cleanupService = new CleanupService();
-        _cleanupService.OnLogItem += Service_OnLogItem;
         
         // Inicializa comando usando AsyncRelayCommand
         ExecuteSelectedCleanupCommand = new AsyncRelayCommand(ExecuteCleanupAsync);
 
-        // Ouve logs do ViewModel (caso outros processos escrevam lá)
+        // Ouve logs do ViewModel (A fonte da verdade)
+        // Não precisamos mais ouvir o serviço diretamente, pois o ViewModel já faz isso.
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
-    }
-
-    private void Service_OnLogItem(CleanupLogItem item)
-    {
-        // Redireciona logs do serviço local para o ViewModel
-        Application.Current.Dispatcher.Invoke(() => 
-        {
-            _viewModel.CleanupLogs.Add(item);
-        });
     }
 
     private async Task ExecuteCleanupAsync()
@@ -74,6 +64,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             IsBusyLocal = true;
             IsOptionsExpanded = false; // Colapsa o card
             
+            // Limpa os logs visuais através do ViewModel
             Application.Current.Dispatcher.Invoke(() => _viewModel.CleanupLogs.Clear());
 
             var options = new CleanupOptions
@@ -87,6 +78,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 CleanRecycleBin = CleanRecycleBin
             };
 
+            // Executa a limpeza no serviço Singleton injetado.
+            // Os logs serão gerados lá, capturados pelo MainViewModel e refletidos aqui via CollectionChanged.
             await _cleanupService.RunCleanupAsync(options);
         }
         catch (Exception ex)
@@ -136,7 +129,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-    // --- Lógica Existente de Log Visual ---
+    // --- Lógica Visual (RichTextBox) ---
 
     private void CleanupLogs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
