@@ -10,7 +10,7 @@ public partial class SearchPage : Page
         InitializeComponent();
         
         // Define o DataContext para o ViewModel injetado.
-        // Isso permite que os Bindings do XAML (ex: {Binding SearchTweaks}) funcionem corretamente.
+        // Isso permite que os bindings {Binding SearchTweaks} e os Comandos funcionem.
         DataContext = viewModel;
     }
 }
