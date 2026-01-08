@@ -54,16 +54,17 @@ public class CleanupService
 
             if (options.CleanUserTemp)
             {
-                pathsToClean.Add("Arquivos Temp", Path.GetTempPath());
+                // Usa Resources para o label (PT: Arquivos Temporários / EN: Temporary Files)
+                pathsToClean.Add(Resources.Label_TempFiles ?? "User Temp", Path.GetTempPath());
                 pathsToClean.Add("Shader Cache (DX)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA", "DXCache"));
                 pathsToClean.Add("Shader Cache (D3D)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache"));
-                pathsToClean.Add("Relatórios de Erro (WER)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER"));
+                pathsToClean.Add("WER Reports", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER"));
                 pathsToClean.Add("CrashDumps", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps"));
             }
 
             if (options.CleanSystemTemp)
             {
-                pathsToClean.Add("Temp Sistema", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"));
+                pathsToClean.Add(Resources.Label_SystemTemp ?? "System Temp", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"));
                 pathsToClean.Add("Windows Logs", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs"));
             }
 
@@ -80,29 +81,10 @@ public class CleanupService
                 }
             }
 
-            // 3. Limpeza Especial: Chrome
+            // 3. Limpeza de Navegadores
             if (options.CleanBrowserCache)
             {
-                string chromeUserData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data");
-                if (Directory.Exists(chromeUserData))
-                {
-                    try
-                    {
-                        foreach (var dir in Directory.GetDirectories(chromeUserData))
-                        {
-                            if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
-                            {
-                                string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
-                                if (Directory.Exists(cachePath))
-                                {
-                                    string profileName = new DirectoryInfo(dir).Name;
-                                    totalBytes += CleanDirectory(cachePath, $"Chrome Cache ({profileName})");
-                                }
-                            }
-                        }
-                    }
-                    catch { }
-                }
+                totalBytes += CleanBrowsers();
             }
 
             // 4. DNS Cache
@@ -111,7 +93,8 @@ public class CleanupService
                 try
                 {
                     CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
-                    OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNS, Icon = "Globe24", StatusColor = "Green" });
+                    string msg = Resources.Log_DNSCleared ?? "DNS cache cleared";
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = msg, Icon = "Globe24", StatusColor = "Green" });
                 }
                 catch { }
             }
@@ -122,11 +105,12 @@ public class CleanupService
                 try
                 {
                     SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
-                    OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_RecycleBin, Icon = "Delete24", StatusColor = "Green" });
+                    string msg = Resources.Log_RecycleBinEmptied ?? "Recycle Bin emptied";
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = msg, Icon = "Delete24", StatusColor = "Green" });
                 }
                 catch
                 {
-                     // Ignora erros ao tentar limpar a lixeira
+                     // Ignora erros
                 }
             }
 
@@ -134,11 +118,76 @@ public class CleanupService
             OnLogItem?.Invoke(new CleanupLogItem
             {
                 Message = string.Format(Resources.Log_Finished, totalMb),
-                Icon = "Delete24",
+                Icon = "CheckmarkCircle24",
                 StatusColor = "#0078D4",
                 IsBold = true
             });
         });
+    }
+
+    private long CleanBrowsers()
+    {
+        long bytesCleaned = 0;
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+        // -- Chrome --
+        string chromePath = Path.Combine(localAppData, "Google", "Chrome", "User Data");
+        bytesCleaned += CleanChromiumBrowser(chromePath, "Chrome");
+
+        // -- Edge --
+        string edgePath = Path.Combine(localAppData, "Microsoft", "Edge", "User Data");
+        bytesCleaned += CleanChromiumBrowser(edgePath, "Edge");
+
+        // -- Firefox --
+        string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
+        if (Directory.Exists(firefoxPath))
+        {
+            try
+            {
+                foreach (var dir in Directory.GetDirectories(firefoxPath))
+                {
+                    // Firefox usa pasta "cache2" dentro do perfil
+                    string cachePath = Path.Combine(dir, "cache2", "entries");
+                    if (Directory.Exists(cachePath))
+                    {
+                        string dirName = new DirectoryInfo(dir).Name;
+                        string label = $"Firefox Cache ({dirName})";
+                        bytesCleaned += CleanDirectory(cachePath, label);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        return bytesCleaned;
+    }
+
+    private long CleanChromiumBrowser(string userDataPath, string browserName)
+    {
+        long bytes = 0;
+        if (Directory.Exists(userDataPath))
+        {
+            try
+            {
+                foreach (var dir in Directory.GetDirectories(userDataPath))
+                {
+                    // Identifica pastas de perfil
+                    if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
+                    {
+                        // Limpa apenas Cache_Data, preservando cookies/histórico
+                        string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
+                        if (Directory.Exists(cachePath))
+                        {
+                            string profileName = new DirectoryInfo(dir).Name;
+                            string label = $"{browserName} Cache ({profileName})";
+                            bytes += CleanDirectory(cachePath, label);
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+        return bytes;
     }
 
     private long CleanDirectory(string path, string label)
@@ -182,7 +231,8 @@ public class CleanupService
         }
         else
         {
-            OnLogItem?.Invoke(new CleanupLogItem { Message = string.Format(Resources.Log_Clean, label), Icon = "Info24", StatusColor = "Gray" });
+            string msg = string.Format(Resources.Log_Clean ?? "{0} Clean", label);
+            OnLogItem?.Invoke(new CleanupLogItem { Message = msg, Icon = "Info24", StatusColor = "Gray" });
         }
         return categoryBytes;
     }
