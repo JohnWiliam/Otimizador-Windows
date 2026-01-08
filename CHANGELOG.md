@@ -2,9 +2,17 @@
 
 **🚀 Otimizador de Sistema v2.1.1**
 
-Esta atualização foca na **unificação visual** completa da aplicação e na correção de bugs críticos de layout, garantindo que todas as categorias ofereçam a mesma experiência fluida introduzida na versão anterior.
+Esta atualização é um marco importante que introduz um **Sistema de Atualização Automática**, além da **unificação visual** completa da aplicação e correções críticas de internacionalização.
 
 **✨ O Que Há de Novo?**
+
+* **🔄 Sistema de Atualização Automática (Novo)**
+>
+> Agora é possível verificar e instalar novas versões diretamente pelo aplicativo, sem necessidade de baixar manualmente pelo navegador.
+>
+> * **Verificação Integrada:** Nova categoria na aba **Configurações** que consulta a API do GitHub Releases para encontrar novidades.
+> * **Instalação Silenciosa:** O sistema baixa o executável em segundo plano e realiza a substituição automática (*Self-Update*) ao reiniciar.
+> * **Interface de Progresso:** Novo diálogo modal (`UpdateDialog`) que exibe as notas da versão (*Release Notes*) e uma barra de progresso em tempo real durante o download.
 
 * **🎨 Padronização de Interface (UI Overhaul)**
 >
@@ -21,10 +29,12 @@ Esta atualização foca na **unificação visual** completa da aplicação e na 
 > * **Dynamic ScrollViewer:** Substituição global dos controles de rolagem padrão pelo `ui:DynamicScrollViewer`. Isso corrige o problema onde os cards ficavam "cortados" e habilita a rolagem suave com a roda do mouse (scroll wheel) dentro do `NavigationView`.
 > * **Correção de Espaçamento:** Ajuste técnico nas margens dos botões (`Margin` em vez de `Spacing`), garantindo compatibilidade nativa com o WPF no .NET 10 sem erros de compilação.
 
-* **🛠️ Estabilidade e Compilação**
+* **🛠️ Estabilidade e Correções Técnicas**
 >
-> * **Correções XML:** Resolução de erros de tags aninhadas (`MC3000`) que quebravam o processo de *build* em páginas longas.
-> * **Integridade MVVM:** Todos os novos botões e cards foram rigorosamente ligados (`Binding`) aos comandos assíncronos existentes (`ApplySingleCommand`/`RevertSingleCommand`), garantindo que a lógica de "Modo Silencioso" e persistência continue funcionando perfeitamente com a nova interface.
+> * **Internacionalização da Pesquisa:** Corrigido um bug onde o título "Otimizações de Pesquisa" permanecia em português mesmo com o app em inglês. Agora o título responde dinamicamente à troca de idioma.
+> * **Estabilidade:** Tratamento de erros de referência nula (`CS8604`/`CS8625`) nos serviços de diálogo e atualização, prevenindo falhas silenciosas.
+> * **Compilação XAML:** Correção do erro `MC3050` movendo conversores estáticos para `Page.Resources`, garantindo uma compilação limpa.
+> * **Integridade MVVM:** Todos os novos botões e cards foram rigorosamente ligados (`Binding`) aos comandos assíncronos existentes, garantindo que a lógica de "Modo Silencioso" e persistência continue funcionando perfeitamente.
 >
 ---
 
