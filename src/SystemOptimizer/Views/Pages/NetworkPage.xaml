@@ -76,6 +76,7 @@
                         </ui:Card>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
-            </ui:DynamicScrollViewer>
+            </ItemsControl>
+        </ui:DynamicScrollViewer>
     </Grid>
 </Page>
