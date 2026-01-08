@@ -75,15 +75,15 @@
                 <ui:ToggleSwitch IsChecked="{Binding IsKeepInstalledEnabled}" />
             </ui:CardControl>
 
-            <TextBlock Text="Atualização" FontSize="20"
+            <TextBlock Text="{x:Static p:Resources.Settings_Update}" FontSize="20"
                        FontWeight="SemiBold" Margin="0,24,0,16"
                        Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
 
             <ui:CardControl Icon="ArrowSync24">
                 <ui:CardControl.Header>
                     <StackPanel>
-                        <TextBlock Text="Versão do Sistema" FontWeight="Medium"/>
-                        <TextBlock Text="Verifique se há novas versões disponíveis no GitHub"
+                        <TextBlock Text="{x:Static p:Resources.Settings_UpdateSystemVersion}" FontWeight="Medium"/>
+                        <TextBlock Text="{x:Static p:Resources.Settings_UpdateCheckDesc}"
                                    FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
                 </ui:CardControl.Header>
@@ -93,7 +93,7 @@
                     <Grid>
                         <StackPanel Orientation="Horizontal" Visibility="{Binding IsCheckingForUpdates, Converter={x:Static ui:Converters.BooleanToVisibilityConverter.Inverse}}">
                             <ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,8,0"/>
-                            <TextBlock Text="Verificar Agora"/>
+                            <TextBlock Text="{x:Static p:Resources.Btn_CheckUpdate}"/>
                         </StackPanel>
                         <ui:ProgressRing IsIndeterminate="True" 
                                          Visibility="{Binding IsCheckingForUpdates, Converter={x:Static ui:Converters.BooleanToVisibilityConverter.Instance}}"
