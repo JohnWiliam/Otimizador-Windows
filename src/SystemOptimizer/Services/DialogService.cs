@@ -1,12 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using Wpf.Ui;
-using Wpf.Ui.Controls;
 using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
 using SystemOptimizer.Properties; // Para usar Resources
 
 namespace SystemOptimizer.Services;
@@ -69,7 +72,7 @@ public class DialogService : IDialogService
             Symbol = iconSymbol,
             FontSize = 32,
             Foreground = iconColor,
-            VerticalAlignment = VerticalAlignment.Center, 
+            VerticalAlignment = VerticalAlignment.Top, 
             Margin = new Thickness(0, 0, 16, 0)
         };
 
@@ -80,7 +83,7 @@ public class DialogService : IDialogService
             Text = title,
             FontSize = 16,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 4),
+            Margin = new Thickness(0, 0, 0, 8),
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] ?? Brushes.White
         };
 
@@ -109,7 +112,7 @@ public class DialogService : IDialogService
             CloseButtonText = "OK",
             DefaultButton = ContentDialogButton.Close,
             DialogMaxWidth = 420, 
-            Padding = new Thickness(24, 20, 24, 10),
+            Padding = new Thickness(24, 24, 24, 12),
             BorderThickness = new Thickness(1),
             BorderBrush = new SolidColorBrush(Color.FromArgb(20, 128, 128, 128)),
             Background = acrylicBrush 
@@ -130,25 +133,26 @@ public class DialogService : IDialogService
             : Color.FromRgb(248, 248, 248);
         var acrylicBrush = new SolidColorBrush(baseColor) { Opacity = 0.95 };
 
-        // StackPanel principal
-        var stackPanel = new StackPanel { Margin = new Thickness(0) };
+        // Grid principal para controle total do layout
+        var mainGrid = new Grid { Margin = new Thickness(0) };
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 0: Header
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) }); // 1: Notes (Expands)
+        mainGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); // 2: Actions
 
-        // --- Cabeçalho ---
-        var headerGrid = new Grid { Margin = new Thickness(0, 0, 0, 16) };
-        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
+        // --- 0. Cabeçalho (Com Padding Superior/Lateral) ---
+        var headerPanel = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(24, 24, 24, 16) };
+        
         var icon = new SymbolIcon
         {
             Symbol = SymbolRegular.ArrowDownload24,
             FontSize = 28,
             Foreground = new SolidColorBrush(Color.FromRgb(0, 120, 215)),
-            Margin = new Thickness(0, 0, 12, 0)
+            Margin = new Thickness(0, 0, 12, 0),
+            VerticalAlignment = VerticalAlignment.Center
         };
 
         var titleBlock = new System.Windows.Controls.TextBlock
         {
-            // USA RESOURCE: Msg_UpdateAvailable_Title
             Text = string.Format(Resources.Msg_UpdateAvailable_Title, version),
             FontSize = 18,
             FontWeight = FontWeights.SemiBold,
@@ -156,119 +160,194 @@ public class DialogService : IDialogService
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"]
         };
 
-        Grid.SetColumn(icon, 0);
-        Grid.SetColumn(titleBlock, 1);
-        headerGrid.Children.Add(icon);
-        headerGrid.Children.Add(titleBlock);
+        headerPanel.Children.Add(icon);
+        headerPanel.Children.Add(titleBlock);
 
-        // --- Notas da Versão ---
-        var notesScroll = new ScrollViewer 
-        { 
-            MaxHeight = 200, 
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            Margin = new Thickness(0, 0, 0, 16)
-        };
-        var notesBlock = new System.Windows.Controls.TextBlock
+        // --- 1. Notas da Versão (Markdown Renderizado) ---
+        var notesRichTextBox = new System.Windows.Controls.RichTextBox
         {
-            Text = releaseNotes,
-            TextWrapping = TextWrapping.Wrap,
-            FontSize = 14,
-            Opacity = 0.8,
+            MaxHeight = 250, // Altura máxima controlada
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Margin = new Thickness(24, 0, 24, 16),
+            Background = Brushes.Transparent,
+            BorderThickness = new Thickness(0),
+            IsReadOnly = true,
+            IsDocumentEnabled = true, // Permite seleção
             Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"]
         };
-        notesScroll.Content = notesBlock;
 
-        // --- Painel de Status/Progresso ---
-        var statusPanel = new StackPanel { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 10, 0, 0) };
+        // Converte Markdown e atribui ao Document
+        notesRichTextBox.Document = RenderMarkdownToFlowDocument(releaseNotes);
+
+        // --- 2. Painel de Ação e Progresso (Padding Inferior reduzido para colar no Footer) ---
+        var actionPanel = new StackPanel { Margin = new Thickness(24, 0, 24, 0) };
+
+        // Painel de Status (Download)
+        var statusPanel = new StackPanel { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 0, 0, 12) };
         var statusText = new System.Windows.Controls.TextBlock 
         { 
-            // USA RESOURCE: Msg_Downloading
             Text = Resources.Msg_Downloading, 
             FontSize = 12, 
             Margin = new Thickness(0,0,0,4),
-            HorizontalAlignment = HorizontalAlignment.Center
+            HorizontalAlignment = HorizontalAlignment.Left
         };
         var progressBar = new System.Windows.Controls.ProgressBar 
         { 
-            Height = 6, 
+            Height = 4, 
             IsIndeterminate = false, 
             Maximum = 100 
         };
         statusPanel.Children.Add(statusText);
         statusPanel.Children.Add(progressBar);
 
-        // --- Botão de Ação Personalizado (CORREÇÃO CS1061) ---
-        // Em vez de usar o botão do ContentDialog, criamos um aqui dentro
-        // para controlar o clique sem fechar o diálogo.
+        // Botão de Atualizar
         var actionButton = new Wpf.Ui.Controls.Button
         {
-            // USA RESOURCE: Btn_UpdateAndRestart
             Content = Resources.Btn_UpdateAndRestart,
             Appearance = ControlAppearance.Primary,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 16, 0, 0),
-            MinWidth = 160
+            HorizontalAlignment = HorizontalAlignment.Stretch, // Ocupa largura total
+            Margin = new Thickness(0, 0, 0, 4) // Pequena margem antes do botão nativo "Cancelar"
         };
 
-        // Adiciona elementos ao StackPanel
-        stackPanel.Children.Add(headerGrid);
-        stackPanel.Children.Add(notesScroll);
-        stackPanel.Children.Add(statusPanel);
-        stackPanel.Children.Add(actionButton); // Botão adicionado ao conteúdo
+        actionPanel.Children.Add(statusPanel);
+        actionPanel.Children.Add(actionButton);
+
+        // Montagem do Grid
+        Grid.SetRow(headerPanel, 0);
+        Grid.SetRow(notesRichTextBox, 1);
+        Grid.SetRow(actionPanel, 2);
+
+        mainGrid.Children.Add(headerPanel);
+        mainGrid.Children.Add(notesRichTextBox);
+        mainGrid.Children.Add(actionPanel);
 
         var dialog = new ContentDialog
         {
             Title = null,
-            Content = stackPanel,
-            // Removemos o botão primário nativo para evitar conflito de fechamento
+            Content = mainGrid,
             PrimaryButtonText = "", 
-            CloseButtonText = "Cancelar",
+            CloseButtonText = "Cancelar", // Botão nativo no rodapé
             DialogMaxWidth = 500,
             Background = acrylicBrush,
-            Padding = new Thickness(24)
+            Padding = new Thickness(0) // IMPORTANTE: Padding zero para controlar margens internamente
         };
 
+        // Ajustes de estilo para transparência
         dialog.Resources["ContentDialogTopOverlay"] = Brushes.Transparent;
         dialog.Resources["ContentDialogContentBackground"] = Brushes.Transparent;
         dialog.Resources["ContentDialogBackground"] = Brushes.Transparent;
 
-        // Lógica do Clique no Botão Personalizado
+        // Lógica do Botão
         actionButton.Click += async (s, e) =>
         {
-            // 1. Bloqueia UI
             actionButton.IsEnabled = false;
-            
-            // CORREÇÃO: Usar string.Empty em vez de null para evitar aviso CS8625
             dialog.CloseButtonText = string.Empty; 
-            
             statusPanel.Visibility = Visibility.Visible;
 
             try
             {
                 var progress = new Progress<double>(p => progressBar.Value = p);
-                
-                // 2. Executa Download
                 await updateAction(progress);
-
-                // 3. Atualiza Status para Instalação
-                // USA RESOURCE: Msg_Installing
                 statusText.Text = Resources.Msg_Installing;
                 progressBar.IsIndeterminate = true;
-
-                // O aplicativo reiniciará em breve, não precisamos fechar o diálogo manualmente
             }
             catch (Exception ex)
             {
-                // Erro: Restaura UI
-                // USA RESOURCE: Msg_UpdateError
                 statusText.Text = string.Format(Resources.Msg_UpdateError, ex.Message);
                 statusText.Foreground = Brushes.Red;
                 actionButton.IsEnabled = true;
-                dialog.CloseButtonText = "Fechar"; // Permite fechar agora
+                dialog.CloseButtonText = "Fechar"; 
                 progressBar.Visibility = Visibility.Collapsed;
             }
         };
 
         await _contentDialogService.ShowAsync(dialog, CancellationToken.None);
+    }
+
+    /// <summary>
+    /// Converte Markdown básico (Headers, Bullet Points, Negrito) em um FlowDocument para RichTextBox.
+    /// </summary>
+    private FlowDocument RenderMarkdownToFlowDocument(string markdown)
+    {
+        var doc = new FlowDocument
+        {
+            PagePadding = new Thickness(0),
+            FontFamily = new FontFamily("Segoe UI"),
+            FontSize = 14
+        };
+
+        if (string.IsNullOrWhiteSpace(markdown)) return doc;
+
+        var lines = markdown.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+        List list = null; // Para agrupar itens de lista
+
+        foreach (var line in lines)
+        {
+            string trimLine = line.Trim();
+            if (string.IsNullOrWhiteSpace(trimLine)) continue;
+
+            // Header (#)
+            if (trimLine.StartsWith("#"))
+            {
+                list = null; // Quebra lista anterior
+                string text = trimLine.TrimStart('#', ' ');
+                var p = new Paragraph(ParseBold(text))
+                {
+                    FontSize = 16,
+                    FontWeight = FontWeights.Bold,
+                    Margin = new Thickness(0, 12, 0, 4)
+                };
+                doc.Blocks.Add(p);
+            }
+            // List Item (- ou *)
+            else if (trimLine.StartsWith("- ") || trimLine.StartsWith("* "))
+            {
+                if (list == null)
+                {
+                    list = new List { Margin = new Thickness(0, 0, 0, 8), MarkerStyle = TextMarkerStyle.Disc };
+                    doc.Blocks.Add(list);
+                }
+                string text = trimLine.Substring(1).Trim();
+                var li = new ListItem(new Paragraph(ParseBold(text)));
+                list.ListItems.Add(li);
+            }
+            // Texto Normal
+            else
+            {
+                list = null; // Quebra lista anterior
+                var p = new Paragraph(ParseBold(trimLine))
+                {
+                    Margin = new Thickness(0, 0, 0, 4)
+                };
+                doc.Blocks.Add(p);
+            }
+        }
+
+        return doc;
+    }
+
+    /// <summary>
+    /// Processa negrito (**texto**) dentro de uma linha.
+    /// </summary>
+    private Inline ParseBold(string text)
+    {
+        // Se não tiver negrito, retorna Run simples
+        if (!text.Contains("**")) return new Run(text);
+
+        var span = new Span();
+        var parts = Regex.Split(text, @"(\*\*.*?\*\*)");
+
+        foreach (var part in parts)
+        {
+            if (part.StartsWith("**") && part.EndsWith("**") && part.Length > 4)
+            {
+                span.Inlines.Add(new Run(part.Substring(2, part.Length - 4)) { FontWeight = FontWeights.Bold });
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(part)) span.Inlines.Add(new Run(part));
+            }
+        }
+        return span;
     }
 }
