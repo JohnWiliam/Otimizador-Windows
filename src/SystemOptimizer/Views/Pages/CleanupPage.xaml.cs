@@ -145,7 +145,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         {
             string msgLower = item.Message.ToLower();
             
-            // Lógica bilíngue (PT/EN) para escolha de ícones
             if (msgLower.Contains("concluída") || msgLower.Contains("finished") || msgLower.Contains("sucesso") || msgLower.Contains("success") || msgLower.Contains("removidos") || msgLower.Contains("removed")) 
                 symbol = SymbolRegular.Checkmark24;
             else if (msgLower.Contains("erro") || msgLower.Contains("error") || msgLower.Contains("fail")) 
@@ -162,13 +161,14 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             symbol = parsedSymbol;
         }
 
+        // Criar ícone garantindo o Foreground
         var icon = new SymbolIcon
         {
             Symbol = symbol,
             FontSize = 16,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = statusBrush,
-            Margin = new Thickness(0, 0, 0, -2)
+            Foreground = statusBrush, // Aplica explicitamente a cor ao ícone
+            Margin = new Thickness(0, 0, 0, -2) 
         };
 
         var iconContainer = new InlineUIContainer(icon)
@@ -182,10 +182,9 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         {
             BaselineAlignment = BaselineAlignment.Center,
             FontFamily = new FontFamily("Segoe UI"),
-            FontSize = 13 
+            FontSize = 13,
+            Foreground = statusBrush // Aplica a mesma cor ao texto
         };
-
-        run.Foreground = statusBrush;
 
         if (item.IsBold)
         {
@@ -202,37 +201,43 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     {
         string msg = message?.ToLower() ?? "";
         
-        // Se vier cor Hex válida do Service, usa ela
         if (!string.IsNullOrEmpty(statusColor) && statusColor.StartsWith("#"))
         {
             try { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(statusColor)); } catch { }
         }
 
-        // Lógica Bilíngue para Cores Harmônicas (Pastel/Flat)
-        
+        // Palette Flat/Pastel
+        // Update / Services -> Blue
         if (msg.Contains("update") || msg.Contains("serviço") || msg.Contains("service"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64B5F6")); // Blue 300
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64B5F6")); 
 
+        // Success / Cleaned -> Green
         if (msg.Contains("temp") || msg.Contains("lixeira") || msg.Contains("bin") || msg.Contains("cache") || msg.Contains("prefetch") || msg.Contains("removed") || msg.Contains("removidos"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#81C784")); // Green 300
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#81C784")); 
         
+        // Neutral / Empty -> Gray Blue
         if (msg.Contains("vazio") || msg.Contains("limpo") || msg.Contains("clean") || msg.Contains("empty"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B0BEC5")); // Blue Gray
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B0BEC5")); 
 
-        if (msg.Contains("chrome") || msg.Contains("edge") || msg.Contains("firefox") || msg.Contains("browser"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD54F")); // Amber 300
+        // Browsers -> Amber/Yellow
+        if (msg.Contains("chrome") || msg.Contains("edge") || msg.Contains("firefox") || msg.Contains("browser") || msg.Contains("navegadores"))
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD54F")); 
 
+        // DNS / Network -> Purple
         if (msg.Contains("dns") || msg.Contains("rede") || msg.Contains("network"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9575CD")); // Deep Purple 300
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9575CD")); 
 
+        // General Success -> Teal
         if (msg.Contains("concluída") || msg.Contains("finished") || msg.Contains("sucesso") || msg.Contains("success") || statusColor == "Green")
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4DB6AC")); // Teal 300
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4DB6AC")); 
 
+        // Error -> Red
         if (msg.Contains("erro") || msg.Contains("error") || msg.Contains("fail") || msg.Contains("negado") || msg.Contains("denied"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E57373")); // Red 300
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E57373")); 
 
+        // Info / Starting -> Light Blue
         if (msg.Contains("iniciando") || msg.Contains("starting") || msg.Contains("parados") || msg.Contains("stopped"))
-             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4FC3F7")); // Light Blue
+             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4FC3F7")); 
 
         return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0")); 
     }
