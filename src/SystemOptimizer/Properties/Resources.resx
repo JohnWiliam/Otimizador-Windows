@@ -185,8 +185,7 @@
   <data name="Cleanup_OptionDNS" xml:space="preserve"><value>Cache de DNS</value></data>
   <data name="Cleanup_OptionRecycleBin" xml:space="preserve"><value>Esvaziar Lixeira</value></data>
   <data name="Cleanup_OptionWindowsUpdate" xml:space="preserve"><value>Cache do Windows Update</value></data>
-  <data name="Log_RecycleBin" xml:space="preserve"><value>Lixeira: Esvaziada</value>
-  </data>
+  <data name="Log_RecycleBin" xml:space="preserve"><value>Lixeira: Esvaziada</value></data>
   <data name="Settings_Update" xml:space="preserve"><value>Atualização</value></data>
   <data name="Settings_UpdateSystemVersion" xml:space="preserve"><value>Versão do Sistema</value></data>
   <data name="Settings_UpdateCheckDesc" xml:space="preserve"><value>Verifique se há novas versões disponíveis no GitHub</value></data>
