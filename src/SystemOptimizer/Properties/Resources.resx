@@ -71,7 +71,7 @@
     <value>Desabilita o serviço de Experiência do Usuário Conectado.</value>
   </data>
   <data name="P3_Title" xml:space="preserve">
-   <value>Desativar Cortana</value>
+    <value>Desativar Cortana</value>
   </data>
   <data name="P3_Desc" xml:space="preserve">
     <value>Bloqueia o assistente de voz legado e pesquisa web.</value>
@@ -413,14 +413,12 @@ Erro: {2}</value>
   <data name="S_3_Desc" xml:space="preserve">
     <value>Remove resultados da web e notícias do Bing do Menu Iniciar.</value>
   </data>
-  
   <data name="Search_Title" xml:space="preserve">
     <value>Otimizações de Pesquisa</value>
   </data>
   <data name="Search_Subtitle" xml:space="preserve">
     <value>Otimize sua privacidade e desempenho do menu Iniciar</value>
   </data>
-
   <data name="Btn_RestartExplorer" xml:space="preserve">
     <value>Reiniciar Explorer</value>
   </data>
@@ -451,7 +449,6 @@ Erro: {2}</value>
   <data name="Log_RecycleBin" xml:space="preserve">
     <value>Lixeira: Esvaziada</value>
   </data>
-
   <data name="Settings_Update" xml:space="preserve">
     <value>Atualização</value>
   </data>
@@ -484,5 +481,17 @@ Erro: {2}</value>
   </data>
   <data name="Msg_UpdateCheckError" xml:space="preserve">
     <value>Falha ao verificar atualizações: {0}</value>
+  </data>
+  <data name="Label_TempFiles" xml:space="preserve">
+    <value>Arquivos Temporários</value>
+  </data>
+  <data name="Label_SystemTemp" xml:space="preserve">
+    <value>Temp do Sistema</value>
+  </data>
+  <data name="Log_DNSCleared" xml:space="preserve">
+    <value>Cache DNS limpo com sucesso</value>
+  </data>
+  <data name="Log_RecycleBinEmptied" xml:space="preserve">
+    <value>Lixeira esvaziada</value>
   </data>
 </root>
