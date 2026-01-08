@@ -212,4 +212,16 @@
   <data name="Msg_UpdateError" xml:space="preserve"><value>Error: {0}</value></data>
   <data name="Msg_UpToDate" xml:space="preserve"><value>You are already using the latest version.</value></data>
   <data name="Msg_UpdateCheckError" xml:space="preserve"><value>Failed to check for updates: {0}</value></data>
+  <data name="Label_TempFiles" xml:space="preserve">
+    <value>Temporary Files</value>
+  </data>
+  <data name="Label_SystemTemp" xml:space="preserve">
+    <value>System Temp</value>
+  </data>
+  <data name="Log_DNSCleared" xml:space="preserve">
+    <value>DNS cache cleared successfully</value>
+  </data>
+  <data name="Log_RecycleBinEmptied" xml:space="preserve">
+    <value>Recycle Bin emptied</value>
+  </data>
 </root>
