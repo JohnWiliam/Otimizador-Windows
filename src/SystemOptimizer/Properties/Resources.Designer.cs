@@ -60,9 +60,6 @@ namespace SystemOptimizer.Properties {
             }
         }
         
-        /// <summary>
-        ///   Consulta uma cadeia de caracteres localizada semelhante a Desativar Transparência.
-        /// </summary>
         public static string A1_Desc {
             get {
                 return ResourceManager.GetString("A1_Desc", resourceCulture);
@@ -213,23 +210,37 @@ namespace SystemOptimizer.Properties {
             }
         }
         
-        /// <summary>
-        ///   Consulta uma cadeia de caracteres localizada semelhante a Arquivos Temporários.
-        /// </summary>
         public static string Label_TempFiles {
             get {
                 return ResourceManager.GetString("Label_TempFiles", resourceCulture);
             }
         }
 
-        /// <summary>
-        ///   Consulta uma cadeia de caracteres localizada semelhante a Temp do Sistema.
-        /// </summary>
         public static string Label_SystemTemp {
             get {
                 return ResourceManager.GetString("Label_SystemTemp", resourceCulture);
             }
         }
+
+        // --- NOVAS PROPRIEDADES ADICIONADAS ---
+        public static string Label_BrowserCache {
+            get {
+                return ResourceManager.GetString("Label_BrowserCache", resourceCulture);
+            }
+        }
+
+        public static string Label_ShaderCache {
+            get {
+                return ResourceManager.GetString("Label_ShaderCache", resourceCulture);
+            }
+        }
+
+        public static string Log_Ignored {
+            get {
+                return ResourceManager.GetString("Log_Ignored", resourceCulture);
+            }
+        }
+        // ------------------------------------
 
         public static string Log_Clean {
             get {
@@ -243,9 +254,6 @@ namespace SystemOptimizer.Properties {
             }
         }
 
-        /// <summary>
-        ///   Consulta uma cadeia de caracteres localizada semelhante a Cache DNS limpo com sucesso.
-        /// </summary>
         public static string Log_DNSCleared {
             get {
                 return ResourceManager.GetString("Log_DNSCleared", resourceCulture);
@@ -264,9 +272,6 @@ namespace SystemOptimizer.Properties {
             }
         }
 
-        /// <summary>
-        ///   Consulta uma cadeia de caracteres localizada semelhante a Lixeira esvaziada.
-        /// </summary>
         public static string Log_RecycleBinEmptied {
             get {
                 return ResourceManager.GetString("Log_RecycleBinEmptied", resourceCulture);
