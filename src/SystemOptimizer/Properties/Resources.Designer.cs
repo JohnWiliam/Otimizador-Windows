@@ -60,167 +60,877 @@ namespace SystemOptimizer.Properties {
             }
         }
         
-        // --- TEXTOS EXISTENTES ---
+        /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a Desativar Transparência.
+        /// </summary>
+        public static string A1_Desc {
+            get {
+                return ResourceManager.GetString("A1_Desc", resourceCulture);
+            }
+        }
         
-        public static string P1_Title { get { return ResourceManager.GetString("P1_Title", resourceCulture); } }
-        public static string P1_Desc { get { return ResourceManager.GetString("P1_Desc", resourceCulture); } }
-        public static string P2_Title { get { return ResourceManager.GetString("P2_Title", resourceCulture); } }
-        public static string P2_Desc { get { return ResourceManager.GetString("P2_Desc", resourceCulture); } }
-        public static string P3_Title { get { return ResourceManager.GetString("P3_Title", resourceCulture); } }
-        public static string P3_Desc { get { return ResourceManager.GetString("P3_Desc", resourceCulture); } }
-        public static string P4_Title { get { return ResourceManager.GetString("P4_Title", resourceCulture); } }
-        public static string P4_Desc { get { return ResourceManager.GetString("P4_Desc", resourceCulture); } }
-        public static string P5_Title { get { return ResourceManager.GetString("P5_Title", resourceCulture); } }
-        public static string P5_Desc { get { return ResourceManager.GetString("P5_Desc", resourceCulture); } }
-        public static string P6_Title { get { return ResourceManager.GetString("P6_Title", resourceCulture); } }
-        public static string P6_Desc { get { return ResourceManager.GetString("P6_Desc", resourceCulture); } }
-        public static string P7_Title { get { return ResourceManager.GetString("P7_Title", resourceCulture); } }
-        public static string P7_Desc { get { return ResourceManager.GetString("P7_Desc", resourceCulture); } }
+        public static string A1_Title {
+            get {
+                return ResourceManager.GetString("A1_Title", resourceCulture);
+            }
+        }
         
-        public static string PF1_Title { get { return ResourceManager.GetString("PF1_Title", resourceCulture); } }
-        public static string PF1_Desc { get { return ResourceManager.GetString("PF1_Desc", resourceCulture); } }
-        public static string PF2_Title { get { return ResourceManager.GetString("PF2_Title", resourceCulture); } }
-        public static string PF2_Desc { get { return ResourceManager.GetString("PF2_Desc", resourceCulture); } }
-        public static string PF3_Title { get { return ResourceManager.GetString("PF3_Title", resourceCulture); } }
-        public static string PF3_Desc { get { return ResourceManager.GetString("PF3_Desc", resourceCulture); } }
-        public static string PF5_Title { get { return ResourceManager.GetString("PF5_Title", resourceCulture); } }
-        public static string PF5_Desc { get { return ResourceManager.GetString("PF5_Desc", resourceCulture); } }
-        public static string PF6_Title { get { return ResourceManager.GetString("PF6_Title", resourceCulture); } }
-        public static string PF6_Desc { get { return ResourceManager.GetString("PF6_Desc", resourceCulture); } }
-        public static string PF7_Title { get { return ResourceManager.GetString("PF7_Title", resourceCulture); } }
-        public static string PF7_Desc { get { return ResourceManager.GetString("PF7_Desc", resourceCulture); } }
-        public static string PF8_Title { get { return ResourceManager.GetString("PF8_Title", resourceCulture); } }
-        public static string PF8_Desc { get { return ResourceManager.GetString("PF8_Desc", resourceCulture); } }
-        public static string PF9_Title { get { return ResourceManager.GetString("PF9_Title", resourceCulture); } }
-        public static string PF9_Desc { get { return ResourceManager.GetString("PF9_Desc", resourceCulture); } }
+        public static string A2_Desc {
+            get {
+                return ResourceManager.GetString("A2_Desc", resourceCulture);
+            }
+        }
         
-        public static string N1_Title { get { return ResourceManager.GetString("N1_Title", resourceCulture); } }
-        public static string N1_Desc { get { return ResourceManager.GetString("N1_Desc", resourceCulture); } }
-        public static string N2_Title { get { return ResourceManager.GetString("N2_Title", resourceCulture); } }
-        public static string N2_Desc { get { return ResourceManager.GetString("N2_Desc", resourceCulture); } }
-        public static string N3_Title { get { return ResourceManager.GetString("N3_Title", resourceCulture); } }
-        public static string N3_Desc { get { return ResourceManager.GetString("N3_Desc", resourceCulture); } }
-        public static string N4_Title { get { return ResourceManager.GetString("N4_Title", resourceCulture); } }
-        public static string N4_Desc { get { return ResourceManager.GetString("N4_Desc", resourceCulture); } }
-        public static string N5_Title { get { return ResourceManager.GetString("N5_Title", resourceCulture); } }
-        public static string N5_Desc { get { return ResourceManager.GetString("N5_Desc", resourceCulture); } }
+        public static string A2_Title {
+            get {
+                return ResourceManager.GetString("A2_Title", resourceCulture);
+            }
+        }
         
-        // --- SEGURANÇA (S1, S2) ---
-        public static string S1_Title { get { return ResourceManager.GetString("S1_Title", resourceCulture); } }
-        public static string S1_Desc { get { return ResourceManager.GetString("S1_Desc", resourceCulture); } }
-        public static string S2_Title { get { return ResourceManager.GetString("S2_Title", resourceCulture); } }
-        public static string S2_Desc { get { return ResourceManager.GetString("S2_Desc", resourceCulture); } }
+        public static string A3_Desc {
+            get {
+                return ResourceManager.GetString("A3_Desc", resourceCulture);
+            }
+        }
         
-        // --- PESQUISA (S_1, S_2, S_3) - CORREÇÃO AQUI ---
-        public static string S_1_Title { get { return ResourceManager.GetString("S_1_Title", resourceCulture); } }
-        public static string S_1_Desc { get { return ResourceManager.GetString("S_1_Desc", resourceCulture); } }
-        public static string S_2_Title { get { return ResourceManager.GetString("S_2_Title", resourceCulture); } }
-        public static string S_2_Desc { get { return ResourceManager.GetString("S_2_Desc", resourceCulture); } }
-        public static string S_3_Title { get { return ResourceManager.GetString("S_3_Title", resourceCulture); } }
-        public static string S_3_Desc { get { return ResourceManager.GetString("S_3_Desc", resourceCulture); } }
+        public static string A3_Title {
+            get {
+                return ResourceManager.GetString("A3_Title", resourceCulture);
+            }
+        }
         
-        public static string Search_Title { get { return ResourceManager.GetString("Search_Title", resourceCulture); } }
-        public static string Search_Subtitle { get { return ResourceManager.GetString("Search_Subtitle", resourceCulture); } }
+        public static string App_Title {
+            get {
+                return ResourceManager.GetString("App_Title", resourceCulture);
+            }
+        }
+        
+        public static string Btn_Apply {
+            get {
+                return ResourceManager.GetString("Btn_Apply", resourceCulture);
+            }
+        }
+        
+        public static string Btn_CheckUpdate {
+            get {
+                return ResourceManager.GetString("Btn_CheckUpdate", resourceCulture);
+            }
+        }
+        
+        public static string Btn_RestartExplorer {
+            get {
+                return ResourceManager.GetString("Btn_RestartExplorer", resourceCulture);
+            }
+        }
+        
+        public static string Btn_Restore {
+            get {
+                return ResourceManager.GetString("Btn_Restore", resourceCulture);
+            }
+        }
+        
+        public static string Btn_RunCleanup {
+            get {
+                return ResourceManager.GetString("Btn_RunCleanup", resourceCulture);
+            }
+        }
+        
+        public static string Btn_UpdateAndRestart {
+            get {
+                return ResourceManager.GetString("Btn_UpdateAndRestart", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_CacheDesc {
+            get {
+                return ResourceManager.GetString("Cleanup_CacheDesc", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_CacheTitle {
+            get {
+                return ResourceManager.GetString("Cleanup_CacheTitle", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_LogTitle {
+            get {
+                return ResourceManager.GetString("Cleanup_LogTitle", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_OptionBrowser {
+            get {
+                return ResourceManager.GetString("Cleanup_OptionBrowser", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_OptionDNS {
+            get {
+                return ResourceManager.GetString("Cleanup_OptionDNS", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_OptionPrefetch {
+            get {
+                return ResourceManager.GetString("Cleanup_OptionPrefetch", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_OptionRecycleBin {
+            get {
+                return ResourceManager.GetString("Cleanup_OptionRecycleBin", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_OptionSystemTemp {
+            get {
+                return ResourceManager.GetString("Cleanup_OptionSystemTemp", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_OptionTemp {
+            get {
+                return ResourceManager.GetString("Cleanup_OptionTemp", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_OptionWindowsUpdate {
+            get {
+                return ResourceManager.GetString("Cleanup_OptionWindowsUpdate", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_SelectOptions {
+            get {
+                return ResourceManager.GetString("Cleanup_SelectOptions", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_Title {
+            get {
+                return ResourceManager.GetString("Cleanup_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a Arquivos Temporários.
+        /// </summary>
+        public static string Label_TempFiles {
+            get {
+                return ResourceManager.GetString("Label_TempFiles", resourceCulture);
+            }
+        }
 
-        public static string A1_Title { get { return ResourceManager.GetString("A1_Title", resourceCulture); } }
-        public static string A1_Desc { get { return ResourceManager.GetString("A1_Desc", resourceCulture); } }
-        public static string A2_Title { get { return ResourceManager.GetString("A2_Title", resourceCulture); } }
-        public static string A2_Desc { get { return ResourceManager.GetString("A2_Desc", resourceCulture); } }
-        public static string A3_Title { get { return ResourceManager.GetString("A3_Title", resourceCulture); } }
-        public static string A3_Desc { get { return ResourceManager.GetString("A3_Desc", resourceCulture); } }
-        
-        public static string SE1_Title { get { return ResourceManager.GetString("SE1_Title", resourceCulture); } }
-        public static string SE1_Desc { get { return ResourceManager.GetString("SE1_Desc", resourceCulture); } }
-        public static string SE2_Title { get { return ResourceManager.GetString("SE2_Title", resourceCulture); } }
-        public static string SE2_Desc { get { return ResourceManager.GetString("SE2_Desc", resourceCulture); } }
-        
-        public static string Settings_Title { get { return ResourceManager.GetString("Settings_Title", resourceCulture); } }
-        public static string Settings_General { get { return ResourceManager.GetString("Settings_General", resourceCulture); } }
-        public static string Settings_Appearance { get { return ResourceManager.GetString("Settings_Appearance", resourceCulture); } }
-        public static string Settings_ThemeDesc { get { return ResourceManager.GetString("Settings_ThemeDesc", resourceCulture); } }
-        public static string Settings_Language { get { return ResourceManager.GetString("Settings_Language", resourceCulture); } }
-        public static string Settings_LanguageDesc { get { return ResourceManager.GetString("Settings_LanguageDesc", resourceCulture); } }
-        public static string Settings_Behavior { get { return ResourceManager.GetString("Settings_Behavior", resourceCulture); } }
-        public static string Settings_Persistence { get { return ResourceManager.GetString("Settings_Persistence", resourceCulture); } }
-        public static string Settings_PersistenceDesc { get { return ResourceManager.GetString("Settings_PersistenceDesc", resourceCulture); } }
-        public static string Settings_KeepInstalled { get { return ResourceManager.GetString("Settings_KeepInstalled", resourceCulture); } }
-        public static string Settings_KeepInstalledDesc { get { return ResourceManager.GetString("Settings_KeepInstalledDesc", resourceCulture); } }
-        
-        public static string Theme_System { get { return ResourceManager.GetString("Theme_System", resourceCulture); } }
-        public static string Theme_Light { get { return ResourceManager.GetString("Theme_Light", resourceCulture); } }
-        public static string Theme_Dark { get { return ResourceManager.GetString("Theme_Dark", resourceCulture); } }
-        
-        public static string Msg_RestartRequired { get { return ResourceManager.GetString("Msg_RestartRequired", resourceCulture); } }
-        public static string Msg_RestartTitle { get { return ResourceManager.GetString("Msg_RestartTitle", resourceCulture); } }
-        
-        public static string Nav_Privacy { get { return ResourceManager.GetString("Nav_Privacy", resourceCulture); } }
-        public static string Nav_Performance { get { return ResourceManager.GetString("Nav_Performance", resourceCulture); } }
-        public static string Nav_Network { get { return ResourceManager.GetString("Nav_Network", resourceCulture); } }
-        public static string Nav_Security { get { return ResourceManager.GetString("Nav_Security", resourceCulture); } }
-        public static string Nav_Visual { get { return ResourceManager.GetString("Nav_Visual", resourceCulture); } }
-        public static string Nav_Tweaks { get { return ResourceManager.GetString("Nav_Tweaks", resourceCulture); } }
-        public static string Nav_Cleanup { get { return ResourceManager.GetString("Nav_Cleanup", resourceCulture); } }
-        public static string Nav_Search { get { return ResourceManager.GetString("Nav_Search", resourceCulture); } }
+        /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a Temp do Sistema.
+        /// </summary>
+        public static string Label_SystemTemp {
+            get {
+                return ResourceManager.GetString("Label_SystemTemp", resourceCulture);
+            }
+        }
 
-        public static string Status_Applying { get { return ResourceManager.GetString("Status_Applying", resourceCulture); } }
-        public static string Status_Loading { get { return ResourceManager.GetString("Status_Loading", resourceCulture); } }
-        public static string Btn_Apply { get { return ResourceManager.GetString("Btn_Apply", resourceCulture); } }
-        public static string Btn_Restore { get { return ResourceManager.GetString("Btn_Restore", resourceCulture); } }
-        public static string Btn_RunCleanup { get { return ResourceManager.GetString("Btn_RunCleanup", resourceCulture); } }
-        public static string Btn_RestartExplorer { get { return ResourceManager.GetString("Btn_RestartExplorer", resourceCulture); } }
+        public static string Log_Clean {
+            get {
+                return ResourceManager.GetString("Log_Clean", resourceCulture);
+            }
+        }
         
-        public static string Status_Optimized { get { return ResourceManager.GetString("Status_Optimized", resourceCulture); } }
-        public static string Status_Default { get { return ResourceManager.GetString("Status_Default", resourceCulture); } }
-        public static string Status_Modified { get { return ResourceManager.GetString("Status_Modified", resourceCulture); } }
-        public static string Status_Unknown { get { return ResourceManager.GetString("Status_Unknown", resourceCulture); } }
-        public static string Status_Undefined { get { return ResourceManager.GetString("Status_Undefined", resourceCulture); } }
-        
-        public static string Cleanup_Title { get { return ResourceManager.GetString("Cleanup_Title", resourceCulture); } }
-        public static string Cleanup_CacheTitle { get { return ResourceManager.GetString("Cleanup_CacheTitle", resourceCulture); } }
-        public static string Cleanup_CacheDesc { get { return ResourceManager.GetString("Cleanup_CacheDesc", resourceCulture); } }
-        public static string Cleanup_LogTitle { get { return ResourceManager.GetString("Cleanup_LogTitle", resourceCulture); } }
-        public static string Cleanup_SelectOptions { get { return ResourceManager.GetString("Cleanup_SelectOptions", resourceCulture); } }
-        
-        public static string Cleanup_OptionTemp { get { return ResourceManager.GetString("Cleanup_OptionTemp", resourceCulture); } }
-        public static string Cleanup_OptionSystemTemp { get { return ResourceManager.GetString("Cleanup_OptionSystemTemp", resourceCulture); } }
-        public static string Cleanup_OptionPrefetch { get { return ResourceManager.GetString("Cleanup_OptionPrefetch", resourceCulture); } }
-        public static string Cleanup_OptionBrowser { get { return ResourceManager.GetString("Cleanup_OptionBrowser", resourceCulture); } }
-        public static string Cleanup_OptionDNS { get { return ResourceManager.GetString("Cleanup_OptionDNS", resourceCulture); } }
-        public static string Cleanup_OptionRecycleBin { get { return ResourceManager.GetString("Cleanup_OptionRecycleBin", resourceCulture); } }
-        public static string Cleanup_OptionWindowsUpdate { get { return ResourceManager.GetString("Cleanup_OptionWindowsUpdate", resourceCulture); } }
+        public static string Log_DNS {
+            get {
+                return ResourceManager.GetString("Log_DNS", resourceCulture);
+            }
+        }
 
-        public static string Log_Starting { get { return ResourceManager.GetString("Log_Starting", resourceCulture); } }
-        public static string Log_Finished { get { return ResourceManager.GetString("Log_Finished", resourceCulture); } }
-        public static string Log_DNS { get { return ResourceManager.GetString("Log_DNS", resourceCulture); } }
-        public static string Log_Removed { get { return ResourceManager.GetString("Log_Removed", resourceCulture); } }
-        public static string Log_Clean { get { return ResourceManager.GetString("Log_Clean", resourceCulture); } }
-        public static string Log_WUServicesStopped { get { return ResourceManager.GetString("Log_WUServicesStopped", resourceCulture); } }
-        public static string Log_WUServicesRestarted { get { return ResourceManager.GetString("Log_WUServicesRestarted", resourceCulture); } }
-        public static string Log_WUError { get { return ResourceManager.GetString("Log_WUError", resourceCulture); } }
-        public static string Log_WUFailStop { get { return ResourceManager.GetString("Log_WUFailStop", resourceCulture); } }
-        public static string Log_RecycleBin { get { return ResourceManager.GetString("Log_RecycleBin", resourceCulture); } }
+        /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a Cache DNS limpo com sucesso.
+        /// </summary>
+        public static string Log_DNSCleared {
+            get {
+                return ResourceManager.GetString("Log_DNSCleared", resourceCulture);
+            }
+        }
         
-        public static string Msg_SuccessTitle { get { return ResourceManager.GetString("Msg_SuccessTitle", resourceCulture); } }
-        public static string Msg_ResultTitle { get { return ResourceManager.GetString("Msg_ResultTitle", resourceCulture); } }
-        public static string Msg_Applied { get { return ResourceManager.GetString("Msg_Applied", resourceCulture); } }
-        public static string Msg_Restored { get { return ResourceManager.GetString("Msg_Restored", resourceCulture); } }
-        public static string Msg_RebootNeeded { get { return ResourceManager.GetString("Msg_RebootNeeded", resourceCulture); } }
-        public static string Msg_CompletedWithErrors { get { return ResourceManager.GetString("Msg_CompletedWithErrors", resourceCulture); } }
-        public static string Msg_ErrorTitle { get { return ResourceManager.GetString("Msg_ErrorTitle", resourceCulture); } }
-        public static string Msg_InitFail { get { return ResourceManager.GetString("Msg_InitFail", resourceCulture); } }
-        public static string App_Title { get { return ResourceManager.GetString("App_Title", resourceCulture); } }
+        public static string Log_Finished {
+            get {
+                return ResourceManager.GetString("Log_Finished", resourceCulture);
+            }
+        }
         
-        // --- NOVOS TEXTOS DE ATUALIZAÇÃO ---
-        public static string Settings_Update { get { return ResourceManager.GetString("Settings_Update", resourceCulture); } }
-        public static string Settings_UpdateSystemVersion { get { return ResourceManager.GetString("Settings_UpdateSystemVersion", resourceCulture); } }
-        public static string Settings_UpdateCheckDesc { get { return ResourceManager.GetString("Settings_UpdateCheckDesc", resourceCulture); } }
-        public static string Btn_CheckUpdate { get { return ResourceManager.GetString("Btn_CheckUpdate", resourceCulture); } }
-        public static string Msg_UpdateAvailable_Title { get { return ResourceManager.GetString("Msg_UpdateAvailable_Title", resourceCulture); } }
-        public static string Btn_UpdateAndRestart { get { return ResourceManager.GetString("Btn_UpdateAndRestart", resourceCulture); } }
-        public static string Msg_Downloading { get { return ResourceManager.GetString("Msg_Downloading", resourceCulture); } }
-        public static string Msg_Installing { get { return ResourceManager.GetString("Msg_Installing", resourceCulture); } }
-        public static string Msg_UpdateError { get { return ResourceManager.GetString("Msg_UpdateError", resourceCulture); } }
-        public static string Msg_UpToDate { get { return ResourceManager.GetString("Msg_UpToDate", resourceCulture); } }
-        public static string Msg_UpdateCheckError { get { return ResourceManager.GetString("Msg_UpdateCheckError", resourceCulture); } }
+        public static string Log_RecycleBin {
+            get {
+                return ResourceManager.GetString("Log_RecycleBin", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Consulta uma cadeia de caracteres localizada semelhante a Lixeira esvaziada.
+        /// </summary>
+        public static string Log_RecycleBinEmptied {
+            get {
+                return ResourceManager.GetString("Log_RecycleBinEmptied", resourceCulture);
+            }
+        }
+        
+        public static string Log_Removed {
+            get {
+                return ResourceManager.GetString("Log_Removed", resourceCulture);
+            }
+        }
+        
+        public static string Log_Starting {
+            get {
+                return ResourceManager.GetString("Log_Starting", resourceCulture);
+            }
+        }
+        
+        public static string Log_WUError {
+            get {
+                return ResourceManager.GetString("Log_WUError", resourceCulture);
+            }
+        }
+        
+        public static string Log_WUFailStop {
+            get {
+                return ResourceManager.GetString("Log_WUFailStop", resourceCulture);
+            }
+        }
+        
+        public static string Log_WUServicesRestarted {
+            get {
+                return ResourceManager.GetString("Log_WUServicesRestarted", resourceCulture);
+            }
+        }
+        
+        public static string Log_WUServicesStopped {
+            get {
+                return ResourceManager.GetString("Log_WUServicesStopped", resourceCulture);
+            }
+        }
+        
+        public static string Msg_Applied {
+            get {
+                return ResourceManager.GetString("Msg_Applied", resourceCulture);
+            }
+        }
+        
+        public static string Msg_CompletedWithErrors {
+            get {
+                return ResourceManager.GetString("Msg_CompletedWithErrors", resourceCulture);
+            }
+        }
+        
+        public static string Msg_Downloading {
+            get {
+                return ResourceManager.GetString("Msg_Downloading", resourceCulture);
+            }
+        }
+        
+        public static string Msg_ErrorTitle {
+            get {
+                return ResourceManager.GetString("Msg_ErrorTitle", resourceCulture);
+            }
+        }
+        
+        public static string Msg_InitFail {
+            get {
+                return ResourceManager.GetString("Msg_InitFail", resourceCulture);
+            }
+        }
+        
+        public static string Msg_Installing {
+            get {
+                return ResourceManager.GetString("Msg_Installing", resourceCulture);
+            }
+        }
+        
+        public static string Msg_RebootNeeded {
+            get {
+                return ResourceManager.GetString("Msg_RebootNeeded", resourceCulture);
+            }
+        }
+        
+        public static string Msg_RestartRequired {
+            get {
+                return ResourceManager.GetString("Msg_RestartRequired", resourceCulture);
+            }
+        }
+        
+        public static string Msg_RestartTitle {
+            get {
+                return ResourceManager.GetString("Msg_RestartTitle", resourceCulture);
+            }
+        }
+        
+        public static string Msg_Restored {
+            get {
+                return ResourceManager.GetString("Msg_Restored", resourceCulture);
+            }
+        }
+        
+        public static string Msg_ResultTitle {
+            get {
+                return ResourceManager.GetString("Msg_ResultTitle", resourceCulture);
+            }
+        }
+        
+        public static string Msg_SuccessTitle {
+            get {
+                return ResourceManager.GetString("Msg_SuccessTitle", resourceCulture);
+            }
+        }
+        
+        public static string Msg_UpdateAvailable_Title {
+            get {
+                return ResourceManager.GetString("Msg_UpdateAvailable_Title", resourceCulture);
+            }
+        }
+        
+        public static string Msg_UpdateCheckError {
+            get {
+                return ResourceManager.GetString("Msg_UpdateCheckError", resourceCulture);
+            }
+        }
+        
+        public static string Msg_UpdateError {
+            get {
+                return ResourceManager.GetString("Msg_UpdateError", resourceCulture);
+            }
+        }
+        
+        public static string Msg_UpToDate {
+            get {
+                return ResourceManager.GetString("Msg_UpToDate", resourceCulture);
+            }
+        }
+        
+        public static string N1_Desc {
+            get {
+                return ResourceManager.GetString("N1_Desc", resourceCulture);
+            }
+        }
+        
+        public static string N1_Title {
+            get {
+                return ResourceManager.GetString("N1_Title", resourceCulture);
+            }
+        }
+        
+        public static string N2_Desc {
+            get {
+                return ResourceManager.GetString("N2_Desc", resourceCulture);
+            }
+        }
+        
+        public static string N2_Title {
+            get {
+                return ResourceManager.GetString("N2_Title", resourceCulture);
+            }
+        }
+        
+        public static string N3_Desc {
+            get {
+                return ResourceManager.GetString("N3_Desc", resourceCulture);
+            }
+        }
+        
+        public static string N3_Title {
+            get {
+                return ResourceManager.GetString("N3_Title", resourceCulture);
+            }
+        }
+        
+        public static string N4_Desc {
+            get {
+                return ResourceManager.GetString("N4_Desc", resourceCulture);
+            }
+        }
+        
+        public static string N4_Title {
+            get {
+                return ResourceManager.GetString("N4_Title", resourceCulture);
+            }
+        }
+        
+        public static string N5_Desc {
+            get {
+                return ResourceManager.GetString("N5_Desc", resourceCulture);
+            }
+        }
+        
+        public static string N5_Title {
+            get {
+                return ResourceManager.GetString("N5_Title", resourceCulture);
+            }
+        }
+        
+        public static string Nav_Cleanup {
+            get {
+                return ResourceManager.GetString("Nav_Cleanup", resourceCulture);
+            }
+        }
+        
+        public static string Nav_Network {
+            get {
+                return ResourceManager.GetString("Nav_Network", resourceCulture);
+            }
+        }
+        
+        public static string Nav_Performance {
+            get {
+                return ResourceManager.GetString("Nav_Performance", resourceCulture);
+            }
+        }
+        
+        public static string Nav_Privacy {
+            get {
+                return ResourceManager.GetString("Nav_Privacy", resourceCulture);
+            }
+        }
+        
+        public static string Nav_Search {
+            get {
+                return ResourceManager.GetString("Nav_Search", resourceCulture);
+            }
+        }
+        
+        public static string Nav_Security {
+            get {
+                return ResourceManager.GetString("Nav_Security", resourceCulture);
+            }
+        }
+        
+        public static string Nav_Tweaks {
+            get {
+                return ResourceManager.GetString("Nav_Tweaks", resourceCulture);
+            }
+        }
+        
+        public static string Nav_Visual {
+            get {
+                return ResourceManager.GetString("Nav_Visual", resourceCulture);
+            }
+        }
+        
+        public static string P1_Desc {
+            get {
+                return ResourceManager.GetString("P1_Desc", resourceCulture);
+            }
+        }
+        
+        public static string P1_Title {
+            get {
+                return ResourceManager.GetString("P1_Title", resourceCulture);
+            }
+        }
+        
+        public static string P2_Desc {
+            get {
+                return ResourceManager.GetString("P2_Desc", resourceCulture);
+            }
+        }
+        
+        public static string P2_Title {
+            get {
+                return ResourceManager.GetString("P2_Title", resourceCulture);
+            }
+        }
+        
+        public static string P3_Desc {
+            get {
+                return ResourceManager.GetString("P3_Desc", resourceCulture);
+            }
+        }
+        
+        public static string P3_Title {
+            get {
+                return ResourceManager.GetString("P3_Title", resourceCulture);
+            }
+        }
+        
+        public static string P4_Desc {
+            get {
+                return ResourceManager.GetString("P4_Desc", resourceCulture);
+            }
+        }
+        
+        public static string P4_Title {
+            get {
+                return ResourceManager.GetString("P4_Title", resourceCulture);
+            }
+        }
+        
+        public static string P5_Desc {
+            get {
+                return ResourceManager.GetString("P5_Desc", resourceCulture);
+            }
+        }
+        
+        public static string P5_Title {
+            get {
+                return ResourceManager.GetString("P5_Title", resourceCulture);
+            }
+        }
+        
+        public static string P6_Desc {
+            get {
+                return ResourceManager.GetString("P6_Desc", resourceCulture);
+            }
+        }
+        
+        public static string P6_Title {
+            get {
+                return ResourceManager.GetString("P6_Title", resourceCulture);
+            }
+        }
+        
+        public static string P7_Desc {
+            get {
+                return ResourceManager.GetString("P7_Desc", resourceCulture);
+            }
+        }
+        
+        public static string P7_Title {
+            get {
+                return ResourceManager.GetString("P7_Title", resourceCulture);
+            }
+        }
+        
+        public static string PF1_Desc {
+            get {
+                return ResourceManager.GetString("PF1_Desc", resourceCulture);
+            }
+        }
+        
+        public static string PF1_Title {
+            get {
+                return ResourceManager.GetString("PF1_Title", resourceCulture);
+            }
+        }
+        
+        public static string PF2_Desc {
+            get {
+                return ResourceManager.GetString("PF2_Desc", resourceCulture);
+            }
+        }
+        
+        public static string PF2_Title {
+            get {
+                return ResourceManager.GetString("PF2_Title", resourceCulture);
+            }
+        }
+        
+        public static string PF3_Desc {
+            get {
+                return ResourceManager.GetString("PF3_Desc", resourceCulture);
+            }
+        }
+        
+        public static string PF3_Title {
+            get {
+                return ResourceManager.GetString("PF3_Title", resourceCulture);
+            }
+        }
+        
+        public static string PF5_Desc {
+            get {
+                return ResourceManager.GetString("PF5_Desc", resourceCulture);
+            }
+        }
+        
+        public static string PF5_Title {
+            get {
+                return ResourceManager.GetString("PF5_Title", resourceCulture);
+            }
+        }
+        
+        public static string PF6_Desc {
+            get {
+                return ResourceManager.GetString("PF6_Desc", resourceCulture);
+            }
+        }
+        
+        public static string PF6_Title {
+            get {
+                return ResourceManager.GetString("PF6_Title", resourceCulture);
+            }
+        }
+        
+        public static string PF7_Desc {
+            get {
+                return ResourceManager.GetString("PF7_Desc", resourceCulture);
+            }
+        }
+        
+        public static string PF7_Title {
+            get {
+                return ResourceManager.GetString("PF7_Title", resourceCulture);
+            }
+        }
+        
+        public static string PF8_Desc {
+            get {
+                return ResourceManager.GetString("PF8_Desc", resourceCulture);
+            }
+        }
+        
+        public static string PF8_Title {
+            get {
+                return ResourceManager.GetString("PF8_Title", resourceCulture);
+            }
+        }
+        
+        public static string PF9_Desc {
+            get {
+                return ResourceManager.GetString("PF9_Desc", resourceCulture);
+            }
+        }
+        
+        public static string PF9_Title {
+            get {
+                return ResourceManager.GetString("PF9_Title", resourceCulture);
+            }
+        }
+        
+        public static string S_1_Desc {
+            get {
+                return ResourceManager.GetString("S_1_Desc", resourceCulture);
+            }
+        }
+        
+        public static string S_1_Title {
+            get {
+                return ResourceManager.GetString("S_1_Title", resourceCulture);
+            }
+        }
+        
+        public static string S_2_Desc {
+            get {
+                return ResourceManager.GetString("S_2_Desc", resourceCulture);
+            }
+        }
+        
+        public static string S_2_Title {
+            get {
+                return ResourceManager.GetString("S_2_Title", resourceCulture);
+            }
+        }
+        
+        public static string S_3_Desc {
+            get {
+                return ResourceManager.GetString("S_3_Desc", resourceCulture);
+            }
+        }
+        
+        public static string S_3_Title {
+            get {
+                return ResourceManager.GetString("S_3_Title", resourceCulture);
+            }
+        }
+        
+        public static string S1_Desc {
+            get {
+                return ResourceManager.GetString("S1_Desc", resourceCulture);
+            }
+        }
+        
+        public static string S1_Title {
+            get {
+                return ResourceManager.GetString("S1_Title", resourceCulture);
+            }
+        }
+        
+        public static string S2_Desc {
+            get {
+                return ResourceManager.GetString("S2_Desc", resourceCulture);
+            }
+        }
+        
+        public static string S2_Title {
+            get {
+                return ResourceManager.GetString("S2_Title", resourceCulture);
+            }
+        }
+        
+        public static string SE1_Desc {
+            get {
+                return ResourceManager.GetString("SE1_Desc", resourceCulture);
+            }
+        }
+        
+        public static string SE1_Title {
+            get {
+                return ResourceManager.GetString("SE1_Title", resourceCulture);
+            }
+        }
+        
+        public static string SE2_Desc {
+            get {
+                return ResourceManager.GetString("SE2_Desc", resourceCulture);
+            }
+        }
+        
+        public static string SE2_Title {
+            get {
+                return ResourceManager.GetString("SE2_Title", resourceCulture);
+            }
+        }
+        
+        public static string Search_Subtitle {
+            get {
+                return ResourceManager.GetString("Search_Subtitle", resourceCulture);
+            }
+        }
+        
+        public static string Search_Title {
+            get {
+                return ResourceManager.GetString("Search_Title", resourceCulture);
+            }
+        }
+        
+        public static string Settings_Appearance {
+            get {
+                return ResourceManager.GetString("Settings_Appearance", resourceCulture);
+            }
+        }
+        
+        public static string Settings_Behavior {
+            get {
+                return ResourceManager.GetString("Settings_Behavior", resourceCulture);
+            }
+        }
+        
+        public static string Settings_General {
+            get {
+                return ResourceManager.GetString("Settings_General", resourceCulture);
+            }
+        }
+        
+        public static string Settings_KeepInstalled {
+            get {
+                return ResourceManager.GetString("Settings_KeepInstalled", resourceCulture);
+            }
+        }
+        
+        public static string Settings_KeepInstalledDesc {
+            get {
+                return ResourceManager.GetString("Settings_KeepInstalledDesc", resourceCulture);
+            }
+        }
+        
+        public static string Settings_Language {
+            get {
+                return ResourceManager.GetString("Settings_Language", resourceCulture);
+            }
+        }
+        
+        public static string Settings_LanguageDesc {
+            get {
+                return ResourceManager.GetString("Settings_LanguageDesc", resourceCulture);
+            }
+        }
+        
+        public static string Settings_Persistence {
+            get {
+                return ResourceManager.GetString("Settings_Persistence", resourceCulture);
+            }
+        }
+        
+        public static string Settings_PersistenceDesc {
+            get {
+                return ResourceManager.GetString("Settings_PersistenceDesc", resourceCulture);
+            }
+        }
+        
+        public static string Settings_ThemeDesc {
+            get {
+                return ResourceManager.GetString("Settings_ThemeDesc", resourceCulture);
+            }
+        }
+        
+        public static string Settings_Title {
+            get {
+                return ResourceManager.GetString("Settings_Title", resourceCulture);
+            }
+        }
+        
+        public static string Settings_Update {
+            get {
+                return ResourceManager.GetString("Settings_Update", resourceCulture);
+            }
+        }
+        
+        public static string Settings_UpdateCheckDesc {
+            get {
+                return ResourceManager.GetString("Settings_UpdateCheckDesc", resourceCulture);
+            }
+        }
+        
+        public static string Settings_UpdateSystemVersion {
+            get {
+                return ResourceManager.GetString("Settings_UpdateSystemVersion", resourceCulture);
+            }
+        }
+        
+        public static string Status_Applying {
+            get {
+                return ResourceManager.GetString("Status_Applying", resourceCulture);
+            }
+        }
+        
+        public static string Status_Default {
+            get {
+                return ResourceManager.GetString("Status_Default", resourceCulture);
+            }
+        }
+        
+        public static string Status_Loading {
+            get {
+                return ResourceManager.GetString("Status_Loading", resourceCulture);
+            }
+        }
+        
+        public static string Status_Modified {
+            get {
+                return ResourceManager.GetString("Status_Modified", resourceCulture);
+            }
+        }
+        
+        public static string Status_Optimized {
+            get {
+                return ResourceManager.GetString("Status_Optimized", resourceCulture);
+            }
+        }
+        
+        public static string Status_Undefined {
+            get {
+                return ResourceManager.GetString("Status_Undefined", resourceCulture);
+            }
+        }
+        
+        public static string Status_Unknown {
+            get {
+                return ResourceManager.GetString("Status_Unknown", resourceCulture);
+            }
+        }
+        
+        public static string Theme_Dark {
+            get {
+                return ResourceManager.GetString("Theme_Dark", resourceCulture);
+            }
+        }
+        
+        public static string Theme_Light {
+            get {
+                return ResourceManager.GetString("Theme_Light", resourceCulture);
+            }
+        }
+        
+        public static string Theme_System {
+            get {
+                return ResourceManager.GetString("Theme_System", resourceCulture);
+            }
+        }
     }
 }
