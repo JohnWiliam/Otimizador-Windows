@@ -3,7 +3,8 @@ using System.Threading.Tasks;
 
 namespace SystemOptimizer.Services;
 
-public record UpdateInfo(bool IsAvailable, string Version, string ReleaseNotes, string DownloadUrl);
+// Propriedades de string agora são anuláveis (string?)
+public record UpdateInfo(bool IsAvailable, string? Version, string? ReleaseNotes, string? DownloadUrl);
 
 public interface IUpdateService
 {
