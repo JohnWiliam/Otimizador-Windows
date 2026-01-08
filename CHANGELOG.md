@@ -1,5 +1,43 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/JohnWiliam/Otimizador-Windows/total?color=green&logo=github)](https://github.com/JohnWiliam/Otimizador-Windows/releases/)
 
+**🚀 Otimizador de Sistema v2.1.1**
+
+Esta atualização é um marco importante que introduz um **Sistema de Atualização Automática**, além da **unificação visual** completa da aplicação e correções críticas de internacionalização.
+
+**✨ O Que Há de Novo?**
+
+* **🔄 Sistema de Atualização Automática (Novo)**
+>
+> Agora é possível verificar e instalar novas versões diretamente pelo aplicativo, sem necessidade de baixar manualmente pelo navegador.
+>
+> * **Verificação Integrada:** Nova categoria na aba **Configurações** que consulta a API do GitHub Releases para encontrar novidades.
+> * **Instalação Silenciosa:** O sistema baixa o executável em segundo plano e realiza a substituição automática (*Self-Update*) ao reiniciar.
+> * **Interface de Progresso:** Novo diálogo modal (`UpdateDialog`) que exibe as notas da versão (*Release Notes*) e uma barra de progresso em tempo real durante o download.
+
+* **🎨 Padronização de Interface (UI Overhaul)**
+>
+> Todas as páginas de categorias (Segurança, Privacidade, Desempenho, Rede, Visual e Ajustes) foram totalmente reconstruídas para seguir o padrão de design moderno.
+>
+> * **Design Consistente:** Substituição de listas antigas por `ui:Card` modernos do WPF-UI, garantindo espaçamento e tipografia uniformes em todo o aplicativo.
+> * **Controles Granulares:** Cada otimização agora possui botões individuais dedicados para "Aplicar" e "Restaurar", oferecendo controle total ao usuário sobre cada ajuste específico.
+> * **Página de Segurança:** A aba de Segurança, anteriormente vazia, foi totalmente implementada e conectada aos *ViewModels* de segurança.
+
+* **🐛 Correções de Layout e Scrolling**
+>
+> Resolução de problemas críticos que impediam a visualização de todo o conteúdo em telas menores ou com muitos itens.
+>
+> * **Dynamic ScrollViewer:** Substituição global dos controles de rolagem padrão pelo `ui:DynamicScrollViewer`. Isso corrige o problema onde os cards ficavam "cortados" e habilita a rolagem suave com a roda do mouse (scroll wheel) dentro do `NavigationView`.
+> * **Correção de Espaçamento:** Ajuste técnico nas margens dos botões (`Margin` em vez de `Spacing`), garantindo compatibilidade nativa com o WPF no .NET 10 sem erros de compilação.
+
+* **🛠️ Estabilidade e Correções Técnicas**
+>
+> * **Internacionalização da Pesquisa:** Corrigido um bug onde o título "Otimizações de Pesquisa" permanecia em português mesmo com o app em inglês. Agora o título responde dinamicamente à troca de idioma.
+> * **Estabilidade:** Tratamento de erros de referência nula (`CS8604`/`CS8625`) nos serviços de diálogo e atualização, prevenindo falhas silenciosas.
+> * **Compilação XAML:** Correção do erro `MC3050` movendo conversores estáticos para `Page.Resources`, garantindo uma compilação limpa.
+> * **Integridade MVVM:** Todos os novos botões e cards foram rigorosamente ligados (`Binding`) aos comandos assíncronos existentes, garantindo que a lógica de "Modo Silencioso" e persistência continue funcionando perfeitamente.
+>
+---
+
 **🚀 Otimizador de Sistema v2.1.0**
 
 Esta versão foca na privacidade e limpeza da experiência de busca do Windows, além de melhorias na robustez do sistema de compilação.

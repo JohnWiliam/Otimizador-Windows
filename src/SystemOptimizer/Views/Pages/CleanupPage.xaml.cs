@@ -1,23 +1,135 @@
 using System;
 using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Input;
 using SystemOptimizer.Models;
+using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
-using Wpf.Ui.Controls; 
+using Wpf.Ui.Controls;
+using CommunityToolkit.Mvvm.Input;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class CleanupPage : Page
+public partial class CleanupPage : Page, INotifyPropertyChanged
 {
-    public CleanupPage(MainViewModel viewModel)
+    private readonly MainViewModel _viewModel;
+    private readonly CleanupService _cleanupService;
+    
+    // Propriedades de Estado da UI
+    private bool _isOptionsExpanded = true;
+    private bool _isBusyLocal = false;
+    
+    // Opções de Limpeza
+    private bool _cleanTemp = true;
+    private bool _cleanSystemTemp = true;
+    private bool _cleanPrefetch = true;
+    private bool _cleanWindowsUpdate = true;
+    private bool _cleanBrowser = true;
+    private bool _cleanDns = true;
+    private bool _cleanRecycleBin = false;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    // Comando
+    public ICommand ExecuteSelectedCleanupCommand { get; }
+
+    // Construtor atualizado para receber o CleanupService via Injeção de Dependência
+    public CleanupPage(MainViewModel viewModel, CleanupService cleanupService)
     {
         InitializeComponent();
-        DataContext = viewModel;
-        viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
+        _viewModel = viewModel;
+        _cleanupService = cleanupService; // Recebe a instância Singleton correta
+        DataContext = viewModel; // Mantém o VM global como contexto principal
+        
+        // Inicializa comando usando AsyncRelayCommand
+        ExecuteSelectedCleanupCommand = new AsyncRelayCommand(ExecuteCleanupAsync);
+
+        // Ouve logs do ViewModel (A fonte da verdade)
+        // Não precisamos mais ouvir o serviço diretamente, pois o ViewModel já faz isso.
+        _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
     }
+
+    private async Task ExecuteCleanupAsync()
+    {
+        if (IsBusyLocal) return;
+
+        try
+        {
+            IsBusyLocal = true;
+            IsOptionsExpanded = false; // Colapsa o card
+            
+            // Limpa os logs visuais através do ViewModel
+            Application.Current.Dispatcher.Invoke(() => _viewModel.CleanupLogs.Clear());
+
+            var options = new CleanupOptions
+            {
+                CleanUserTemp = CleanTemp,
+                CleanSystemTemp = CleanSystemTemp,
+                CleanPrefetch = CleanPrefetch,
+                CleanWindowsUpdate = CleanWindowsUpdate,
+                CleanBrowserCache = CleanBrowser,
+                CleanDns = CleanDns,
+                CleanRecycleBin = CleanRecycleBin
+            };
+
+            // Executa a limpeza no serviço Singleton injetado.
+            // Os logs serão gerados lá, capturados pelo MainViewModel e refletidos aqui via CollectionChanged.
+            await _cleanupService.RunCleanupAsync(options);
+        }
+        catch (Exception ex)
+        {
+            // Loga erro crítico na tela se algo falhar
+            Application.Current.Dispatcher.Invoke(() => 
+            {
+                _viewModel.CleanupLogs.Add(new CleanupLogItem 
+                { 
+                    Message = $"ERRO CRÍTICO AO INICIAR LIMPEZA: {ex.Message}", 
+                    Icon = "ErrorCircle24", 
+                    StatusColor = "#FF0000",
+                    IsBold = true 
+                });
+            });
+        }
+        finally
+        {
+            IsBusyLocal = false;
+        }
+    }
+
+    // --- Propriedades de Binding ---
+
+    public bool IsOptionsExpanded
+    {
+        get => _isOptionsExpanded;
+        set { _isOptionsExpanded = value; OnPropertyChanged(); }
+    }
+
+    public bool IsBusyLocal
+    {
+        get => _isBusyLocal;
+        set { _isBusyLocal = value; OnPropertyChanged(); }
+    }
+
+    public bool CleanTemp { get => _cleanTemp; set { _cleanTemp = value; OnPropertyChanged(); } }
+    public bool CleanSystemTemp { get => _cleanSystemTemp; set { _cleanSystemTemp = value; OnPropertyChanged(); } }
+    public bool CleanPrefetch { get => _cleanPrefetch; set { _cleanPrefetch = value; OnPropertyChanged(); } }
+    public bool CleanWindowsUpdate { get => _cleanWindowsUpdate; set { _cleanWindowsUpdate = value; OnPropertyChanged(); } }
+    public bool CleanBrowser { get => _cleanBrowser; set { _cleanBrowser = value; OnPropertyChanged(); } }
+    public bool CleanDns { get => _cleanDns; set { _cleanDns = value; OnPropertyChanged(); } }
+    public bool CleanRecycleBin { get => _cleanRecycleBin; set { _cleanRecycleBin = value; OnPropertyChanged(); } }
+
+    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+    // --- Lógica Visual (RichTextBox) ---
 
     private void CleanupLogs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -43,15 +155,11 @@ public partial class CleanupPage : Page
         paragraph.Margin = new Thickness(0, 0, 0, 2);
         paragraph.LineHeight = 18;
 
-        // --- 1. Lógica Inteligente de Cores (Baseada na mensagem e status) ---
         Brush statusBrush = GetSmartPastelBrush(item.StatusColor, item.Message);
 
-        // --- 2. Ícone ---
         SymbolRegular symbol = SymbolRegular.Info24;
-        // Tenta obter ícone do item, ou define ícones baseados no contexto
         if (!Enum.TryParse(item.Icon, out SymbolRegular parsedSymbol))
         {
-            // Ícones automáticos se o sistema não enviar um específico
             string msgLower = item.Message.ToLower();
             if (msgLower.Contains("concluída") || msgLower.Contains("sucesso")) symbol = SymbolRegular.CheckmarkCircle24;
             else if (msgLower.Contains("erro") || msgLower.Contains("falha")) symbol = SymbolRegular.ErrorCircle24;
@@ -68,7 +176,7 @@ public partial class CleanupPage : Page
             Symbol = symbol,
             FontSize = 14,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = statusBrush // Ícone colorido
+            Foreground = statusBrush
         };
 
         var iconContainer = new InlineUIContainer(icon)
@@ -78,7 +186,6 @@ public partial class CleanupPage : Page
         paragraph.Inlines.Add(iconContainer);
         paragraph.Inlines.Add(new Run("  "));
 
-        // --- 3. Texto da Mensagem ---
         var run = new Run(item.Message)
         {
             BaselineAlignment = BaselineAlignment.Center,
@@ -86,8 +193,6 @@ public partial class CleanupPage : Page
             FontSize = 12
         };
 
-        // Aplica a cor pastel ao texto também (para ficar tudo coeso e suave)
-        // Se preferires o texto branco, muda para: run.Foreground = (Brush)FindResource("TextFillColorPrimaryBrush");
         run.Foreground = statusBrush;
 
         if (item.IsBold)
@@ -101,55 +206,33 @@ public partial class CleanupPage : Page
         LogOutput.ScrollToEnd();
     }
 
-    // --- SISTEMA DE CORES INTUITIVAS ---
     private static Brush GetSmartPastelBrush(string originalColorName, string message)
     {
         string msg = message?.ToLower() ?? "";
         string colorKey = originalColorName?.ToLower() ?? "";
 
-        // 1. Prioridade: Windows Update / Serviços (VERDE)
         if (msg.Contains("update") || msg.Contains("wu") || msg.Contains("serviço") || msg.Contains("service"))
-        {
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#A9DFBF")); // Verde Pastel Suave
-        }
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#A9DFBF")); 
 
-        // 2. Prioridade: Limpeza / Temporários / Lixeira (LARANJA/PÊSSEGO)
-        // Tons quentes para indicar "remoção" ou "arquivos de lixo"
         if (msg.Contains("temp") || msg.Contains("tmp") || msg.Contains("lixeira") ||
             msg.Contains("trash") || msg.Contains("cache") || msg.Contains("prefetch") ||
             msg.Contains("log") || msg.Contains("old"))
-        {
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EDBB99")); // Pêssego Pastel
-        }
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EDBB99"));
 
-        // 3. Prioridade: Navegadores / Internet (AMARELO/CREME)
         if (msg.Contains("chrome") || msg.Contains("edge") || msg.Contains("firefox") ||
             msg.Contains("browser") || msg.Contains("navegador") || msg.Contains("cookie") || msg.Contains("histórico"))
-        {
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F9E79F")); // Amarelo Creme Pastel
-        }
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F9E79F")); 
 
-        // 4. Prioridade: Rede / Sistema / Explorer (ROXO/LAVANDA)
         if (msg.Contains("dns") || msg.Contains("ip") || msg.Contains("rede") ||
             msg.Contains("explorer") || msg.Contains("sistema") || msg.Contains("system"))
-        {
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D7BDE2")); // Lavanda Pastel
-        }
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D7BDE2"));
 
-        // 5. Prioridade: Sucesso / Conclusão (VERDE BRILHANTE)
         if (msg.Contains("concluída") || msg.Contains("sucesso") || colorKey.Contains("green"))
-        {
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#82E0AA")); // Verde Primavera
-        }
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#82E0AA")); 
 
-        // 6. Prioridade: Erro / Falha (VERMELHO SUAVE)
         if (msg.Contains("erro") || msg.Contains("falha") || msg.Contains("negado") || colorKey.Contains("red"))
-        {
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1948A")); // Vermelho Salmão
-        }
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F1948A")); 
 
-        // 7. Padrão (AZUL GELO / CINZA AZULADO)
-        // Usado para "Iniciando...", linhas pontilhadas ou info genérica
         return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AED6F1"));
     }
 }

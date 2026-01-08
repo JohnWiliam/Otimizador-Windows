@@ -19,9 +19,17 @@
 
 O **Otimizador de Sistema** é uma aplicação moderna, portátil e robusta desenvolvida em **C# 14 (WPF)** para ajustar, limpar e acelerar o Windows. Ele utiliza a biblioteca **WPF-UI 4.1** para oferecer uma interface elegante com efeitos **Mica/Acrylic** e **Fluent Design**, garantindo uma experiência nativa no Windows 11.
 
+Nesta versão, o aplicativo conta com controles granulares (botões individuais de "Aplicar" e "Restaurar") e um sistema de **Auto-Update** integrado.
+
 ### ✨ Funcionalidades Principais
 
 O aplicativo é dividido em categorias inteligentes para facilitar o uso:
+
+#### 🔄 Atualizações (Updates)
+Mantenha o sistema sempre na última versão sem esforço.
+* **Verificação Integrada**: Consulta a API do GitHub Releases para encontrar novidades.
+* **Instalação Silenciosa**: O sistema baixa e substitui o executável automaticamente em segundo plano.
+* **Interface de Progresso**: Visualize as notas da versão e o progresso do download em tempo real.
 
 #### 🛡️ Privacidade (Privacy)
 Proteja seus dados desativando serviços invasivos do Windows.
@@ -82,7 +90,7 @@ O projeto segue a arquitetura **MVVM (Model-View-ViewModel)** com **Injeção de
 * `src/SystemOptimizer/`
     * 📂 **Assets/**: Ícones e imagens de alta resolução.
     * 📂 **Models/**: Definições de Tweaks (`RegistryTweak`, `CustomTweak`).
-    * 📂 **Services/**: Lógica de negócio (`TweakService`, `CleanupService`, `DialogService`).
+    * 📂 **Services/**: Lógica de negócio (`TweakService`, `CleanupService`, `DialogService`, `UpdateService`).
     * 📂 **ViewModels/**: Lógica de apresentação (`MainViewModel`).
     * 📂 **Views/**: Interfaces XAML (`MainWindow`, `Pages/`).
 * 📜 **build.ps1**: Script automatizado para compilar o executável portátil.
@@ -108,9 +116,17 @@ Este software modifica configurações do registro e serviços do sistema. Embor
 
 **System Optimizer** is a modern, portable, and robust application built in **C# 14 (WPF)** to tweak, clean, and accelerate Windows. It leverages the **WPF-UI 4.1** library to deliver a sleek interface with **Mica/Acrylic** effects and **Fluent Design**, ensuring a native feel on Windows 11.
 
+This version features granular controls (individual "Apply" and "Restore" buttons) and an integrated **Auto-Update** system.
+
 ### ✨ Key Features
 
 The application is organized into smart categories for ease of use:
+
+#### 🔄 Updates
+Keep the system always up to date effortlessly.
+* **Automatic Check**: Queries GitHub Releases API for updates.
+* **Silent Install**: Downloads and replaces the executable automatically in the background.
+* **Progress UI**: View release notes and download progress in real-time.
 
 #### 🛡️ Privacy
 Protect your data by disabling invasive Windows services.
@@ -171,7 +187,7 @@ The project follows the **MVVM (Model-View-ViewModel)** architecture with **Depe
 * `src/SystemOptimizer/`
     * 📂 **Assets/**: High-resolution icons and images.
     * 📂 **Models/**: Tweak definitions (`RegistryTweak`, `CustomTweak`).
-    * 📂 **Services/**: Business logic (`TweakService`, `CleanupService`, `DialogService`).
+    * 📂 **Services/**: Business logic (`TweakService`, `CleanupService`, `DialogService`, `UpdateService`).
     * 📂 **ViewModels/**: Presentation logic (`MainViewModel`).
     * 📂 **Views/**: XAML Interfaces (`MainWindow`, `Pages/`).
 * 📜 **build.ps1**: Automated script to compile the portable executable.
