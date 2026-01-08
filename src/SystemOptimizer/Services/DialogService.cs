@@ -237,7 +237,10 @@ public class DialogService : IDialogService
         {
             // 1. Bloqueia UI
             actionButton.IsEnabled = false;
-            dialog.CloseButtonText = null; // Remove opção de cancelar
+            
+            // CORREÇÃO: Usar string.Empty em vez de null para evitar aviso CS8625
+            dialog.CloseButtonText = string.Empty; 
+            
             statusPanel.Visibility = Visibility.Visible;
 
             try
