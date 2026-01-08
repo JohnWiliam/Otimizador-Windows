@@ -187,6 +187,8 @@
   <data name="S_2_Desc" xml:space="preserve"><value>Prevents Windows from searching content in cloud accounts (OneDrive/Outlook).</value></data>
   <data name="S_3_Title" xml:space="preserve"><value>Bing Results</value></data>
   <data name="S_3_Desc" xml:space="preserve"><value>Removes web results and Bing news from the Start Menu.</value></data>
+  
+  <data name="Search_Title" xml:space="preserve"><value>Search Optimizations</value></data>
   <data name="Search_Subtitle" xml:space="preserve"><value>Optimize your privacy and Start Menu performance</value></data>
 
   <data name="Cleanup_SelectOptions" xml:space="preserve"><value>Select items to clean</value></data>
