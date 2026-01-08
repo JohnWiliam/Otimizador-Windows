@@ -7,31 +7,75 @@
       xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
       xmlns:p="clr-namespace:SystemOptimizer.Properties"
       mc:Ignorable="d" 
-      d:DesignHeight="450" d:DesignWidth="800"
-      Title="AppearancePage">
+      d:DesignHeight="600" d:DesignWidth="800"
+      Title="AppearancePage"
+      Foreground="{DynamicResource TextFillColorPrimaryBrush}">
 
-    <Grid Margin="20,10,20,20">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0" 
                    Text="{x:Static p:Resources.Nav_Visual}" 
-                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                   FontSize="24" 
+                   FontSize="26" 
                    FontWeight="SemiBold" 
-                   Margin="0,0,0,10" />
+                   Margin="0,0,0,16" 
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
 
-        <ui:DynamicScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding AppearanceTweaks}" 
-                          ItemTemplate="{StaticResource TweakItemTemplate}" />
-        </ui:DynamicScrollViewer>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding AppearanceTweaks}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:TweakViewModel}">
+                        <ui:Card Margin="0,0,0,8" Padding="16">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-            <ui:Button Content="{x:Static p:Resources.Btn_Restore}" Command="{Binding RevertSelectedCommand}" CommandParameter="Appearance" Appearance="Secondary" Margin="0,0,10,0" Width="150" />
-            <ui:Button Content="{x:Static p:Resources.Btn_Apply}" Command="{Binding ApplySelectedCommand}" CommandParameter="Appearance" Appearance="Primary" Width="150" />
-        </StackPanel>
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="{Binding Title}" 
+                                               FontSize="16" 
+                                               FontWeight="Medium" 
+                                               Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding Description}" 
+                                               FontSize="13" 
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                               TextWrapping="Wrap"/>
+                                    
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <ui:SymbolIcon Symbol="{Binding StatusIcon}" 
+                                                       FontSize="16" 
+                                                       Foreground="{Binding StatusColor}" 
+                                                       Margin="0,0,6,0"/>
+                                        <TextBlock Text="{Binding StatusText}" 
+                                                   Foreground="{Binding StatusColor}" 
+                                                   FontSize="12" 
+                                                   VerticalAlignment="Center" 
+                                                   FontWeight="SemiBold"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
+                                    <ui:Button Appearance="Primary" 
+                                               Icon="{ui:SymbolIcon Checkmark24}"
+                                               Command="{Binding DataContext.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                               CommandParameter="{Binding Id}"
+                                               ToolTip="{x:Static p:Resources.Btn_Apply}"/>
+
+                                    <ui:Button Appearance="Secondary" 
+                                               Icon="{ui:SymbolIcon ArrowUndo24}"
+                                               Command="{Binding DataContext.RevertSingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
+                                               CommandParameter="{Binding Id}"
+                                               ToolTip="{x:Static p:Resources.Btn_Restore}"/>
+                                </StackPanel>
+                            </Grid>
+                        </ui:Card>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </Page>
