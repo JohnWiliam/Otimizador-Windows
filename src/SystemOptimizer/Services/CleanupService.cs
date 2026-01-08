@@ -49,7 +49,6 @@ public class CleanupService
             }
 
             // 2. Limpeza de Arquivos Genéricos (Temp Usuário)
-            // Removemos Shaders daqui para agrupar depois
             if (options.CleanUserTemp)
             {
                 var userPaths = new Dictionary<string, string>
@@ -227,7 +226,6 @@ public class CleanupService
         return (bytes, skipped);
     }
 
-    // Método auxiliar para formatar e enviar log unificado
     private void LogAggregateResult(string label, long bytes, int skipped)
     {
         if (bytes > 0)
