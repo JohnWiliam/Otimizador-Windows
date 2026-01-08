@@ -13,6 +13,7 @@ using SystemOptimizer.Views.Pages;
 using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
+using System.Net.Http;
 
 namespace SystemOptimizer;
 
@@ -36,6 +37,9 @@ public partial class App : Application
                 // 2. Core Services
                 services.AddSingleton<TweakService>();
                 services.AddSingleton<CleanupService>();
+                
+                // NOVO: Registro do serviço de atualização
+                services.AddSingleton<IUpdateService, UpdateService>();
 
                 // 3. UI Services
                 services.AddSingleton<INavigationViewPageProvider, PageService>();
@@ -51,7 +55,7 @@ public partial class App : Application
                 services.AddTransient<PrivacyPage>();
                 services.AddTransient<NetworkPage>();
                 services.AddTransient<SecurityPage>();
-                services.AddTransient<SearchPage>(); // ADICIONADO AQUI
+                services.AddTransient<SearchPage>(); 
                 services.AddTransient<CleanupPage>();
                 services.AddTransient<AppearancePage>();
                 
