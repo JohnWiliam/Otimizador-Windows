@@ -109,7 +109,13 @@ namespace SystemOptimizer.Properties {
         public static string S1_Desc { get { return ResourceManager.GetString("S1_Desc", resourceCulture); } }
         public static string S2_Title { get { return ResourceManager.GetString("S2_Title", resourceCulture); } }
         public static string S2_Desc { get { return ResourceManager.GetString("S2_Desc", resourceCulture); } }
+        public static string S_3_Title { get { return ResourceManager.GetString("S_3_Title", resourceCulture); } }
+        public static string S_3_Desc { get { return ResourceManager.GetString("S_3_Desc", resourceCulture); } }
         
+        // --- NOVO: TÍTULO DA PÁGINA DE PESQUISA ---
+        public static string Search_Title { get { return ResourceManager.GetString("Search_Title", resourceCulture); } }
+        public static string Search_Subtitle { get { return ResourceManager.GetString("Search_Subtitle", resourceCulture); } }
+
         public static string A1_Title { get { return ResourceManager.GetString("A1_Title", resourceCulture); } }
         public static string A1_Desc { get { return ResourceManager.GetString("A1_Desc", resourceCulture); } }
         public static string A2_Title { get { return ResourceManager.GetString("A2_Title", resourceCulture); } }
@@ -198,16 +204,7 @@ namespace SystemOptimizer.Properties {
         public static string Msg_InitFail { get { return ResourceManager.GetString("Msg_InitFail", resourceCulture); } }
         public static string App_Title { get { return ResourceManager.GetString("App_Title", resourceCulture); } }
         
-        public static string S_1_Title { get { return ResourceManager.GetString("S_1_Title", resourceCulture); } }
-        public static string S_1_Desc { get { return ResourceManager.GetString("S_1_Desc", resourceCulture); } }
-        public static string S_2_Title { get { return ResourceManager.GetString("S_2_Title", resourceCulture); } }
-        public static string S_2_Desc { get { return ResourceManager.GetString("S_2_Desc", resourceCulture); } }
-        public static string S_3_Title { get { return ResourceManager.GetString("S_3_Title", resourceCulture); } }
-        public static string S_3_Desc { get { return ResourceManager.GetString("S_3_Desc", resourceCulture); } }
-        public static string Search_Subtitle { get { return ResourceManager.GetString("Search_Subtitle", resourceCulture); } }
-
-        // --- NOVOS TEXTOS DE ATUALIZAÇÃO (Adicionados para corrigir CS0117) ---
-
+        // --- TEXTOS DE ATUALIZAÇÃO ---
         public static string Settings_Update { get { return ResourceManager.GetString("Settings_Update", resourceCulture); } }
         public static string Settings_UpdateSystemVersion { get { return ResourceManager.GetString("Settings_UpdateSystemVersion", resourceCulture); } }
         public static string Settings_UpdateCheckDesc { get { return ResourceManager.GetString("Settings_UpdateCheckDesc", resourceCulture); } }
