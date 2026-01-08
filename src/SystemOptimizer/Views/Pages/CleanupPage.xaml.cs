@@ -138,6 +138,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         paragraph.Margin = new Thickness(0, 0, 0, 4);
         paragraph.LineHeight = 20;
 
+        // Recupera o Brush da cor
         Brush statusBrush = GetHarmonicBrush(item.StatusColor, item.Message);
 
         SymbolRegular symbol = SymbolRegular.Info24;
@@ -166,7 +167,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             Symbol = symbol,
             FontSize = 16,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = statusBrush,
+            Foreground = statusBrush, // Aplica explicitamente a cor
             Margin = new Thickness(0, 0, 0, -2) 
         };
 
@@ -177,7 +178,10 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         paragraph.Inlines.Add(iconContainer);
         paragraph.Inlines.Add(new Run("  "));
 
-        var run = new Run(item.Message)
+        // CORREÇÃO CRÍTICA: Substitui o literal '\n' por quebra de linha real
+        string processedMessage = item.Message?.Replace("\\n", Environment.NewLine) ?? "";
+
+        var run = new Run(processedMessage)
         {
             BaselineAlignment = BaselineAlignment.Center,
             FontFamily = new FontFamily("Segoe UI"),
@@ -205,6 +209,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             try { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(statusColor)); } catch { }
         }
 
+        // Palette Flat/Pastel
+        
         // Update / Services -> Blue
         if (msg.Contains("update") || msg.Contains("serviço") || msg.Contains("service"))
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64B5F6")); 
