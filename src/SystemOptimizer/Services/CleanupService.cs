@@ -48,9 +48,10 @@ public class CleanupService
                 await CleanWindowsUpdateAsync();
             }
 
-            // 2. Limpeza de Arquivos Genéricos (Temp Usuário)
+            // 2. Arquivos Temporários do Usuário (Temp + CrashDumps + WER)
             if (options.CleanUserTemp)
             {
+                // Limpeza de pastas gerais
                 var userPaths = new Dictionary<string, string>
                 {
                     { Resources.Label_TempFiles ?? "User Temp", Path.GetTempPath() },
@@ -61,7 +62,14 @@ public class CleanupService
                 foreach (var kvp in userPaths)
                 {
                     if (Directory.Exists(kvp.Value))
-                        totalBytes += CleanDirectory(kvp.Value, kvp.Key, true).Bytes;
+                    {
+                        // Log individual para pastas importantes do sistema
+                        var res = CleanDirectory(kvp.Value, null, false);
+                        totalBytes += res.Bytes;
+                        if (res.Bytes > 0) LogAggregateResult(kvp.Key, res.Bytes, res.Skipped);
+                        else if (res.Bytes == 0 && kvp.Key == (Resources.Label_TempFiles ?? "User Temp")) 
+                             LogAggregateResult(kvp.Key, 0, 0); // Mostra que Temp está limpo
+                    }
                 }
 
                 // --- Shader Cache Unificado (Nvidia, AMD, DX) ---
@@ -78,17 +86,15 @@ public class CleanupService
                 {
                     if (Directory.Exists(path))
                     {
-                        var res = CleanDirectory(path, null, false); // False para não gerar log individual
+                        var res = CleanDirectory(path, null, false);
                         shaderBytes += res.Bytes;
                         shaderSkipped += res.Skipped;
                     }
                 }
                 
-                if (shaderBytes > 0 || shaderSkipped > 0)
-                {
-                    totalBytes += shaderBytes;
-                    LogAggregateResult(Resources.Label_ShaderCache ?? "Shader Cache", shaderBytes, shaderSkipped);
-                }
+                // Emite UM log para todos os Shaders
+                LogAggregateResult(Resources.Label_ShaderCache ?? "Shader Cache", shaderBytes, shaderSkipped);
+                totalBytes += shaderBytes;
             }
 
             // 3. Temp Sistema
@@ -103,7 +109,11 @@ public class CleanupService
                 foreach (var kvp in sysPaths)
                 {
                     if (Directory.Exists(kvp.Value))
-                        totalBytes += CleanDirectory(kvp.Value, kvp.Key, true).Bytes;
+                    {
+                        var res = CleanDirectory(kvp.Value, kvp.Key, false);
+                        totalBytes += res.Bytes;
+                        LogAggregateResult(kvp.Key, res.Bytes, res.Skipped);
+                    }
                 }
             }
 
@@ -112,7 +122,11 @@ public class CleanupService
             {
                 string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch");
                 if (Directory.Exists(path))
-                    totalBytes += CleanDirectory(path, "Prefetch", true).Bytes;
+                {
+                    var res = CleanDirectory(path, "Prefetch", false);
+                    totalBytes += res.Bytes;
+                    LogAggregateResult("Prefetch", res.Bytes, res.Skipped);
+                }
             }
 
             // 5. Navegadores Unificado
@@ -192,7 +206,7 @@ public class CleanupService
             catch { }
         }
 
-        // Log Unificado
+        // Log Unificado para todos os navegadores
         LogAggregateResult(Resources.Label_BrowserCache ?? "Browser Cache", totalBytes, totalSkipped);
         
         return totalBytes;
@@ -245,7 +259,7 @@ public class CleanupService
         }
         else
         {
-            string msg = string.Format(Resources.Log_Clean ?? "{0} Clean", label);
+            string msg = string.Format(Resources.Log_Clean ?? "{0} : Clean", label);
             OnLogItem?.Invoke(new CleanupLogItem { Message = msg, Icon = "Info24", StatusColor = "Gray" });
         }
     }
@@ -302,8 +316,11 @@ public class CleanupService
             {
                 try
                 {
-                    CleanDirectory(wuPath, "Windows Update", true);
+                    var res = CleanDirectory(wuPath, null, false);
                     success = true;
+                    // Log manual para WU
+                    if (res.Bytes > 0) LogAggregateResult("Windows Update", res.Bytes, res.Skipped);
+                    else OnLogItem?.Invoke(new CleanupLogItem { Message = string.Format(Resources.Log_Clean, "Windows Update"), Icon = "Checkmark24", StatusColor = "Green" });
                 }
                 catch
                 {
