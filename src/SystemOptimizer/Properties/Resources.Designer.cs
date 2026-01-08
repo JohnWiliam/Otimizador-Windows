@@ -222,7 +222,7 @@ namespace SystemOptimizer.Properties {
             }
         }
 
-        // --- NOVAS PROPRIEDADES ADICIONADAS ---
+        // --- NOVAS PROPRIEDADES ---
         public static string Label_BrowserCache {
             get {
                 return ResourceManager.GetString("Label_BrowserCache", resourceCulture);
@@ -240,7 +240,7 @@ namespace SystemOptimizer.Properties {
                 return ResourceManager.GetString("Log_Ignored", resourceCulture);
             }
         }
-        // ------------------------------------
+        // --------------------------
 
         public static string Log_Clean {
             get {
