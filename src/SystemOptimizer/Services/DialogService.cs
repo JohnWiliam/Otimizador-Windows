@@ -71,7 +71,6 @@ public class DialogService : IDialogService
             Symbol = iconSymbol,
             FontSize = 32, // Tamanho confortável
             Foreground = iconColor,
-            // CORREÇÃO: Alinhamento 'Center' para ficar no meio da altura do texto
             VerticalAlignment = VerticalAlignment.Center, 
             Margin = new Thickness(0, 0, 16, 0) // Removemos a margem superior
         };
@@ -115,9 +114,6 @@ public class DialogService : IDialogService
             
             DialogMaxWidth = 420, 
             
-            // PADDING REFINADO:
-            // Top: 20 (Equilíbrio visual com o título)
-            // Bottom: 10 (Menor porque os botões já têm margem, aproximando o conteúdo)
             Padding = new Thickness(24, 20, 24, 10),
             
             BorderThickness = new Thickness(1),
@@ -130,6 +126,139 @@ public class DialogService : IDialogService
         dialog.Resources["ContentDialogTopOverlay"] = Brushes.Transparent;
         dialog.Resources["ContentDialogContentBackground"] = Brushes.Transparent;
         dialog.Resources["ContentDialogBackground"] = Brushes.Transparent;
+
+        await _contentDialogService.ShowAsync(dialog, CancellationToken.None);
+    }
+
+    public async Task ShowUpdateDialogAsync(string version, string releaseNotes, Func<IProgress<double>, Task> updateAction)
+    {
+        // 1. Configura Layout
+        var currentTheme = ApplicationThemeManager.GetAppTheme();
+        Color baseColor = currentTheme == ApplicationTheme.Dark 
+            ? Color.FromRgb(32, 32, 32)  
+            : Color.FromRgb(248, 248, 248);
+        var acrylicBrush = new SolidColorBrush(baseColor) { Opacity = 0.95 };
+
+        var stackPanel = new StackPanel { Margin = new Thickness(0) };
+
+        // Título e Ícone
+        var headerGrid = new Grid { Margin = new Thickness(0, 0, 0, 16) };
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var icon = new SymbolIcon
+        {
+            Symbol = SymbolRegular.ArrowDownload24,
+            FontSize = 28,
+            Foreground = new SolidColorBrush(Color.FromRgb(0, 120, 215)),
+            Margin = new Thickness(0, 0, 12, 0)
+        };
+
+        var titleBlock = new System.Windows.Controls.TextBlock
+        {
+            Text = $"Atualização Disponível: {version}",
+            FontSize = 18,
+            FontWeight = FontWeights.SemiBold,
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"]
+        };
+
+        Grid.SetColumn(icon, 0);
+        Grid.SetColumn(titleBlock, 1);
+        headerGrid.Children.Add(icon);
+        headerGrid.Children.Add(titleBlock);
+
+        // Notas da Versão (Scrollable)
+        var notesScroll = new ScrollViewer 
+        { 
+            MaxHeight = 200, 
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Margin = new Thickness(0, 0, 0, 16)
+        };
+        var notesBlock = new System.Windows.Controls.TextBlock
+        {
+            Text = releaseNotes,
+            TextWrapping = TextWrapping.Wrap,
+            FontSize = 14,
+            Opacity = 0.8,
+            Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"]
+        };
+        notesScroll.Content = notesBlock;
+
+        // Barra de Progresso e Status (Inicialmente Ocultos)
+        var statusPanel = new StackPanel { Visibility = Visibility.Collapsed, Margin = new Thickness(0, 10, 0, 0) };
+        var statusText = new System.Windows.Controls.TextBlock 
+        { 
+            Text = "Baixando atualização...", 
+            FontSize = 12, 
+            Margin = new Thickness(0,0,0,4),
+            HorizontalAlignment = HorizontalAlignment.Center
+        };
+        var progressBar = new System.Windows.Controls.ProgressBar 
+        { 
+            Height = 6, 
+            IsIndeterminate = false, 
+            Maximum = 100 
+        };
+        statusPanel.Children.Add(statusText);
+        statusPanel.Children.Add(progressBar);
+
+        stackPanel.Children.Add(headerGrid);
+        stackPanel.Children.Add(notesScroll);
+        stackPanel.Children.Add(statusPanel);
+
+        // Construção do Dialog
+        var dialog = new ContentDialog
+        {
+            Title = null,
+            Content = stackPanel,
+            PrimaryButtonText = "Atualizar e Reiniciar",
+            CloseButtonText = "Cancelar",
+            DefaultButton = ContentDialogButton.Primary,
+            DialogMaxWidth = 500,
+            Background = acrylicBrush,
+            Padding = new Thickness(24)
+        };
+
+        dialog.Resources["ContentDialogTopOverlay"] = Brushes.Transparent;
+        dialog.Resources["ContentDialogContentBackground"] = Brushes.Transparent;
+        dialog.Resources["ContentDialogBackground"] = Brushes.Transparent;
+
+        // Lógica do Botão Atualizar
+        dialog.ButtonClicked += async (sender, args) =>
+        {
+            if (args.Button == ContentDialogButton.Primary)
+            {
+                // Impede o fechamento automático
+                args.Cancel = true; 
+                
+                // Atualiza UI para estado de download
+                dialog.IsPrimaryButtonEnabled = false;
+                dialog.CloseButtonText = null; // Remove opção de cancelar durante o download
+                statusPanel.Visibility = Visibility.Visible;
+
+                try
+                {
+                    var progress = new Progress<double>(p => progressBar.Value = p);
+                    
+                    // Executa o download
+                    await updateAction(progress);
+
+                    // Se chegou aqui, a aplicação vai reiniciar em breve.
+                    statusText.Text = "Instalando...";
+                    progressBar.IsIndeterminate = true;
+                }
+                catch (Exception ex)
+                {
+                    // Em caso de erro, restaura a UI
+                    statusText.Text = "Erro: " + ex.Message;
+                    statusText.Foreground = Brushes.Red;
+                    dialog.IsPrimaryButtonEnabled = true;
+                    dialog.CloseButtonText = "Fechar";
+                    progressBar.Visibility = Visibility.Collapsed;
+                }
+            }
+        };
 
         await _contentDialogService.ShowAsync(dialog, CancellationToken.None);
     }
