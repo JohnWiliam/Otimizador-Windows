@@ -161,13 +161,12 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             symbol = parsedSymbol;
         }
 
-        // Criar ícone garantindo o Foreground
         var icon = new SymbolIcon
         {
             Symbol = symbol,
             FontSize = 16,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = statusBrush, // Aplica explicitamente a cor ao ícone
+            Foreground = statusBrush,
             Margin = new Thickness(0, 0, 0, -2) 
         };
 
@@ -183,7 +182,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             BaselineAlignment = BaselineAlignment.Center,
             FontFamily = new FontFamily("Segoe UI"),
             FontSize = 13,
-            Foreground = statusBrush // Aplica a mesma cor ao texto
+            Foreground = statusBrush
         };
 
         if (item.IsBold)
@@ -206,7 +205,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             try { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(statusColor)); } catch { }
         }
 
-        // Palette Flat/Pastel
         // Update / Services -> Blue
         if (msg.Contains("update") || msg.Contains("serviço") || msg.Contains("service"))
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64B5F6")); 
@@ -219,8 +217,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         if (msg.Contains("vazio") || msg.Contains("limpo") || msg.Contains("clean") || msg.Contains("empty"))
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B0BEC5")); 
 
-        // Browsers -> Amber/Yellow
-        if (msg.Contains("chrome") || msg.Contains("edge") || msg.Contains("firefox") || msg.Contains("browser") || msg.Contains("navegadores"))
+        // Browsers / Shaders -> Amber/Yellow
+        if (msg.Contains("chrome") || msg.Contains("edge") || msg.Contains("firefox") || msg.Contains("browser") || msg.Contains("navegadores") || msg.Contains("shader"))
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD54F")); 
 
         // DNS / Network -> Purple
