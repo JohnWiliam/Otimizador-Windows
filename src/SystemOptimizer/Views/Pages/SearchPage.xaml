@@ -24,7 +24,7 @@
                    Margin="0,0,0,16" 
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ui:DynamicScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding SearchTweaks}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type vm:TweakViewModel}">
@@ -58,13 +58,13 @@
                                     </StackPanel>
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                                    
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                     <ui:Button Appearance="Primary" 
                                                Icon="{ui:SymbolIcon Checkmark24}"
                                                Command="{Binding DataContext.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
                                                CommandParameter="{Binding Id}"
-                                               ToolTip="Aplicar esta otimização"/>
+                                               ToolTip="Aplicar esta otimização"
+                                               Margin="0,0,8,0"/>
 
                                     <ui:Button Appearance="Secondary" 
                                                Icon="{ui:SymbolIcon ArrowUndo24}"
@@ -77,6 +77,6 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-        </ScrollViewer>
+        </ui:DynamicScrollViewer>
     </Grid>
 </Page>
