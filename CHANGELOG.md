@@ -1,5 +1,33 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/JohnWiliam/Otimizador-Windows/total?color=green&logo=github)](https://github.com/JohnWiliam/Otimizador-Windows/releases/)
 
+**🚀 Otimizador de Sistema v2.1.1**
+
+Esta atualização foca na **unificação visual** completa da aplicação e na correção de bugs críticos de layout, garantindo que todas as categorias ofereçam a mesma experiência fluida introduzida na versão anterior.
+
+**✨ O Que Há de Novo?**
+
+* **🎨 Padronização de Interface (UI Overhaul)**
+>
+> Todas as páginas de categorias (Segurança, Privacidade, Desempenho, Rede, Visual e Ajustes) foram totalmente reconstruídas para seguir o padrão de design moderno.
+>
+> * **Design Consistente:** Substituição de listas antigas por `ui:Card` modernos do WPF-UI, garantindo espaçamento e tipografia uniformes em todo o aplicativo.
+> * **Controles Granulares:** Cada otimização agora possui botões individuais dedicados para "Aplicar" e "Restaurar", oferecendo controle total ao usuário sobre cada ajuste específico.
+> * **Página de Segurança:** A aba de Segurança, anteriormente vazia, foi totalmente implementada e conectada aos *ViewModels* de segurança.
+
+* **🐛 Correções de Layout e Scrolling**
+>
+> Resolução de problemas críticos que impediam a visualização de todo o conteúdo em telas menores ou com muitos itens.
+>
+> * **Dynamic ScrollViewer:** Substituição global dos controles de rolagem padrão pelo `ui:DynamicScrollViewer`. Isso corrige o problema onde os cards ficavam "cortados" e habilita a rolagem suave com a roda do mouse (scroll wheel) dentro do `NavigationView`.
+> * **Correção de Espaçamento:** Ajuste técnico nas margens dos botões (`Margin` em vez de `Spacing`), garantindo compatibilidade nativa com o WPF no .NET 10 sem erros de compilação.
+
+* **🛠️ Estabilidade e Compilação**
+>
+> * **Correções XML:** Resolução de erros de tags aninhadas (`MC3000`) que quebravam o processo de *build* em páginas longas.
+> * **Integridade MVVM:** Todos os novos botões e cards foram rigorosamente ligados (`Binding`) aos comandos assíncronos existentes (`ApplySingleCommand`/`RevertSingleCommand`), garantindo que a lógica de "Modo Silencioso" e persistência continue funcionando perfeitamente com a nova interface.
+>
+---
+
 **🚀 Otimizador de Sistema v2.1.0**
 
 Esta versão foca na privacidade e limpeza da experiência de busca do Windows, além de melhorias na robustez do sistema de compilação.
