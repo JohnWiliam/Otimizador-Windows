@@ -58,7 +58,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  
   <data name="P1_Title" xml:space="preserve"><value>Disable Telemetry</value></data>
   <data name="P1_Desc" xml:space="preserve"><value>Prevents sending diagnostic data to Microsoft.</value></data>
   <data name="P2_Title" xml:space="preserve"><value>Disable DiagTrack</value></data>
@@ -73,7 +72,6 @@
   <data name="P6_Desc" xml:space="preserve"><value>Removes 'annoying' suggestions from Start Menu.</value></data>
   <data name="P7_Title" xml:space="preserve"><value>Disable OOBE Data</value></data>
   <data name="P7_Desc" xml:space="preserve"><value>Privacy during initial system setup.</value></data>
-
   <data name="PF1_Title" xml:space="preserve"><value>Ultimate Power Plan</value></data>
   <data name="PF1_Desc" xml:space="preserve"><value>Forces maximum performance plan (Ultimate/High).</value></data>
   <data name="PF2_Title" xml:space="preserve"><value>Disable GameDVR</value></data>
@@ -90,7 +88,6 @@
   <data name="PF8_Desc" xml:space="preserve"><value>Increases FPS, but reduces system security (REQUIRES RESTART).</value></data>
   <data name="PF9_Title" xml:space="preserve"><value>Disable Hibernation</value></data>
   <data name="PF9_Desc" xml:space="preserve"><value>Frees up GBs of disk space (Removes hiberfil.sys).</value></data>
-
   <data name="N1_Title" xml:space="preserve"><value>TCP Auto-Tuning</value></data>
   <data name="N1_Desc" xml:space="preserve"><value>Dynamic TCP Window (Essential for >100Mbps).</value></data>
   <data name="N2_Title" xml:space="preserve"><value>CUBIC Algorithm</value></data>
@@ -101,24 +98,20 @@
   <data name="N4_Desc" xml:space="preserve"><value>Receive Side Scaling (Stability/driver test).</value></data>
   <data name="N5_Title" xml:space="preserve"><value>Disable QoS Limit</value></data>
   <data name="N5_Desc" xml:space="preserve"><value>Removes bandwidth reservation (Packet Scheduler).</value></data>
-
   <data name="S1_Title" xml:space="preserve"><value>Show Extensions</value></data>
   <data name="S1_Desc" xml:space="preserve"><value>Security: Displays real extensions (.exe, .bat).</value></data>
   <data name="S2_Title" xml:space="preserve"><value>Disable AutoRun</value></data>
   <data name="S2_Desc" xml:space="preserve"><value>Security: Blocks automatic USB execution.</value></data>
-
   <data name="A1_Title" xml:space="preserve"><value>Disable Transparency</value></data>
   <data name="A1_Desc" xml:space="preserve"><value>Increases UI response by removing Acrylic/Mica.</value></data>
   <data name="A2_Title" xml:space="preserve"><value>Dark Mode</value></data>
   <data name="A2_Desc" xml:space="preserve"><value>Forces dark theme for applications.</value></data>
   <data name="A3_Title" xml:space="preserve"><value>Visual Effects</value></data>
   <data name="A3_Desc" xml:space="preserve"><value>Adjusts for 'Best Performance' (Partial).</value></data>
-
   <data name="SE1_Title" xml:space="preserve"><value>Disable SysMain</value></data>
   <data name="SE1_Desc" xml:space="preserve"><value>Optimizes disk usage for SSDs (Superfetch).</value></data>
   <data name="SE2_Title" xml:space="preserve"><value>Disable Prefetch</value></data>
   <data name="SE2_Desc" xml:space="preserve"><value>Prevents creation of boot traces (RegWrite).</value></data>
-
   <data name="Settings_Title" xml:space="preserve"><value>Settings</value></data>
   <data name="Settings_General" xml:space="preserve"><value>General</value></data>
   <data name="Settings_Appearance" xml:space="preserve"><value>Appearance</value></data>
@@ -135,7 +128,6 @@
   <data name="Theme_Dark" xml:space="preserve"><value>Dark</value></data>
   <data name="Msg_RestartRequired" xml:space="preserve"><value>To apply the language change, the application needs to be restarted.\nDo you want to restart now?</value></data>
   <data name="Msg_RestartTitle" xml:space="preserve"><value>Restart Required</value></data>
-
   <data name="Nav_Privacy" xml:space="preserve"><value>Privacy</value></data>
   <data name="Nav_Performance" xml:space="preserve"><value>Performance</value></data>
   <data name="Nav_Network" xml:space="preserve"><value>Network</value></data>
@@ -144,20 +136,17 @@
   <data name="Nav_Tweaks" xml:space="preserve"><value>Tweaks</value></data>
   <data name="Nav_Cleanup" xml:space="preserve"><value>Cleanup</value></data>
   <data name="Nav_Search" xml:space="preserve"><value>Search</value></data>
-
   <data name="Status_Applying" xml:space="preserve"><value>Applying changes...</value></data>
   <data name="Status_Loading" xml:space="preserve"><value>Loading system state...</value></data>
   <data name="Btn_Apply" xml:space="preserve"><value>Apply Selection</value></data>
   <data name="Btn_Restore" xml:space="preserve"><value>Restore Selection</value></data>
   <data name="Btn_RunCleanup" xml:space="preserve"><value>Run Cleanup</value></data>
   <data name="Btn_RestartExplorer" xml:space="preserve"><value>Restart Explorer</value></data>
-
   <data name="Status_Optimized" xml:space="preserve"><value>Optimized</value></data>
   <data name="Status_Default" xml:space="preserve"><value>Not Optimized</value></data>
   <data name="Status_Modified" xml:space="preserve"><value>Modified</value></data>
   <data name="Status_Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Status_Undefined" xml:space="preserve"><value>UNDEFINED</value></data>
-
   <data name="Cleanup_Title" xml:space="preserve"><value>System Cleanup</value></data>
   <data name="Cleanup_CacheTitle" xml:space="preserve"><value>Temporary Files and Cache</value></data>
   <data name="Cleanup_CacheDesc" xml:space="preserve"><value>Free up disk space by removing unnecessary files.</value></data>
@@ -179,18 +168,16 @@
   <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Completed with errors.\nSuccesses: {0}\nFailures: {1}\nError: {2}</value></data>
   <data name="Msg_ErrorTitle" xml:space="preserve"><value>Error</value></data>
   <data name="Msg_InitFail" xml:space="preserve"><value>Failed to start: {0}</value></data>
-  <data name="App_Title" xml:space="preserve"><value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.1.1</value></data>
-
+  <data name="App_Title" xml:space="preserve"><value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.1.2</value></data>
   <data name="S_1_Title" xml:space="preserve"><value>Search Box Suggestions</value></data>
   <data name="S_1_Desc" xml:space="preserve"><value>Disables online and recent suggestions when typing in the search bar.</value></data>
   <data name="S_2_Title" xml:space="preserve"><value>Cloud Search</value></data>
   <data name="S_2_Desc" xml:space="preserve"><value>Prevents Windows from searching content in cloud accounts (OneDrive/Outlook).</value></data>
   <data name="S_3_Title" xml:space="preserve"><value>Bing Results</value></data>
   <data name="S_3_Desc" xml:space="preserve"><value>Removes web results and Bing news from the Start Menu.</value></data>
-  
   <data name="Search_Title" xml:space="preserve"><value>Search Optimizations</value></data>
   <data name="Search_Subtitle" xml:space="preserve"><value>Optimize your privacy and Start Menu performance</value></data>
-
+  <data name="Btn_RestartExplorer" xml:space="preserve"><value>Restart Explorer</value></data>
   <data name="Cleanup_SelectOptions" xml:space="preserve"><value>Select items to clean</value></data>
   <data name="Cleanup_OptionTemp" xml:space="preserve"><value>Temporary Files (User)</value></data>
   <data name="Cleanup_OptionSystemTemp" xml:space="preserve"><value>Temporary Files (System)</value></data>
@@ -200,7 +187,6 @@
   <data name="Cleanup_OptionRecycleBin" xml:space="preserve"><value>Empty Recycle Bin</value></data>
   <data name="Cleanup_OptionWindowsUpdate" xml:space="preserve"><value>Windows Update Cache</value></data>
   <data name="Log_RecycleBin" xml:space="preserve"><value>Recycle Bin: Emptied</value></data>
-
   <data name="Settings_Update" xml:space="preserve"><value>Update</value></data>
   <data name="Settings_UpdateSystemVersion" xml:space="preserve"><value>System Version</value></data>
   <data name="Settings_UpdateCheckDesc" xml:space="preserve"><value>Check for new versions available on GitHub</value></data>
@@ -212,4 +198,12 @@
   <data name="Msg_UpdateError" xml:space="preserve"><value>Error: {0}</value></data>
   <data name="Msg_UpToDate" xml:space="preserve"><value>You are already using the latest version.</value></data>
   <data name="Msg_UpdateCheckError" xml:space="preserve"><value>Failed to check for updates: {0}</value></data>
+  <data name="Label_TempFiles" xml:space="preserve"><value>Temporary Files</value></data>
+  <data name="Label_SystemTemp" xml:space="preserve"><value>System Temp</value></data>
+  <data name="Log_DNSCleared" xml:space="preserve"><value>DNS cache cleared successfully</value></data>
+  <data name="Log_RecycleBinEmptied" xml:space="preserve"><value>Recycle Bin emptied</value></data>
+
+  <data name="Label_BrowserCache" xml:space="preserve"><value>Browser Cache</value></data>
+  <data name="Label_ShaderCache" xml:space="preserve"><value>Shader Cache</value></data>
+  <data name="Log_Ignored" xml:space="preserve"><value> ({0} ignored)</value></data>
 </root>

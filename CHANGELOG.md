@@ -1,5 +1,27 @@
 [![GitHub downloads](https://img.shields.io/github/downloads/JohnWiliam/Otimizador-Windows/total?color=green&logo=github)](https://github.com/JohnWiliam/Otimizador-Windows/releases/)
 
+**🚀 Otimizador de Sistema v2.1.2**
+
+Esta atualização aprimora significativamente as capacidades de limpeza do sistema, introduzindo suporte seguro para múltiplos navegadores, unificação de logs de shaders e uma estética visual mais refinada e harmônica.
+
+**✨ O Que Há de Novo?**
+
+* **🧹 Limpeza de Navegadores Expandida**
+>
+> A funcionalidade de limpeza foi reescrita para abranger os principais navegadores do mercado com foco total em segurança de dados.
+>
+> * **Suporte Multi-Navegador:** Implementada a deteção e limpeza de cache para **Microsoft Edge** e **Mozilla Firefox**, além do Google Chrome.
+> * **Segurança de Dados:** A nova lógica atua estritamente nas pastas de cache temporário (`Cache_Data` e `cache2`), garantindo que seus **Cookies**, **Histórico** e **Senhas** permaneçam intactos.
+
+* **🎨 Log de Execução Unificado (Cleaner UX)**
+>
+> O feedback visual da limpeza foi otimizado para reduzir a poluição visual e melhorar a legibilidade.
+>
+> * **Logs Agrupados:** Em vez de listar cada perfil de navegador ou pasta de shader individualmente, o sistema agora consolida essas operações em entradas únicas (ex: "Cache de Navegadores", "Cache de Shaders"), somando o total de espaço liberado.
+> * **Harmonia Visual:** Adoção de uma nova paleta de cores "Flat" (Pastel) para os textos e ícones, substituindo as cores saturadas antigas por tons mais modernos e confortáveis para leitura.
+> * **Correções de Texto:** Resolução de bugs visuais como a exibição incorreta de quebras de linha (`\n`) e padronização das mensagens de arquivos ignorados em Português e Inglês.
+>
+---
 **🚀 Otimizador de Sistema v2.1.1**
 
 Esta atualização é um marco importante que introduz um **Sistema de Atualização Automática**, além da **unificação visual** completa da aplicação e correções críticas de internacionalização.

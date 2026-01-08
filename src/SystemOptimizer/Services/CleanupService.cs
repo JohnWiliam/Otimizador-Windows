@@ -14,7 +14,6 @@ public class CleanupService
 {
     public event Action<CleanupLogItem>? OnLogItem;
 
-    // P/Invoke para Lixeira
     [DllImport("shell32.dll")]
     static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint dwFlags);
 
@@ -43,105 +42,229 @@ public class CleanupService
             OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_Starting, Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
             long totalBytes = 0;
 
-            // 1. Windows Update Cleanup
+            // 1. Windows Update
             if (options.CleanWindowsUpdate)
             {
                 await CleanWindowsUpdateAsync();
             }
 
-            // 2. File Cleanup Genérico
-            var pathsToClean = new Dictionary<string, string>();
-
+            // 2. Arquivos Temporários do Usuário (Temp + CrashDumps + WER)
             if (options.CleanUserTemp)
             {
-                pathsToClean.Add("Arquivos Temp", Path.GetTempPath());
-                pathsToClean.Add("Shader Cache (DX)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA", "DXCache"));
-                pathsToClean.Add("Shader Cache (D3D)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache"));
-                pathsToClean.Add("Relatórios de Erro (WER)", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER"));
-                pathsToClean.Add("CrashDumps", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps"));
+                // Limpeza de pastas gerais
+                var userPaths = new Dictionary<string, string>
+                {
+                    { Resources.Label_TempFiles ?? "User Temp", Path.GetTempPath() },
+                    { "WER Reports", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "WER") },
+                    { "CrashDumps", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CrashDumps") }
+                };
+
+                foreach (var kvp in userPaths)
+                {
+                    if (Directory.Exists(kvp.Value))
+                    {
+                        // Log individual para pastas importantes do sistema
+                        var res = CleanDirectory(kvp.Value, null, false);
+                        totalBytes += res.Bytes;
+                        if (res.Bytes > 0) LogAggregateResult(kvp.Key, res.Bytes, res.Skipped);
+                        else if (res.Bytes == 0 && kvp.Key == (Resources.Label_TempFiles ?? "User Temp")) 
+                             LogAggregateResult(kvp.Key, 0, 0); // Mostra que Temp está limpo
+                    }
+                }
+
+                // --- Shader Cache Unificado (Nvidia, AMD, DX) ---
+                long shaderBytes = 0;
+                int shaderSkipped = 0;
+                var shaderPaths = new List<string>
+                {
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA", "DXCache"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "D3DSCache"),
+                    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AMD", "DxCache")
+                };
+
+                foreach (var path in shaderPaths)
+                {
+                    if (Directory.Exists(path))
+                    {
+                        var res = CleanDirectory(path, null, false);
+                        shaderBytes += res.Bytes;
+                        shaderSkipped += res.Skipped;
+                    }
+                }
+                
+                // Emite UM log para todos os Shaders
+                LogAggregateResult(Resources.Label_ShaderCache ?? "Shader Cache", shaderBytes, shaderSkipped);
+                totalBytes += shaderBytes;
             }
 
+            // 3. Temp Sistema
             if (options.CleanSystemTemp)
             {
-                pathsToClean.Add("Temp Sistema", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"));
-                pathsToClean.Add("Windows Logs", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs"));
+                var sysPaths = new Dictionary<string, string>
+                {
+                    { Resources.Label_SystemTemp ?? "System Temp", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp") },
+                    { "Windows Logs", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Logs") }
+                };
+
+                foreach (var kvp in sysPaths)
+                {
+                    if (Directory.Exists(kvp.Value))
+                    {
+                        var res = CleanDirectory(kvp.Value, kvp.Key, false);
+                        totalBytes += res.Bytes;
+                        LogAggregateResult(kvp.Key, res.Bytes, res.Skipped);
+                    }
+                }
             }
 
+            // 4. Prefetch
             if (options.CleanPrefetch)
             {
-                pathsToClean.Add("Prefetch", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch"));
-            }
-
-            foreach (var kvp in pathsToClean)
-            {
-                if (Directory.Exists(kvp.Value))
+                string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Prefetch");
+                if (Directory.Exists(path))
                 {
-                    totalBytes += CleanDirectory(kvp.Value, kvp.Key);
+                    var res = CleanDirectory(path, "Prefetch", false);
+                    totalBytes += res.Bytes;
+                    LogAggregateResult("Prefetch", res.Bytes, res.Skipped);
                 }
             }
 
-            // 3. Limpeza Especial: Chrome
+            // 5. Navegadores Unificado
             if (options.CleanBrowserCache)
             {
-                string chromeUserData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Google", "Chrome", "User Data");
-                if (Directory.Exists(chromeUserData))
-                {
-                    try
-                    {
-                        foreach (var dir in Directory.GetDirectories(chromeUserData))
-                        {
-                            if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
-                            {
-                                string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
-                                if (Directory.Exists(cachePath))
-                                {
-                                    string profileName = new DirectoryInfo(dir).Name;
-                                    totalBytes += CleanDirectory(cachePath, $"Chrome Cache ({profileName})");
-                                }
-                            }
-                        }
-                    }
-                    catch { }
-                }
+                totalBytes += CleanBrowsersUnified();
             }
 
-            // 4. DNS Cache
+            // 6. DNS
             if (options.CleanDns)
             {
                 try
                 {
                     CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
-                    OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNS, Icon = "Globe24", StatusColor = "Green" });
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNSCleared, Icon = "Globe24", StatusColor = "Green" });
                 }
                 catch { }
             }
 
-            // 5. Lixeira
+            // 7. Lixeira
             if (options.CleanRecycleBin)
             {
                 try
                 {
                     SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
-                    OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_RecycleBin, Icon = "Delete24", StatusColor = "Green" });
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_RecycleBinEmptied, Icon = "Delete24", StatusColor = "Green" });
                 }
-                catch
-                {
-                     // Ignora erros ao tentar limpar a lixeira
-                }
+                catch { }
             }
 
             double totalMb = Math.Round(totalBytes / 1024.0 / 1024.0, 2);
             OnLogItem?.Invoke(new CleanupLogItem
             {
                 Message = string.Format(Resources.Log_Finished, totalMb),
-                Icon = "Delete24",
+                Icon = "CheckmarkCircle24",
                 StatusColor = "#0078D4",
                 IsBold = true
             });
         });
     }
 
-    private long CleanDirectory(string path, string label)
+    private long CleanBrowsersUnified()
+    {
+        long totalBytes = 0;
+        int totalSkipped = 0;
+        string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+        // -- Chrome --
+        string chromePath = Path.Combine(localAppData, "Google", "Chrome", "User Data");
+        var chromeRes = CleanChromiumBrowser(chromePath, false);
+        totalBytes += chromeRes.Bytes;
+        totalSkipped += chromeRes.Skipped;
+
+        // -- Edge --
+        string edgePath = Path.Combine(localAppData, "Microsoft", "Edge", "User Data");
+        var edgeRes = CleanChromiumBrowser(edgePath, false);
+        totalBytes += edgeRes.Bytes;
+        totalSkipped += edgeRes.Skipped;
+
+        // -- Firefox --
+        string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
+        if (Directory.Exists(firefoxPath))
+        {
+            try
+            {
+                foreach (var dir in Directory.GetDirectories(firefoxPath))
+                {
+                    string cachePath = Path.Combine(dir, "cache2", "entries");
+                    if (Directory.Exists(cachePath))
+                    {
+                        var res = CleanDirectory(cachePath, null, false);
+                        totalBytes += res.Bytes;
+                        totalSkipped += res.Skipped;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        // Log Unificado para todos os navegadores
+        LogAggregateResult(Resources.Label_BrowserCache ?? "Browser Cache", totalBytes, totalSkipped);
+        
+        return totalBytes;
+    }
+
+    private (long Bytes, int Skipped) CleanChromiumBrowser(string userDataPath, bool logOutput)
+    {
+        long bytes = 0;
+        int skipped = 0;
+
+        if (Directory.Exists(userDataPath))
+        {
+            try
+            {
+                foreach (var dir in Directory.GetDirectories(userDataPath))
+                {
+                    if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
+                    {
+                        string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
+                        if (Directory.Exists(cachePath))
+                        {
+                            var res = CleanDirectory(cachePath, null, logOutput);
+                            bytes += res.Bytes;
+                            skipped += res.Skipped;
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+        return (bytes, skipped);
+    }
+
+    private void LogAggregateResult(string label, long bytes, int skipped)
+    {
+        if (bytes > 0)
+        {
+            double mb = Math.Round(bytes / 1024.0 / 1024.0, 2);
+            string msg = string.Format(Resources.Log_Removed, label, mb);
+            
+            if (skipped > 0)
+                msg += string.Format(Resources.Log_Ignored, skipped);
+
+            OnLogItem?.Invoke(new CleanupLogItem
+            {
+                Message = msg,
+                Icon = "Checkmark24",
+                StatusColor = "Green"
+            });
+        }
+        else
+        {
+            string msg = string.Format(Resources.Log_Clean ?? "{0} : Clean", label);
+            OnLogItem?.Invoke(new CleanupLogItem { Message = msg, Icon = "Info24", StatusColor = "Gray" });
+        }
+    }
+
+    private (long Bytes, int Skipped) CleanDirectory(string path, string? label, bool logOutput)
     {
         long categoryBytes = 0;
         int skippedCount = 0;
@@ -167,24 +290,12 @@ public class CleanupService
             }
         } catch { }
 
-        if (categoryBytes > 0)
+        if (logOutput && label != null)
         {
-            double mb = Math.Round(categoryBytes / 1024.0 / 1024.0, 2);
-            string msg = string.Format(Resources.Log_Removed, label, mb);
-            if (skippedCount > 0) msg += $" ({skippedCount} ignored)";
+            LogAggregateResult(label, categoryBytes, skippedCount);
+        }
 
-            OnLogItem?.Invoke(new CleanupLogItem
-            {
-                Message = msg,
-                Icon = "Checkmark24",
-                StatusColor = "Green"
-            });
-        }
-        else
-        {
-            OnLogItem?.Invoke(new CleanupLogItem { Message = string.Format(Resources.Log_Clean, label), Icon = "Info24", StatusColor = "Gray" });
-        }
-        return categoryBytes;
+        return (categoryBytes, skippedCount);
     }
 
     private async Task CleanWindowsUpdateAsync()
@@ -205,8 +316,11 @@ public class CleanupService
             {
                 try
                 {
-                    CleanDirectory(wuPath, "Windows Update");
+                    var res = CleanDirectory(wuPath, null, false);
                     success = true;
+                    // Log manual para WU
+                    if (res.Bytes > 0) LogAggregateResult("Windows Update", res.Bytes, res.Skipped);
+                    else OnLogItem?.Invoke(new CleanupLogItem { Message = string.Format(Resources.Log_Clean, "Windows Update"), Icon = "Checkmark24", StatusColor = "Green" });
                 }
                 catch
                 {

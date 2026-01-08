@@ -58,431 +58,151 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="P1_Title" xml:space="preserve">
-    <value>Desativar Telemetria</value>
-  </data>
-  <data name="P1_Desc" xml:space="preserve">
-    <value>Impede o envio de dados diagnósticos para a Microsoft.</value>
-  </data>
-  <data name="P2_Title" xml:space="preserve">
-    <value>Desativar DiagTrack</value>
-  </data>
-  <data name="P2_Desc" xml:space="preserve">
-    <value>Desabilita o serviço de Experiência do Usuário Conectado.</value>
-  </data>
-  <data name="P3_Title" xml:space="preserve">
-   <value>Desativar Cortana</value>
-  </data>
-  <data name="P3_Desc" xml:space="preserve">
-    <value>Bloqueia o assistente de voz legado e pesquisa web.</value>
-  </data>
-  <data name="P4_Title" xml:space="preserve">
-    <value>Desativar ID de Anúncio</value>
-  </data>
-  <data name="P4_Desc" xml:space="preserve">
-    <value>Impede rastreamento comercial entre aplicativos.</value>
-  </data>
-  <data name="P5_Title" xml:space="preserve">
-    <value>Desativar Geolocalização</value>
-  </data>
-  <data name="P5_Desc" xml:space="preserve">
-    <value>Bloqueia o rastreamento de localização global do OS.</value>
-  </data>
-  <data name="P6_Title" xml:space="preserve">
-    <value>Desativar Dicas do Windows</value>
-  </data>
-  <data name="P6_Desc" xml:space="preserve">
-    <value>Remove sugestões 'irritantes' no Menu Iniciar.</value>
-  </data>
-  <data name="P7_Title" xml:space="preserve">
-    <value>Desativar Dados OOBE</value>
-  </data>
-  <data name="P7_Desc" xml:space="preserve">
-    <value>Privacidade durante a configuração inicial do sistema.</value>
-  </data>
-  <data name="PF1_Title" xml:space="preserve">
-    <value>Plano de Energia Ultimate</value>
-  </data>
-  <data name="PF1_Desc" xml:space="preserve">
-    <value>Força o plano de desempenho máximo (Ultimate/High).</value>
-  </data>
-  <data name="PF2_Title" xml:space="preserve">
-    <value>Desativar GameDVR</value>
-  </data>
-  <data name="PF2_Desc" xml:space="preserve">
-    <value>Remove gravação em segundo plano (Aumenta FPS).</value>
-  </data>
-  <data name="PF3_Title" xml:space="preserve">
-    <value>Input Mouse 1:1</value>
-  </data>
-  <data name="PF3_Desc" xml:space="preserve">
-    <value>Remove aprimoramento de precisão (Aceleração).</value>
-  </data>
-  <data name="PF5_Title" xml:space="preserve">
-    <value>Prioridade de CPU</value>
-  </data>
-  <data name="PF5_Desc" xml:space="preserve">
-    <value>Ajusta prioridade para Programas vs Serviços (26 hex).</value>
-  </data>
-  <data name="PF6_Title" xml:space="preserve">
-    <value>Throttling de Rede</value>
-  </data>
-  <data name="PF6_Desc" xml:space="preserve">
-    <value>Remove limite de processamento de pacotes (Index FFFFFF).</value>
-  </data>
-  <data name="PF7_Title" xml:space="preserve">
-    <value>Agendamento GPU</value>
-  </data>
-  <data name="PF7_Desc" xml:space="preserve">
-    <value>Habilita agendamento acelerado por hardware (Requer Reinício).</value>
-  </data>
-  <data name="PF8_Title" xml:space="preserve">
-    <value>Desativar VBS / HVCI</value>
-  </data>
-  <data name="PF8_Desc" xml:space="preserve">
-    <value>Aumenta FPS, mas reduz a segurança do sistema (REQUER REINÍCIO).</value>
-  </data>
-  <data name="PF9_Title" xml:space="preserve">
-    <value>Desativar Hibernação</value>
-  </data>
-  <data name="PF9_Desc" xml:space="preserve">
-    <value>Libera GBs de espaço em disco (Remove hiberfil.sys).</value>
-  </data>
-  <data name="N1_Title" xml:space="preserve">
-    <value>TCP Auto-Tuning</value>
-  </data>
-  <data name="N1_Desc" xml:space="preserve">
-    <value>Janela TCP Dinâmica (Essencial para >100Mbps).</value>
-  </data>
-  <data name="N2_Title" xml:space="preserve">
-    <value>Algoritmo CUBIC</value>
-  </data>
-  <data name="N2_Desc" xml:space="preserve">
-    <value>Gestão moderna de congestionamento para alta velocidade.</value>
-  </data>
-  <data name="N3_Title" xml:space="preserve">
-    <value>Ativar ECN</value>
-  </data>
-  <data name="N3_Desc" xml:space="preserve">
-    <value>Notificação Explícita de Congestionamento (Menos Perda).</value>
-  </data>
-  <data name="N4_Title" xml:space="preserve">
-    <value>Desativar RSS</value>
-  </data>
-  <data name="N4_Desc" xml:space="preserve">
-    <value>Receive Side Scaling (Teste de estabilidade/driver).</value>
-  </data>
-  <data name="N5_Title" xml:space="preserve">
-    <value>Desativar QoS Limit</value>
-  </data>
-  <data name="N5_Desc" xml:space="preserve">
-    <value>Remove reserva de banda (Packet Scheduler).</value>
-  </data>
-  <data name="S1_Title" xml:space="preserve">
-    <value>Mostrar Extensões</value>
-  </data>
-  <data name="S1_Desc" xml:space="preserve">
-    <value>Segurança: Exibe extensões reais (.exe, .bat).</value>
-  </data>
-  <data name="S2_Title" xml:space="preserve">
-    <value>Desativar AutoRun</value>
-  </data>
-  <data name="S2_Desc" xml:space="preserve">
-    <value>Segurança: Bloqueia execução automática de USB.</value>
-  </data>
-  <data name="A1_Title" xml:space="preserve">
-    <value>Desativar Transparência</value>
-  </data>
-  <data name="A1_Desc" xml:space="preserve">
-    <value>Aumenta a resposta da UI removendo Acrylic/Mica.</value>
-  </data>
-  <data name="A2_Title" xml:space="preserve">
-    <value>Modo Escuro</value>
-  </data>
-  <data name="A2_Desc" xml:space="preserve">
-    <value>Força tema escuro para aplicativos.</value>
-  </data>
-  <data name="A3_Title" xml:space="preserve">
-    <value>Efeitos Visuais</value>
-  </data>
-  <data name="A3_Desc" xml:space="preserve">
-    <value>Ajusta para 'Melhor Desempenho' (Parcial).</value>
-  </data>
-  <data name="SE1_Title" xml:space="preserve">
-    <value>Desativar SysMain</value>
-  </data>
-  <data name="SE1_Desc" xml:space="preserve">
-    <value>Otimiza uso de disco para SSDs (Superfetch).</value>
-  </data>
-  <data name="SE2_Title" xml:space="preserve">
-    <value>Desativar Prefetch</value>
-  </data>
-  <data name="SE2_Desc" xml:space="preserve">
-    <value>Impede criação de rastros de inicialização (RegWrite).</value>
-  </data>
-  <data name="Settings_Title" xml:space="preserve">
-    <value>Configurações</value>
-  </data>
-  <data name="Settings_General" xml:space="preserve">
-    <value>Geral</value>
-  </data>
-  <data name="Settings_Appearance" xml:space="preserve">
-    <value>Aparência</value>
-  </data>
-  <data name="Settings_ThemeDesc" xml:space="preserve">
-    <value>Escolha o tema da aplicação</value>
-  </data>
-  <data name="Settings_Language" xml:space="preserve">
-    <value>Idioma</value>
-  </data>
-  <data name="Settings_LanguageDesc" xml:space="preserve">
-    <value>Selecione o idioma da interface</value>
-  </data>
-  <data name="Settings_Behavior" xml:space="preserve">
-    <value>Comportamento</value>
-  </data>
-  <data name="Settings_Persistence" xml:space="preserve">
-    <value>Persistência</value>
-  </data>
-  <data name="Settings_PersistenceDesc" xml:space="preserve">
-    <value>Reaplica silenciosamente os Tweaks na inicialização caso algum gatilho altere as preferências do usuário.</value>
-  </data>
-  <data name="Settings_KeepInstalled" xml:space="preserve">
-    <value>Manter Instalado</value>
-  </data>
-  <data name="Settings_KeepInstalledDesc" xml:space="preserve">
-    <value>Criar atalhos na Área de Trabalho e Menu Iniciar</value>
-  </data>
-  <data name="Theme_System" xml:space="preserve">
-    <value>Padrão do Sistema</value>
-  </data>
-  <data name="Theme_Light" xml:space="preserve">
-    <value>Claro</value>
-  </data>
-  <data name="Theme_Dark" xml:space="preserve">
-    <value>Escuro</value>
-  </data>
-  <data name="Msg_RestartRequired" xml:space="preserve">
-    <value>Para aplicar a alteração de idioma, é necessário reiniciar a aplicação.
-Deseja reiniciar agora?</value>
-  </data>
-  <data name="Msg_RestartTitle" xml:space="preserve">
-    <value>Reinício Necessário</value>
-  </data>
-  <data name="Nav_Privacy" xml:space="preserve">
-    <value>Privacidade</value>
-  </data>
-  <data name="Nav_Performance" xml:space="preserve">
-    <value>Performance</value>
-  </data>
-  <data name="Nav_Network" xml:space="preserve">
-    <value>Rede</value>
-  </data>
-  <data name="Nav_Security" xml:space="preserve">
-    <value>Segurança</value>
-  </data>
-  <data name="Nav_Visual" xml:space="preserve">
-    <value>Visual</value>
-  </data>
-  <data name="Nav_Tweaks" xml:space="preserve">
-    <value>Tweaks</value>
-  </data>
-  <data name="Nav_Cleanup" xml:space="preserve">
-    <value>Limpeza</value>
-  </data>
-  <data name="Status_Applying" xml:space="preserve">
-    <value>Aplicando alterações...</value>
-  </data>
-  <data name="Status_Loading" xml:space="preserve">
-    <value>Carregando estado do sistema...</value>
-  </data>
-  <data name="Btn_Apply" xml:space="preserve">
-    <value>Aplicar Seleção</value>
-  </data>
-  <data name="Btn_Restore" xml:space="preserve">
-    <value>Restaurar Seleção</value>
-  </data>
-  <data name="Btn_RunCleanup" xml:space="preserve">
-    <value>Executar Limpeza</value>
-  </data>
-  <data name="Status_Optimized" xml:space="preserve">
-    <value>Otimizado</value>
-  </data>
-  <data name="Status_Default" xml:space="preserve">
-    <value>Não Otimizado</value>
-  </data>
-  <data name="Status_Modified" xml:space="preserve">
-    <value>Modificado</value>
-  </data>
-  <data name="Status_Unknown" xml:space="preserve">
-    <value>Desconhecido</value>
-  </data>
-  <data name="Status_Undefined" xml:space="preserve">
-    <value>INDEFINIDO</value>
-  </data>
-  <data name="Cleanup_Title" xml:space="preserve">
-    <value>Limpeza do Sistema</value>
-  </data>
-  <data name="Cleanup_CacheTitle" xml:space="preserve">
-    <value>Arquivos Temporários e Cache</value>
-  </data>
-  <data name="Cleanup_CacheDesc" xml:space="preserve">
-    <value>Libere espaço em disco removendo arquivos desnecessários.</value>
-  </data>
-  <data name="Cleanup_LogTitle" xml:space="preserve">
-    <value>Log de Execução</value>
-  </data>
-  <data name="Log_Starting" xml:space="preserve">
-    <value>Iniciando varredura e limpeza...</value>
-  </data>
-  <data name="Log_Finished" xml:space="preserve">
-    <value>LIMPEZA CONCLUÍDA!
-Liberado: {0} MB</value>
-  </data>
-  <data name="Log_DNS" xml:space="preserve">
-    <value>Cache DNS: Limpo</value>
-  </data>
-  <data name="Log_Removed" xml:space="preserve">
-    <value>{0} : {1} MB removidos</value>
-  </data>
-  <data name="Log_Clean" xml:space="preserve">
-    <value>{0} : Limpo</value>
-  </data>
-  <data name="Log_WUServicesStopped" xml:space="preserve">
-    <value>Serviços WU: Parados.
-Tentando limpeza...</value>
-  </data>
-  <data name="Log_WUServicesRestarted" xml:space="preserve">
-    <value>Serviços WU: Reiniciados.</value>
-  </data>
-  <data name="Log_WUError" xml:space="preserve">
-    <value>Windows Update : Alguns arquivos estavam em uso.</value>
-  </data>
-  <data name="Log_WUFailStop" xml:space="preserve">
-    <value>Windows Update : Não foi possível parar serviços.</value>
-  </data>
-  <data name="Msg_SuccessTitle" xml:space="preserve">
-    <value>Sucesso</value>
-  </data>
-  <data name="Msg_ResultTitle" xml:space="preserve">
-    <value>Resultado</value>
-  </data>
-  <data name="Msg_Applied" xml:space="preserve">
-    <value>Otimizações aplicadas.</value>
-  </data>
-  <data name="Msg_Restored" xml:space="preserve">
-    <value>Configurações restauradas.</value>
-  </data>
-  <data name="Msg_RebootNeeded" xml:space="preserve">
-    <value>
-REINICIE o computador.</value>
-  </data>
-  <data name="Msg_CompletedWithErrors" xml:space="preserve">
-    <value>Concluído com erros.
-Sucessos: {0}
-Falhas: {1}
-Erro: {2}</value>
-  </data>
-  <data name="Msg_ErrorTitle" xml:space="preserve">
-    <value>Erro</value>
-  </data>
-  <data name="Msg_InitFail" xml:space="preserve">
-    <value>Falha ao iniciar: {0}</value>
-  </data>
-  <data name="App_Title" xml:space="preserve">
-    <value>Otimizador de Sistema - Criado e Idealizado por John Wiliam &amp; IA v2.1.1</value>
-  </data>
-  <data name="Nav_Search" xml:space="preserve">
-    <value>Pesquisa</value>
-  </data>
-  <data name="S_1_Title" xml:space="preserve">
-    <value>Sugestões na Caixa de Pesquisa</value>
-  </data>
-  <data name="S_1_Desc" xml:space="preserve">
-    <value>Desativa as sugestões online e recentes ao digitar na barra de pesquisa.</value>
-  </data>
-  <data name="S_2_Title" xml:space="preserve">
-    <value>Pesquisa na Nuvem</value>
-  </data>
-  <data name="S_2_Desc" xml:space="preserve">
-    <value>Impede que o Windows pesquise conteúdo em contas na nuvem (OneDrive/Outlook).</value>
-  </data>
-  <data name="S_3_Title" xml:space="preserve">
-    <value>Resultados do Bing</value>
-  </data>
-  <data name="S_3_Desc" xml:space="preserve">
-    <value>Remove resultados da web e notícias do Bing do Menu Iniciar.</value>
-  </data>
+  <data name="P1_Title" xml:space="preserve"><value>Desativar Telemetria</value></data>
+  <data name="P1_Desc" xml:space="preserve"><value>Impede o envio de dados diagnósticos para a Microsoft.</value></data>
+  <data name="P2_Title" xml:space="preserve"><value>Desativar DiagTrack</value></data>
+  <data name="P2_Desc" xml:space="preserve"><value>Desabilita o serviço de Experiência do Usuário Conectado.</value></data>
+  <data name="P3_Title" xml:space="preserve"><value>Desativar Cortana</value></data>
+  <data name="P3_Desc" xml:space="preserve"><value>Bloqueia o assistente de voz legado e pesquisa web.</value></data>
+  <data name="P4_Title" xml:space="preserve"><value>Desativar ID de Anúncio</value></data>
+  <data name="P4_Desc" xml:space="preserve"><value>Impede rastreamento comercial entre aplicativos.</value></data>
+  <data name="P5_Title" xml:space="preserve"><value>Desativar Geolocalização</value></data>
+  <data name="P5_Desc" xml:space="preserve"><value>Bloqueia o rastreamento de localização global do OS.</value></data>
+  <data name="P6_Title" xml:space="preserve"><value>Desativar Dicas do Windows</value></data>
+  <data name="P6_Desc" xml:space="preserve"><value>Remove sugestões 'irritantes' no Menu Iniciar.</value></data>
+  <data name="P7_Title" xml:space="preserve"><value>Desativar Dados OOBE</value></data>
+  <data name="P7_Desc" xml:space="preserve"><value>Privacidade durante a configuração inicial do sistema.</value></data>
+  <data name="PF1_Title" xml:space="preserve"><value>Plano de Energia Ultimate</value></data>
+  <data name="PF1_Desc" xml:space="preserve"><value>Força o plano de desempenho máximo (Ultimate/High).</value></data>
+  <data name="PF2_Title" xml:space="preserve"><value>Desativar GameDVR</value></data>
+  <data name="PF2_Desc" xml:space="preserve"><value>Remove gravação em segundo plano (Aumenta FPS).</value></data>
+  <data name="PF3_Title" xml:space="preserve"><value>Input Mouse 1:1</value></data>
+  <data name="PF3_Desc" xml:space="preserve"><value>Remove aprimoramento de precisão (Aceleração).</value></data>
+  <data name="PF5_Title" xml:space="preserve"><value>Prioridade de CPU</value></data>
+  <data name="PF5_Desc" xml:space="preserve"><value>Ajusta prioridade para Programas vs Serviços (26 hex).</value></data>
+  <data name="PF6_Title" xml:space="preserve"><value>Throttling de Rede</value></data>
+  <data name="PF6_Desc" xml:space="preserve"><value>Remove limite de processamento de pacotes (Index FFFFFF).</value></data>
+  <data name="PF7_Title" xml:space="preserve"><value>Agendamento GPU</value></data>
+  <data name="PF7_Desc" xml:space="preserve"><value>Habilita agendamento acelerado por hardware (Requer Reinício).</value></data>
+  <data name="PF8_Title" xml:space="preserve"><value>Desativar VBS / HVCI</value></data>
+  <data name="PF8_Desc" xml:space="preserve"><value>Aumenta FPS, mas reduz a segurança do sistema (REQUER REINÍCIO).</value></data>
+  <data name="PF9_Title" xml:space="preserve"><value>Desativar Hibernação</value></data>
+  <data name="PF9_Desc" xml:space="preserve"><value>Libera GBs de espaço em disco (Remove hiberfil.sys).</value></data>
+  <data name="N1_Title" xml:space="preserve"><value>TCP Auto-Tuning</value></data>
+  <data name="N1_Desc" xml:space="preserve"><value>Janela TCP Dinâmica (Essencial para >100Mbps).</value></data>
+  <data name="N2_Title" xml:space="preserve"><value>Algoritmo CUBIC</value></data>
+  <data name="N2_Desc" xml:space="preserve"><value>Gestão moderna de congestionamento para alta velocidade.</value></data>
+  <data name="N3_Title" xml:space="preserve"><value>Ativar ECN</value></data>
+  <data name="N3_Desc" xml:space="preserve"><value>Notificação Explícita de Congestionamento (Menos Perda).</value></data>
+  <data name="N4_Title" xml:space="preserve"><value>Desativar RSS</value></data>
+  <data name="N4_Desc" xml:space="preserve"><value>Receive Side Scaling (Teste de estabilidade/driver).</value></data>
+  <data name="N5_Title" xml:space="preserve"><value>Desativar QoS Limit</value></data>
+  <data name="N5_Desc" xml:space="preserve"><value>Remove reserva de banda (Packet Scheduler).</value></data>
+  <data name="S1_Title" xml:space="preserve"><value>Mostrar Extensões</value></data>
+  <data name="S1_Desc" xml:space="preserve"><value>Segurança: Exibe extensões reais (.exe, .bat).</value></data>
+  <data name="S2_Title" xml:space="preserve"><value>Desativar AutoRun</value></data>
+  <data name="S2_Desc" xml:space="preserve"><value>Segurança: Bloqueia execução automática de USB.</value></data>
+  <data name="A1_Title" xml:space="preserve"><value>Desativar Transparência</value></data>
+  <data name="A1_Desc" xml:space="preserve"><value>Aumenta a resposta da UI removendo Acrylic/Mica.</value></data>
+  <data name="A2_Title" xml:space="preserve"><value>Modo Escuro</value></data>
+  <data name="A2_Desc" xml:space="preserve"><value>Força tema escuro para aplicativos.</value></data>
+  <data name="A3_Title" xml:space="preserve"><value>Efeitos Visuais</value></data>
+  <data name="A3_Desc" xml:space="preserve"><value>Ajusta para 'Melhor Desempenho' (Parcial).</value></data>
+  <data name="SE1_Title" xml:space="preserve"><value>Desativar SysMain</value></data>
+  <data name="SE1_Desc" xml:space="preserve"><value>Otimiza uso de disco para SSDs (Superfetch).</value></data>
+  <data name="SE2_Title" xml:space="preserve"><value>Desativar Prefetch</value></data>
+  <data name="SE2_Desc" xml:space="preserve"><value>Impede criação de rastros de inicialização (RegWrite).</value></data>
+  <data name="Settings_Title" xml:space="preserve"><value>Configurações</value></data>
+  <data name="Settings_General" xml:space="preserve"><value>Geral</value></data>
+  <data name="Settings_Appearance" xml:space="preserve"><value>Aparência</value></data>
+  <data name="Settings_ThemeDesc" xml:space="preserve"><value>Escolha o tema da aplicação</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>Idioma</value></data>
+  <data name="Settings_LanguageDesc" xml:space="preserve"><value>Selecione o idioma da interface</value></data>
+  <data name="Settings_Behavior" xml:space="preserve"><value>Comportamento</value></data>
+  <data name="Settings_Persistence" xml:space="preserve"><value>Persistência</value></data>
+  <data name="Settings_PersistenceDesc" xml:space="preserve"><value>Reaplica silenciosamente os Tweaks na inicialização caso algum gatilho altere as preferências do usuário.</value></data>
+  <data name="Settings_KeepInstalled" xml:space="preserve"><value>Manter Instalado</value></data>
+  <data name="Settings_KeepInstalledDesc" xml:space="preserve"><value>Criar atalhos na Área de Trabalho e Menu Iniciar</value></data>
+  <data name="Theme_System" xml:space="preserve"><value>Padrão do Sistema</value></data>
+  <data name="Theme_Light" xml:space="preserve"><value>Claro</value></data>
+  <data name="Theme_Dark" xml:space="preserve"><value>Escuro</value></data>
+  <data name="Msg_RestartRequired" xml:space="preserve"><value>Para aplicar a alteração de idioma, é necessário reiniciar a aplicação.\nDeseja reiniciar agora?</value></data>
+  <data name="Msg_RestartTitle" xml:space="preserve"><value>Reinício Necessário</value></data>
+  <data name="Nav_Privacy" xml:space="preserve"><value>Privacidade</value></data>
+  <data name="Nav_Performance" xml:space="preserve"><value>Performance</value></data>
+  <data name="Nav_Network" xml:space="preserve"><value>Rede</value></data>
+  <data name="Nav_Security" xml:space="preserve"><value>Segurança</value></data>
+  <data name="Nav_Visual" xml:space="preserve"><value>Visual</value></data>
+  <data name="Nav_Tweaks" xml:space="preserve"><value>Tweaks</value></data>
+  <data name="Nav_Cleanup" xml:space="preserve"><value>Limpeza</value></data>
+  <data name="Status_Applying" xml:space="preserve"><value>Aplicando alterações...</value></data>
+  <data name="Status_Loading" xml:space="preserve"><value>Carregando estado do sistema...</value></data>
+  <data name="Btn_Apply" xml:space="preserve"><value>Aplicar Seleção</value></data>
+  <data name="Btn_Restore" xml:space="preserve"><value>Restaurar Seleção</value></data>
+  <data name="Btn_RunCleanup" xml:space="preserve"><value>Executar Limpeza</value></data>
+  <data name="Status_Optimized" xml:space="preserve"><value>Otimizado</value></data>
+  <data name="Status_Default" xml:space="preserve"><value>Não Otimizado</value></data>
+  <data name="Status_Modified" xml:space="preserve"><value>Modificado</value></data>
+  <data name="Status_Unknown" xml:space="preserve"><value>Desconhecido</value></data>
+  <data name="Status_Undefined" xml:space="preserve"><value>INDEFINIDO</value></data>
+  <data name="Cleanup_Title" xml:space="preserve"><value>Limpeza do Sistema</value></data>
+  <data name="Cleanup_CacheTitle" xml:space="preserve"><value>Arquivos Temporários e Cache</value></data>
+  <data name="Cleanup_CacheDesc" xml:space="preserve"><value>Libere espaço em disco removendo arquivos desnecessários.</value></data>
+  <data name="Cleanup_LogTitle" xml:space="preserve"><value>Log de Execução</value></data>
+  <data name="Log_Starting" xml:space="preserve"><value>Iniciando varredura e limpeza...</value></data>
+  <data name="Log_Finished" xml:space="preserve"><value>LIMPEZA CONCLUÍDA!\nLiberado: {0} MB</value></data>
+  <data name="Log_DNS" xml:space="preserve"><value>Cache DNS: Limpo</value></data>
+  <data name="Log_Removed" xml:space="preserve"><value>{0} : {1} MB removidos</value></data>
+  <data name="Log_Clean" xml:space="preserve"><value>{0} : Limpo</value></data>
+  <data name="Log_WUServicesStopped" xml:space="preserve"><value>Serviços WU: Parados.\nTentando limpeza...</value></data>
+  <data name="Log_WUServicesRestarted" xml:space="preserve"><value>Serviços WU: Reiniciados.</value></data>
+  <data name="Log_WUError" xml:space="preserve"><value>Windows Update : Alguns arquivos estavam em uso.</value></data>
+  <data name="Log_WUFailStop" xml:space="preserve"><value>Windows Update : Não foi possível parar serviços.</value></data>
+  <data name="Msg_SuccessTitle" xml:space="preserve"><value>Sucesso</value></data>
+  <data name="Msg_ResultTitle" xml:space="preserve"><value>Resultado</value></data>
+  <data name="Msg_Applied" xml:space="preserve"><value>Otimizações aplicadas.</value></data>
+  <data name="Msg_Restored" xml:space="preserve"><value>Configurações restauradas.</value></data>
+  <data name="Msg_RebootNeeded" xml:space="preserve"><value>\nREINICIE o computador.</value></data>
+  <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Concluído com erros.\nSucessos: {0}\nFalhas: {1}\nErro: {2}</value></data>
+  <data name="Msg_ErrorTitle" xml:space="preserve"><value>Erro</value></data>
+  <data name="Msg_InitFail" xml:space="preserve"><value>Falha ao iniciar: {0}</value></data>
+  <data name="App_Title" xml:space="preserve"><value>Otimizador de Sistema - Criado e Idealizado por John Wiliam &amp; IA v2.1.2</value></data>
+  <data name="Nav_Search" xml:space="preserve"><value>Pesquisa</value></data>
+  <data name="S_1_Title" xml:space="preserve"><value>Sugestões na Caixa de Pesquisa</value></data>
+  <data name="S_1_Desc" xml:space="preserve"><value>Desativa as sugestões online e recentes ao digitar na barra de pesquisa.</value></data>
+  <data name="S_2_Title" xml:space="preserve"><value>Pesquisa na Nuvem</value></data>
+  <data name="S_2_Desc" xml:space="preserve"><value>Impede que o Windows pesquise conteúdo em contas na nuvem (OneDrive/Outlook).</value></data>
+  <data name="S_3_Title" xml:space="preserve"><value>Resultados do Bing</value></data>
+  <data name="S_3_Desc" xml:space="preserve"><value>Remove resultados da web e notícias do Bing do Menu Iniciar.</value></data>
+  <data name="Search_Title" xml:space="preserve"><value>Otimizações de Pesquisa</value></data>
+  <data name="Search_Subtitle" xml:space="preserve"><value>Otimize sua privacidade e desempenho do menu Iniciar</value></data>
+  <data name="Btn_RestartExplorer" xml:space="preserve"><value>Reiniciar Explorer</value></data>
+  <data name="Cleanup_SelectOptions" xml:space="preserve"><value>Selecione os itens para limpar</value></data>
+  <data name="Cleanup_OptionTemp" xml:space="preserve"><value>Arquivos Temporários (Usuário)</value></data>
+  <data name="Cleanup_OptionSystemTemp" xml:space="preserve"><value>Arquivos Temporários (Sistema)</value></data>
+  <data name="Cleanup_OptionPrefetch" xml:space="preserve"><value>Prefetch do Windows</value></data>
+  <data name="Cleanup_OptionBrowser" xml:space="preserve"><value>Cache de Navegadores</value></data>
+  <data name="Cleanup_OptionDNS" xml:space="preserve"><value>Cache de DNS</value></data>
+  <data name="Cleanup_OptionRecycleBin" xml:space="preserve"><value>Esvaziar Lixeira</value></data>
+  <data name="Cleanup_OptionWindowsUpdate" xml:space="preserve"><value>Cache do Windows Update</value></data>
+  <data name="Log_RecycleBin" xml:space="preserve"><value>Lixeira: Esvaziada</value></data>
+  <data name="Settings_Update" xml:space="preserve"><value>Atualização</value></data>
+  <data name="Settings_UpdateSystemVersion" xml:space="preserve"><value>Versão do Sistema</value></data>
+  <data name="Settings_UpdateCheckDesc" xml:space="preserve"><value>Verifique se há novas versões disponíveis no GitHub</value></data>
+  <data name="Btn_CheckUpdate" xml:space="preserve"><value>Verificar Agora</value></data>
+  <data name="Msg_UpdateAvailable_Title" xml:space="preserve"><value>Atualização Disponível: {0}</value></data>
+  <data name="Btn_UpdateAndRestart" xml:space="preserve"><value>Atualizar e Reiniciar</value></data>
+  <data name="Msg_Downloading" xml:space="preserve"><value>Baixando atualização...</value></data>
+  <data name="Msg_Installing" xml:space="preserve"><value>Instalando...</value></data>
+  <data name="Msg_UpdateError" xml:space="preserve"><value>Erro: {0}</value></data>
+  <data name="Msg_UpToDate" xml:space="preserve"><value>Você já está usando a versão mais recente.</value></data>
+  <data name="Msg_UpdateCheckError" xml:space="preserve"><value>Falha ao verificar atualizações: {0}</value></data>
+  <data name="Label_TempFiles" xml:space="preserve"><value>Arquivos Temporários</value></data>
+  <data name="Label_SystemTemp" xml:space="preserve"><value>Temp do Sistema</value></data>
+  <data name="Log_DNSCleared" xml:space="preserve"><value>Cache DNS limpo com sucesso</value></data>
+  <data name="Log_RecycleBinEmptied" xml:space="preserve"><value>Lixeira esvaziada</value></data>
   
-  <data name="Search_Title" xml:space="preserve">
-    <value>Otimizações de Pesquisa</value>
-  </data>
-  <data name="Search_Subtitle" xml:space="preserve">
-    <value>Otimize sua privacidade e desempenho do menu Iniciar</value>
-  </data>
-
-  <data name="Btn_RestartExplorer" xml:space="preserve">
-    <value>Reiniciar Explorer</value>
-  </data>
-  <data name="Cleanup_SelectOptions" xml:space="preserve">
-    <value>Selecione os itens para limpar</value>
-  </data>
-  <data name="Cleanup_OptionTemp" xml:space="preserve">
-    <value>Arquivos Temporários (Usuário)</value>
-  </data>
-  <data name="Cleanup_OptionSystemTemp" xml:space="preserve">
-    <value>Arquivos Temporários (Sistema)</value>
-  </data>
-  <data name="Cleanup_OptionPrefetch" xml:space="preserve">
-    <value>Prefetch do Windows</value>
-  </data>
-  <data name="Cleanup_OptionBrowser" xml:space="preserve">
-    <value>Cache de Navegadores</value>
-  </data>
-  <data name="Cleanup_OptionDNS" xml:space="preserve">
-    <value>Cache de DNS</value>
-  </data>
-  <data name="Cleanup_OptionRecycleBin" xml:space="preserve">
-    <value>Esvaziar Lixeira</value>
-  </data>
-  <data name="Cleanup_OptionWindowsUpdate" xml:space="preserve">
-    <value>Cache do Windows Update</value>
-  </data>
-  <data name="Log_RecycleBin" xml:space="preserve">
-    <value>Lixeira: Esvaziada</value>
-  </data>
-
-  <data name="Settings_Update" xml:space="preserve">
-    <value>Atualização</value>
-  </data>
-  <data name="Settings_UpdateSystemVersion" xml:space="preserve">
-    <value>Versão do Sistema</value>
-  </data>
-  <data name="Settings_UpdateCheckDesc" xml:space="preserve">
-    <value>Verifique se há novas versões disponíveis no GitHub</value>
-  </data>
-  <data name="Btn_CheckUpdate" xml:space="preserve">
-    <value>Verificar Agora</value>
-  </data>
-  <data name="Msg_UpdateAvailable_Title" xml:space="preserve">
-    <value>Atualização Disponível: {0}</value>
-  </data>
-  <data name="Btn_UpdateAndRestart" xml:space="preserve">
-    <value>Atualizar e Reiniciar</value>
-  </data>
-  <data name="Msg_Downloading" xml:space="preserve">
-    <value>Baixando atualização...</value>
-  </data>
-  <data name="Msg_Installing" xml:space="preserve">
-    <value>Instalando...</value>
-  </data>
-  <data name="Msg_UpdateError" xml:space="preserve">
-    <value>Erro: {0}</value>
-  </data>
-  <data name="Msg_UpToDate" xml:space="preserve">
-    <value>Você já está usando a versão mais recente.</value>
-  </data>
-  <data name="Msg_UpdateCheckError" xml:space="preserve">
-    <value>Falha ao verificar atualizações: {0}</value>
-  </data>
+  <data name="Label_BrowserCache" xml:space="preserve"><value>Cache de Navegadores</value></data>
+  <data name="Label_ShaderCache" xml:space="preserve"><value>Cache de Shaders</value></data>
+  <data name="Log_Ignored" xml:space="preserve"><value> ({0} ignorados)</value></data>
 </root>
