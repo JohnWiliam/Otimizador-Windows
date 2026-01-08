@@ -58,13 +58,13 @@
                                     </StackPanel>
                                 </StackPanel>
 
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="8">
-                                    
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                     <ui:Button Appearance="Primary" 
                                                Icon="{ui:SymbolIcon Checkmark24}"
                                                Command="{Binding DataContext.ApplySingleCommand, RelativeSource={RelativeSource AncestorType=Page}}" 
                                                CommandParameter="{Binding Id}"
-                                               ToolTip="Aplicar esta otimização"/>
+                                               ToolTip="Aplicar esta otimização"
+                                               Margin="0,0,8,0"/>
 
                                     <ui:Button Appearance="Secondary" 
                                                Icon="{ui:SymbolIcon ArrowUndo24}"
