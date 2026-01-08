@@ -300,7 +300,9 @@ public class DialogService : IDialogService
         if (string.IsNullOrWhiteSpace(markdown)) return doc;
 
         var lines = markdown.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-        List list = null;
+        
+        // CORREÇÃO: List? (nullable) para evitar aviso CS8600 na inicialização e reset
+        List? list = null;
 
         foreach (var line in lines)
         {
