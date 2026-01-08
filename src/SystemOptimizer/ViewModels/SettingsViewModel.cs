@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -20,6 +21,8 @@ public partial class SettingsViewModel : ObservableObject
 {
     // --- Dependências ---
     private readonly TweakService _tweakService;
+    private readonly IUpdateService _updateService;
+    private readonly IDialogService _dialogService;
 
     // --- Constantes para Persistência ---
     private const string TaskName = "SystemOptimizer_AutoRun";
@@ -50,14 +53,20 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isPersistenceEnabled;
 
-    // --- NOVA PROPRIEDADE: Manter Instalado ---
+    // Propriedade para Manter Instalado
     [ObservableProperty]
     private bool _isKeepInstalledEnabled;
 
+    // NOVO: Estado de verificação de atualização
+    [ObservableProperty]
+    private bool _isCheckingForUpdates;
+
     // Construtor atualizado com Injeção de Dependência
-    public SettingsViewModel(TweakService tweakService)
+    public SettingsViewModel(TweakService tweakService, IUpdateService updateService, IDialogService dialogService)
     {
         _tweakService = tweakService;
+        _updateService = updateService;
+        _dialogService = dialogService;
 
         // Inicializa o idioma atual com base na configuração carregada
         _currentLanguage = AppSettings.Current.Language == "en-US" ? "English" : "Português";
@@ -67,7 +76,7 @@ public partial class SettingsViewModel : ObservableObject
 
         // Define caminhos dos atalhos
         string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
-        string startMenu = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu); // Geralmente AppData\Roaming\Microsoft\Windows\Start Menu
+        string startMenu = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu); 
         
         _desktopShortcutPath = Path.Combine(desktop, "System Optimizer.lnk");
         _startMenuShortcutPath = Path.Combine(startMenu, "Programs", "System Optimizer.lnk");
@@ -126,10 +135,49 @@ public partial class SettingsViewModel : ObservableObject
             DisablePersistence();
     }
 
-    // --- NOVO: Trigger para "Manter Instalado" ---
+    // Trigger para "Manter Instalado"
     partial void OnIsKeepInstalledEnabledChanged(bool value)
     {
         ManageShortcuts(value);
+    }
+
+    // --- NOVO: Comando de Verificação de Atualização ---
+    [RelayCommand]
+    private async Task CheckForUpdates()
+    {
+        if (IsCheckingForUpdates) return;
+
+        try
+        {
+            IsCheckingForUpdates = true;
+
+            var updateInfo = await _updateService.CheckForUpdatesAsync();
+
+            if (updateInfo.IsAvailable)
+            {
+                // Exibe o diálogo personalizado e define a ação de download
+                await _dialogService.ShowUpdateDialogAsync(
+                    updateInfo.Version, 
+                    updateInfo.ReleaseNotes, 
+                    async (progress) => 
+                    {
+                        // Esta ação é chamada quando o usuário clica em "Atualizar"
+                        await _updateService.DownloadAndInstallAsync(updateInfo.DownloadUrl, progress);
+                    });
+            }
+            else
+            {
+                await _dialogService.ShowMessageAsync("Atualização", "Você já está usando a versão mais recente.", DialogType.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            await _dialogService.ShowMessageAsync("Erro", $"Falha ao verificar atualizações: {ex.Message}", DialogType.Error);
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+        }
     }
 
     private void UpdateTheme(ApplicationTheme theme)
