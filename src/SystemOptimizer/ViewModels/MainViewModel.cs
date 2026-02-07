@@ -108,7 +108,10 @@ public partial class MainViewModel : ObservableObject
 
     private bool IsRebootRequired(string tweakId)
     {
-        HashSet<string> rebootIds = ["PF4", "PF7", "PF8", "A1", "P1", "SE1", "SCH1", "SCH2", "SCH3"];
+        // CORRIGIDO: Apenas tweaks que REALMENTE requerem reinício do sistema
+        // PF7: Agendamento GPU (HwSchMode) - configuração de driver de hardware
+        // PF8: VBS/HVCI - segurança de hypervisor
+        HashSet<string> rebootIds = ["PF7", "PF8"];
         return rebootIds.Contains(tweakId);
     }
 
@@ -179,7 +182,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void RestartExplorer()
+    private async Task RestartExplorer()
     {
         try
         {
@@ -193,7 +196,7 @@ public partial class MainViewModel : ObservableObject
         catch (Exception ex)
         {
             Logger.Log($"Falha ao reiniciar Explorer: {ex.Message}", "ERROR");
-            _dialogService.ShowMessageAsync("Erro", "Não foi possível reiniciar o Windows Explorer automaticamente.", DialogType.Error);
+            await _dialogService.ShowMessageAsync(Resources.Msg_ErrorTitle, "Não foi possível reiniciar o Windows Explorer automaticamente.", DialogType.Error);
         }
     }
 
