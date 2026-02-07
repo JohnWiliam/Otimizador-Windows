@@ -135,7 +135,12 @@ public class TweakService
         Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, Resources.N1_Title, Resources.N1_Desc,
             () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
-            () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).AutoTuningLevelLocal").Trim(); return res.Equals("Normal", StringComparison.OrdinalIgnoreCase); }
+            () =>
+            {
+                var res = CommandHelper.RunCommand("powershell",
+                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).AutoTuningLevelLocal\"").Trim();
+                return res.Equals("Normal", StringComparison.OrdinalIgnoreCase);
+            }
         ));
 
         Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, Resources.N2_Title, Resources.N2_Desc,
@@ -145,13 +150,23 @@ public class TweakService
                 return true;
             },
             () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
-            () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).CongestionProvider").Trim().ToUpper(); return res == "CUBIC" || res == "CTCP"; }
+            () =>
+            {
+                var res = CommandHelper.RunCommand("powershell",
+                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).CongestionProvider\"").Trim().ToUpper();
+                return res == "CUBIC" || res == "CTCP";
+            }
         ));
 
         Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, Resources.N3_Title, Resources.N3_Desc,
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
-            () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).EcnCapability").Trim(); return res.Equals("Enabled", StringComparison.OrdinalIgnoreCase); }
+            () =>
+            {
+                var res = CommandHelper.RunCommand("powershell",
+                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).EcnCapability\"").Trim();
+                return res.Equals("Enabled", StringComparison.OrdinalIgnoreCase);
+            }
         ));
 
         Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, Resources.N4_Title, Resources.N4_Desc,
