@@ -83,9 +83,9 @@
   <data name="PF6_Title" xml:space="preserve"><value>Network Throttling</value></data>
   <data name="PF6_Desc" xml:space="preserve"><value>Removes packet processing limit (Index FFFFFF).</value></data>
   <data name="PF7_Title" xml:space="preserve"><value>GPU Scheduling</value></data>
-  <data name="PF7_Desc" xml:space="preserve"><value>Enables hardware-accelerated scheduling (Requires Restart).</value></data>
+  <data name="PF7_Desc" xml:space="preserve"><value>Enables hardware-accelerated scheduling (Requires restart).</value></data>
   <data name="PF8_Title" xml:space="preserve"><value>Disable VBS / HVCI</value></data>
-  <data name="PF8_Desc" xml:space="preserve"><value>Increases FPS, but reduces system security (REQUIRES RESTART).</value></data>
+  <data name="PF8_Desc" xml:space="preserve"><value>Increases FPS, but reduces system security (Requires restart).</value></data>
   <data name="PF9_Title" xml:space="preserve"><value>Disable Hibernation</value></data>
   <data name="PF9_Desc" xml:space="preserve"><value>Frees up GBs of disk space (Removes hiberfil.sys).</value></data>
   <data name="N1_Title" xml:space="preserve"><value>TCP Auto-Tuning</value></data>
