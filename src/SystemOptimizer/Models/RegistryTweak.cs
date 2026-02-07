@@ -126,22 +126,61 @@ public class RegistryTweak : TweakBase
             }
             else
             {
-                // Cenário 3: Valor existe. Comparação string-to-string robusta.
-                string valStr = val.ToString() ?? "";
-                string optStr = _optimizedValue.ToString() ?? "";
-                string defStr = _defaultValue?.ToString() ?? "";
+                // Cenário 3: Valor existe. Comparação ajustada por tipo.
+                if (_valueKind == RegistryValueKind.DWord)
+                {
+                    static uint NormalizeDword(object value)
+                    {
+                        if (Convert.ToInt64(value) == -1)
+                            return uint.MaxValue;
 
-                if (string.Equals(valStr, optStr, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    Status = TweakStatus.Optimized;
+                        return Convert.ToUInt32(value);
+                    }
+
+                    uint valNum = NormalizeDword(val);
+                    uint optNum = NormalizeDword(_optimizedValue);
+                    uint? defNum = _defaultValue == null ? null : NormalizeDword(_defaultValue);
+
+                    if (valNum == optNum)
+                        Status = TweakStatus.Optimized;
+                    else if (defNum.HasValue && valNum == defNum.Value)
+                        Status = TweakStatus.Default;
+                    else
+                        Status = TweakStatus.Modified;
                 }
-                else if (_defaultValue != null && string.Equals(valStr, defStr, StringComparison.InvariantCultureIgnoreCase))
+                else if (_valueKind == RegistryValueKind.QWord)
                 {
-                    Status = TweakStatus.Default;
+                    static ulong NormalizeQword(object value)
+                    {
+                        if (Convert.ToInt64(value) == -1)
+                            return ulong.MaxValue;
+
+                        return Convert.ToUInt64(value);
+                    }
+
+                    ulong valNum = NormalizeQword(val);
+                    ulong optNum = NormalizeQword(_optimizedValue);
+                    ulong? defNum = _defaultValue == null ? null : NormalizeQword(_defaultValue);
+
+                    if (valNum == optNum)
+                        Status = TweakStatus.Optimized;
+                    else if (defNum.HasValue && valNum == defNum.Value)
+                        Status = TweakStatus.Default;
+                    else
+                        Status = TweakStatus.Modified;
                 }
                 else
                 {
-                    Status = TweakStatus.Modified;
+                    string valStr = val.ToString() ?? "";
+                    string optStr = _optimizedValue.ToString() ?? "";
+                    string defStr = _defaultValue?.ToString() ?? "";
+
+                    if (string.Equals(valStr, optStr, StringComparison.InvariantCultureIgnoreCase))
+                        Status = TweakStatus.Optimized;
+                    else if (_defaultValue != null && string.Equals(valStr, defStr, StringComparison.InvariantCultureIgnoreCase))
+                        Status = TweakStatus.Default;
+                    else
+                        Status = TweakStatus.Modified;
                 }
             }
         }
