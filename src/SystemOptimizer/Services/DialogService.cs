@@ -284,14 +284,13 @@ public class DialogService : IDialogService
     }
 
     /// <summary>
-    /// Converte Markdown básico em FlowDocument visualmente coerente.
+    /// Converte Markdown em FlowDocument com suporte a títulos, listas, links e blocos de código.
     /// </summary>
     private FlowDocument RenderMarkdownToFlowDocument(string markdown)
     {
-        // PagePadding 0 é crucial para o alinhamento com o resto do Grid
         var doc = new FlowDocument
         {
-            PagePadding = new Thickness(0), 
+            PagePadding = new Thickness(0),
             FontFamily = new FontFamily("Segoe UI"),
             FontSize = 14,
             TextAlignment = TextAlignment.Left
@@ -299,85 +298,224 @@ public class DialogService : IDialogService
 
         if (string.IsNullOrWhiteSpace(markdown)) return doc;
 
-        var lines = markdown.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-        
-        // CORREÇÃO: List? (nullable) para evitar aviso CS8600 na inicialização e reset
+        var lines = markdown.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
         List? list = null;
+        bool isNumberedList = false;
+        bool inCodeBlock = false;
+        var codeLines = new List<string>();
 
-        foreach (var line in lines)
+        foreach (var rawLine in lines)
         {
-            string trimLine = line.Trim();
-            if (string.IsNullOrWhiteSpace(trimLine)) continue;
+            string line = rawLine;
+            string trimLine = line.TrimEnd();
 
-            // Headers (#)
-            if (trimLine.StartsWith("#"))
+            if (trimLine.StartsWith("```", StringComparison.Ordinal))
             {
-                list = null; // Fecha lista anterior se houver
-                string text = trimLine.TrimStart('#', ' ');
-                var p = new Paragraph(ParseBold(text))
+                if (!inCodeBlock)
                 {
-                    FontSize = 16,
-                    FontWeight = FontWeights.Bold,
-                    // Margem superior maior para separar seções
-                    Margin = new Thickness(0, 12, 0, 6) 
-                };
-                doc.Blocks.Add(p);
-            }
-            // Listas (- ou *)
-            else if (trimLine.StartsWith("- ") || trimLine.StartsWith("* "))
-            {
-                if (list == null)
-                {
-                    // Marcador e margem da lista
-                    list = new List 
-                    { 
-                        Margin = new Thickness(0, 0, 0, 8), 
-                        MarkerStyle = TextMarkerStyle.Disc,
-                        Padding = new Thickness(20, 0, 0, 0) // Indentação da lista
-                    };
-                    doc.Blocks.Add(list);
+                    inCodeBlock = true;
+                    codeLines.Clear();
                 }
-                string text = trimLine.Substring(1).Trim();
-                var li = new ListItem(new Paragraph(ParseBold(text)) { Margin = new Thickness(0) });
-                list.ListItems.Add(li);
+                else
+                {
+                    inCodeBlock = false;
+                    AddCodeBlock(doc, codeLines);
+                }
+                continue;
             }
-            // Texto Normal
-            else
+
+            if (inCodeBlock)
+            {
+                codeLines.Add(line);
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(trimLine))
             {
                 list = null;
-                var p = new Paragraph(ParseBold(trimLine))
+                isNumberedList = false;
+                doc.Blocks.Add(new Paragraph { Margin = new Thickness(0, 0, 0, 8) });
+                continue;
+            }
+
+            string trimmed = trimLine.Trim();
+
+            if (trimmed.StartsWith("#", StringComparison.Ordinal))
+            {
+                list = null;
+                isNumberedList = false;
+                int level = CountHeadingLevel(trimmed);
+                string text = trimmed.TrimStart('#', ' ');
+                var p = new Paragraph(ParseInline(text))
                 {
-                    Margin = new Thickness(0, 0, 0, 4)
+                    FontSize = GetHeadingSize(level),
+                    FontWeight = FontWeights.Bold,
+                    Margin = new Thickness(0, 12, 0, 6)
                 };
                 doc.Blocks.Add(p);
+                continue;
             }
+
+            if (IsBulletLine(trimmed))
+            {
+                if (list == null || isNumberedList)
+                {
+                    list = CreateList(TextMarkerStyle.Disc);
+                    isNumberedList = false;
+                    doc.Blocks.Add(list);
+                }
+                string text = trimmed.Substring(1).Trim();
+                list.ListItems.Add(new ListItem(new Paragraph(ParseInline(text)) { Margin = new Thickness(0) }));
+                continue;
+            }
+
+            if (TryParseNumberedLine(trimmed, out var numberedText))
+            {
+                if (list == null || !isNumberedList)
+                {
+                    list = CreateList(TextMarkerStyle.Decimal);
+                    isNumberedList = true;
+                    doc.Blocks.Add(list);
+                }
+                list.ListItems.Add(new ListItem(new Paragraph(ParseInline(numberedText)) { Margin = new Thickness(0) }));
+                continue;
+            }
+
+            list = null;
+            isNumberedList = false;
+            doc.Blocks.Add(new Paragraph(ParseInline(trimmed)) { Margin = new Thickness(0, 0, 0, 4) });
+        }
+
+        if (inCodeBlock && codeLines.Count > 0)
+        {
+            AddCodeBlock(doc, codeLines);
         }
 
         return doc;
     }
 
-    /// <summary>
-    /// Processa negrito simples (**texto**).
-    /// </summary>
-    private Inline ParseBold(string text)
+    private static List CreateList(TextMarkerStyle markerStyle)
     {
-        if (!text.Contains("**")) return new Run(text);
+        return new List
+        {
+            Margin = new Thickness(0, 0, 0, 8),
+            MarkerStyle = markerStyle,
+            Padding = new Thickness(20, 0, 0, 0)
+        };
+    }
+
+    private static int CountHeadingLevel(string text)
+    {
+        int level = 0;
+        while (level < text.Length && text[level] == '#') level++;
+        return Math.Clamp(level, 1, 4);
+    }
+
+    private static double GetHeadingSize(int level)
+    {
+        return level switch
+        {
+            1 => 20,
+            2 => 18,
+            3 => 16,
+            _ => 15
+        };
+    }
+
+    private static bool IsBulletLine(string text)
+    {
+        return text.StartsWith("- ", StringComparison.Ordinal) || text.StartsWith("* ", StringComparison.Ordinal);
+    }
+
+    private static bool TryParseNumberedLine(string text, out string content)
+    {
+        content = string.Empty;
+        var match = Regex.Match(text, @"^\d+\.\s+(.+)$");
+        if (!match.Success) return false;
+        content = match.Groups[1].Value.Trim();
+        return true;
+    }
+
+    private void AddCodeBlock(FlowDocument doc, IReadOnlyList<string> codeLines)
+    {
+        var codeText = string.Join("\n", codeLines);
+        var textBlock = new System.Windows.Controls.TextBlock
+        {
+            Text = codeText,
+            FontFamily = new FontFamily("Consolas"),
+            FontSize = 12,
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"] ?? Brushes.White
+        };
+
+        var border = new Border
+        {
+            Background = new SolidColorBrush(Color.FromArgb(20, 0, 0, 0)),
+            BorderBrush = new SolidColorBrush(Color.FromArgb(40, 0, 0, 0)),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(8),
+            Margin = new Thickness(0, 4, 0, 8),
+            Child = textBlock
+        };
+
+        doc.Blocks.Add(new BlockUIContainer(border));
+    }
+
+    private Inline ParseInline(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return new Run(string.Empty);
 
         var span = new Span();
-        // Regex simplificado para capturar pares de **
-        var parts = Regex.Split(text, @"(\*\*.*?\*\*)");
+        var regex = new Regex(@"(\*\*.*?\*\*|`[^`]+`|\[[^\]]+\]\([^\)]+\))");
+        var parts = regex.Split(text);
 
         foreach (var part in parts)
         {
+            if (string.IsNullOrEmpty(part)) continue;
+
             if (part.StartsWith("**") && part.EndsWith("**") && part.Length > 4)
             {
                 span.Inlines.Add(new Run(part.Substring(2, part.Length - 4)) { FontWeight = FontWeights.Bold });
+                continue;
             }
-            else
+
+            if (part.StartsWith("`", StringComparison.Ordinal) && part.EndsWith("`", StringComparison.Ordinal) && part.Length > 2)
             {
-                if (!string.IsNullOrEmpty(part)) span.Inlines.Add(new Run(part));
+                span.Inlines.Add(new Run(part.Substring(1, part.Length - 2))
+                {
+                    FontFamily = new FontFamily("Consolas"),
+                    Background = new SolidColorBrush(Color.FromArgb(20, 0, 0, 0))
+                });
+                continue;
             }
+
+            if (part.StartsWith("[", StringComparison.Ordinal) && part.Contains("](", StringComparison.Ordinal) && part.EndsWith(")", StringComparison.Ordinal))
+            {
+                var linkMatch = Regex.Match(part, @"^\[(.+)\]\((.+)\)$");
+                if (linkMatch.Success)
+                {
+                    string linkText = linkMatch.Groups[1].Value;
+                    string linkUrl = linkMatch.Groups[2].Value;
+                    var hyperlink = new Hyperlink(new Run(linkText))
+                    {
+                        NavigateUri = Uri.TryCreate(linkUrl, UriKind.Absolute, out var uri) ? uri : null
+                    };
+                    hyperlink.RequestNavigate += (_, e) =>
+                    {
+                        if (e.Uri != null)
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+                        }
+                    };
+                    span.Inlines.Add(hyperlink);
+                    continue;
+                }
+            }
+
+            span.Inlines.Add(new Run(part));
         }
+
         return span;
     }
 }

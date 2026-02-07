@@ -126,7 +126,7 @@
   <data name="Theme_System" xml:space="preserve"><value>System Default</value></data>
   <data name="Theme_Light" xml:space="preserve"><value>Light</value></data>
   <data name="Theme_Dark" xml:space="preserve"><value>Dark</value></data>
-  <data name="Msg_RestartRequired" xml:space="preserve"><value>To apply the language change, the application needs to be restarted.\nDo you want to restart now?</value></data>
+  <data name="Msg_RestartRequired" xml:space="preserve"><value>To apply the language change, the application needs to be restarted.&#10;Do you want to restart now?</value></data>
   <data name="Msg_RestartTitle" xml:space="preserve"><value>Restart Required</value></data>
   <data name="Nav_Privacy" xml:space="preserve"><value>Privacy</value></data>
   <data name="Nav_Performance" xml:space="preserve"><value>Performance</value></data>
@@ -152,11 +152,11 @@
   <data name="Cleanup_CacheDesc" xml:space="preserve"><value>Free up disk space by removing unnecessary files.</value></data>
   <data name="Cleanup_LogTitle" xml:space="preserve"><value>Execution Log</value></data>
   <data name="Log_Starting" xml:space="preserve"><value>Starting scan and cleanup...</value></data>
-  <data name="Log_Finished" xml:space="preserve"><value>CLEANUP FINISHED!\nFreed: {0} MB</value></data>
+  <data name="Log_Finished" xml:space="preserve"><value>CLEANUP FINISHED!&#10;Freed: {0} MB</value></data>
   <data name="Log_DNS" xml:space="preserve"><value>DNS Cache: Cleaned</value></data>
   <data name="Log_Removed" xml:space="preserve"><value>{0} : {1} MB removed</value></data>
   <data name="Log_Clean" xml:space="preserve"><value>{0} : Cleaned</value></data>
-  <data name="Log_WUServicesStopped" xml:space="preserve"><value>WU Services: Stopped.\nAttempting cleanup...</value></data>
+  <data name="Log_WUServicesStopped" xml:space="preserve"><value>WU Services: Stopped.&#10;Attempting cleanup...</value></data>
   <data name="Log_WUServicesRestarted" xml:space="preserve"><value>WU Services: Restarted.</value></data>
   <data name="Log_WUError" xml:space="preserve"><value>Windows Update : Some files were in use.</value></data>
   <data name="Log_WUFailStop" xml:space="preserve"><value>Windows Update : Could not stop services.</value></data>
@@ -164,8 +164,8 @@
   <data name="Msg_ResultTitle" xml:space="preserve"><value>Result</value></data>
   <data name="Msg_Applied" xml:space="preserve"><value>Optimizations applied.</value></data>
   <data name="Msg_Restored" xml:space="preserve"><value>Settings restored.</value></data>
-  <data name="Msg_RebootNeeded" xml:space="preserve"><value>\nRESTART the computer.</value></data>
-  <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Completed with errors.\nSuccesses: {0}\nFailures: {1}\nError: {2}</value></data>
+  <data name="Msg_RebootNeeded" xml:space="preserve"><value>&#10;RESTART the computer.</value></data>
+  <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Completed with errors.&#10;Successes: {0}&#10;Failures: {1}&#10;Error: {2}</value></data>
   <data name="Msg_ErrorTitle" xml:space="preserve"><value>Error</value></data>
   <data name="Msg_InitFail" xml:space="preserve"><value>Failed to start: {0}</value></data>
   <data name="App_Title" xml:space="preserve"><value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.1.2</value></data>
