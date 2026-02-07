@@ -89,7 +89,15 @@ public partial class SettingsViewModel : ObservableObject
             var result = MessageBox.Show(Resources.Msg_RestartRequired, Resources.Msg_RestartTitle, MessageBoxButton.YesNo, MessageBoxImage.Information);
             if (result == MessageBoxResult.Yes)
             {
-                Process.Start(Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty);
+                string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(currentExe))
+                {
+                    Logger.Log("Caminho do executável atual não encontrado ao reiniciar o aplicativo.", "ERROR");
+                    MessageBox.Show("Não foi possível localizar o executável para reiniciar o aplicativo.", Resources.Msg_ErrorTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                Process.Start(currentExe);
                 Application.Current.Shutdown();
             }
         }
