@@ -1,6 +1,6 @@
 using System;
 using System.Windows;
-using CommunityToolkit.WinUI.Notifications;
+using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO
 
 namespace SystemOptimizer
 {
@@ -10,7 +10,6 @@ namespace SystemOptimizer
         public static void Main(string[] args)
         {
             // O Toolkit gerencia a ativação automaticamente se configurado corretamente no App.xaml.cs/StartupService
-            // Não precisamos registrar o ToastNotificationActivator aqui manualmente da forma antiga.
             
             try 
             {
