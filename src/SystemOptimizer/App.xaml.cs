@@ -14,7 +14,7 @@ using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
 using System.Net.Http;
-using CommunityToolkit.WinUI.Notifications;
+using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO: Namespace compatível com v7.1.3
 
 namespace SystemOptimizer;
 
@@ -41,7 +41,6 @@ public partial class App : Application
                 services.AddSingleton<StartupTasksService>();
 
                 // 3. UI Services
-                // CORREÇÃO: Uso explícito da interface para evitar erro CS0246
                 services.AddSingleton<Wpf.Ui.Abstractions.INavigationViewPageProvider, PageService>();
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
@@ -120,10 +119,6 @@ public partial class App : Application
                 NavigateToSettings(mainWindow);
                 _pendingOpenSettings = false;
             }
-            
-            // Verificação de updates (método corrigido para CheckForUpdatesAsync no serviço ou lógica movida para StartupTasksService)
-            // No StartupTasksService.Initialize já chamamos o update check, então esta linha abaixo seria redundante ou deve ser removida se o método não existir.
-            // Para segurança, removemos a chamada manual aqui pois StartupTasksService.Initialize já o faz.
         }
 
         base.OnStartup(e);
