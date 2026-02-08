@@ -64,6 +64,20 @@ public partial class App : Application
             .Build();
     }
 
+    public async Task RunSilentModeWithoutUiAsync()
+    {
+        AppSettings.Load();
+        var culture = new System.Globalization.CultureInfo(AppSettings.Current.Language);
+        Thread.CurrentThread.CurrentCulture = culture;
+        Thread.CurrentThread.CurrentUICulture = culture;
+        SystemOptimizer.Properties.Resources.Culture = culture;
+
+        await _host.StartAsync();
+        await RunSilentModeAsync();
+        await _host.StopAsync();
+        _host.Dispose();
+    }
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         // Carrega configurações de idioma antes de inicializar a UI
@@ -83,7 +97,8 @@ public partial class App : Application
         if (e.Args.Contains("--silent"))
         {
             // Agora aguardamos a execução completa do modo silencioso
-            await RunSilentMode();
+            await RunSilentModeAsync();
+            Shutdown();
         }
         else
         {
@@ -110,7 +125,7 @@ public partial class App : Application
         e.Handled = true; // Impede o crash total se possível
     }
 
-    private async Task RunSilentMode()
+    private async Task RunSilentModeAsync()
     {
         try
         {
@@ -154,11 +169,6 @@ public partial class App : Application
         catch (Exception ex)
         {
             Logger.Log($"Erro crítico no modo silencioso: {ex.Message}", "ERROR");
-        }
-        finally
-        {
-            // Fecha a aplicação após concluir o trabalho em background
-            Shutdown();
         }
     }
 }
