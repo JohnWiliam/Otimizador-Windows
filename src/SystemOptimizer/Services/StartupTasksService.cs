@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using CommunityToolkit.WinUI.Notifications; // Namespace correto
+using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
 using Wpf.Ui;
@@ -41,9 +41,6 @@ public sealed class StartupTasksService
             RequestOpenSettings();
             return;
         }
-        
-        // Removido bloco que usava GetToastActivationArgs() pois ele não existe mais.
-        // A lógica de ativação por Toast é 100% assíncrona via evento OnActivated abaixo.
     }
 
     private void RegisterToastActivation()
