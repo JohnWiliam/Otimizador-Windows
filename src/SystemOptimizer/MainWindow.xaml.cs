@@ -72,9 +72,8 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
     public void SetPageService(INavigationViewPageProvider pageService)
     {
-        // CORREÇÃO: NavigationView não possui mais o método SetPageService.
-        // Deve-se atribuir diretamente à propriedade PageService.
-        RootNavigation.PageService = pageService;
+        // CORREÇÃO: Na versão 4.1+, o método correto é SetPageProviderService
+        RootNavigation.SetPageProviderService(pageService);
     }
 
     public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
