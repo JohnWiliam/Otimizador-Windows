@@ -1,50 +1,28 @@
 using System;
 using System.Windows;
-using SystemOptimizer.Helpers;
 using CommunityToolkit.WinUI.Notifications;
-using SystemOptimizer.Services;
 
-namespace SystemOptimizer;
-
-public static class Program
+namespace SystemOptimizer
 {
-    [STAThread] // Essencial para aplicações WPF
-    public static void Main(string[] args)
+    public static class Program
     {
-        try
+        [STAThread]
+        public static void Main(string[] args)
         {
-            var isSilent = Array.Exists(args, arg => string.Equals(arg, "--silent", StringComparison.OrdinalIgnoreCase));
-
-            if (isSilent)
+            // O Toolkit gerencia a ativação automaticamente se configurado corretamente no App.xaml.cs/StartupService
+            // Não precisamos registrar o ToastNotificationActivator aqui manualmente da forma antiga.
+            
+            try 
             {
                 var app = new App();
-                app.RunSilentModeWithoutUiAsync().GetAwaiter().GetResult();
-                return;
+                app.InitializeComponent();
+                app.Run();
             }
-
-            ToastNotificationManagerCompat.RegisterAumidAndComServer<ToastNotificationActivator>(NotificationConstants.AppId);
-            ToastNotificationManagerCompat.RegisterActivator<ToastNotificationActivator>();
-
-            var app = new App();
-
-            // Carrega o App.xaml (recursos, estilos, temas).
-            // Sem isso, a MainWindow falha ao tentar renderizar os controles do Wpf.Ui.
-            app.InitializeComponent();
-
-            // Inicia a aplicação
-            app.Run();
-        }
-        catch (Exception ex)
-        {
-            // Se algo der errado antes da janela abrir, mostramos uma mensagem
-            // Isso ajuda a diagnosticar erros de inicialização (ex: falta de dll, erro de config)
-            MessageBox.Show($"Erro fatal na inicialização:\n\n{ex.Message}\n\n{ex.StackTrace}",
-                            "SystemOptimizer - Erro Fatal",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
-
-            // Tenta logar também
-            Logger.Log($"FATAL CRASH: {ex}", "CRITICAL");
+            catch (Exception ex)
+            {
+                // Fallback simples de log caso o app falhe na inicialização
+                MessageBox.Show($"Fatal Error: {ex.Message}", "SystemOptimizer Critical Error");
+            }
         }
     }
 }

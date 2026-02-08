@@ -2,9 +2,10 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using CommunityToolkit.WinUI.Notifications;
+using CommunityToolkit.WinUI.Notifications; // Namespace correto
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
+using Wpf.Ui;
 using Wpf.Ui.Abstractions;
 
 namespace SystemOptimizer.Services;
@@ -40,34 +41,23 @@ public sealed class StartupTasksService
             RequestOpenSettings();
             return;
         }
-
-        var protocolArg = args.FirstOrDefault(arg => arg.StartsWith("systemoptimizer://", StringComparison.OrdinalIgnoreCase));
-        if (!string.IsNullOrWhiteSpace(protocolArg) && protocolArg.Contains("settings", StringComparison.OrdinalIgnoreCase))
-        {
-            RequestOpenSettings();
-            return;
-        }
-
-        if (ToastNotificationManagerCompat.WasCurrentProcessToastActivated())
-        {
-            var toastArgs = ToastNotificationManagerCompat.GetToastActivationArgs();
-            if (toastArgs != null)
-            {
-                HandleToastArguments(toastArgs.Argument);
-            }
-        }
+        
+        // Removido bloco que usava GetToastActivationArgs() pois ele não existe mais.
+        // A lógica de ativação por Toast é 100% assíncrona via evento OnActivated abaixo.
     }
 
     private void RegisterToastActivation()
     {
-        if (_toastActivationRegistered)
-        {
-            return;
-        }
+        if (_toastActivationRegistered) return;
 
+        // Este evento dispara mesmo se o app foi aberto pelo Toast
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
-            HandleToastArguments(toastArgs.Argument);
+            // Precisamos despachar para a UI Thread pois isso vem de um thread background
+            Application.Current.Dispatcher.Invoke(() => 
+            {
+                HandleToastArguments(toastArgs.Argument);
+            });
         };
 
         _toastActivationRegistered = true;
@@ -75,16 +65,20 @@ public sealed class StartupTasksService
 
     private void HandleToastArguments(string? argument)
     {
-        if (string.IsNullOrWhiteSpace(argument))
-        {
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(argument)) return;
 
-        var args = ToastArguments.Parse(argument);
-        if (args.TryGetValue("action", out var action) &&
-            string.Equals(action, "open-settings", StringComparison.OrdinalIgnoreCase))
+        try 
         {
-            RequestOpenSettings();
+            var args = ToastArguments.Parse(argument);
+            if (args.TryGetValue("action", out var action) &&
+                string.Equals(action, "open-settings", StringComparison.OrdinalIgnoreCase))
+            {
+                RequestOpenSettings();
+            }
+        }
+        catch (Exception ex)
+        {
+             Logger.Log($"Erro ao processar argumentos do toast: {ex.Message}", "ERROR");
         }
     }
 
@@ -96,10 +90,7 @@ public sealed class StartupTasksService
 
     private async Task TryNavigateToSettingsAsync()
     {
-        if (Application.Current?.Dispatcher == null || Application.Current.MainWindow == null)
-        {
-            return;
-        }
+        if (Application.Current?.Dispatcher == null || Application.Current.MainWindow == null) return;
 
         await Application.Current.Dispatcher.InvokeAsync(() =>
         {
@@ -139,9 +130,6 @@ public sealed class StartupTasksService
             .AddText("Atualização disponível")
             .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
             .AddArgument("action", "open-settings")
-            .Show(toast =>
-            {
-                toast.SuppressPopup = true;
-            });
+            .Show();
     }
 }

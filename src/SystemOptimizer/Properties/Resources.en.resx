@@ -168,7 +168,7 @@
   <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Completed with errors.&#10;Successes: {0}&#10;Failures: {1}&#10;Error: {2}</value></data>
   <data name="Msg_ErrorTitle" xml:space="preserve"><value>Error</value></data>
   <data name="Msg_InitFail" xml:space="preserve"><value>Failed to start: {0}</value></data>
-  <data name="App_Title" xml:space="preserve"><value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.1.2</value></data>
+  <data name="App_Title" xml:space="preserve"><value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.2.0</value></data>
   <data name="S_1_Title" xml:space="preserve"><value>Search Box Suggestions</value></data>
   <data name="S_1_Desc" xml:space="preserve"><value>Disables online and recent suggestions when typing in the search bar.</value></data>
   <data name="S_2_Title" xml:space="preserve"><value>Cloud Search</value></data>
@@ -188,7 +188,7 @@
   <data name="Cleanup_OptionWindowsUpdate" xml:space="preserve"><value>Windows Update Cache</value></data>
   <data name="Log_RecycleBin" xml:space="preserve"><value>Recycle Bin: Emptied</value></data>
   <data name="Settings_Update" xml:space="preserve"><value>Update</value></data>
-  <data name="Settings_UpdateSystemVersion" xml:space="preserve"><value>System Version</value></data>
+  <data name="Settings_UpdateSystemVersion" xml:space="preserve"><value>Application Update</value></data>
   <data name="Settings_UpdateCheckDesc" xml:space="preserve"><value>Check for new versions available on GitHub</value></data>
   <data name="Btn_CheckUpdate" xml:space="preserve"><value>Check Now</value></data>
   <data name="Msg_UpdateAvailable_Title" xml:space="preserve"><value>Update Available: {0}</value></data>

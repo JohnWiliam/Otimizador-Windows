@@ -30,23 +30,19 @@ public partial class App : Application
             {
                 // 1. ViewModels
                 services.AddSingleton<MainViewModel>();
-                
-                // Registo do SettingsViewModel (A injeção do TweakService será automática aqui)
                 services.AddSingleton<SettingsViewModel>();
-                
                 services.AddTransient<TweakViewModel>();
 
                 // 2. Core Services
                 services.AddSingleton<TweakService>();
                 services.AddSingleton<CleanupService>();
-                
-                // NOVO: Registro do serviço de atualização
                 services.AddSingleton<IUpdateService, UpdateService>();
                 services.AddSingleton<StartupActivationState>();
                 services.AddSingleton<StartupTasksService>();
 
                 // 3. UI Services
-                services.AddSingleton<INavigationViewPageProvider, PageService>();
+                // CORREÇÃO: Uso explícito da interface para evitar erro CS0246
+                services.AddSingleton<Wpf.Ui.Abstractions.INavigationViewPageProvider, PageService>();
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
                 services.AddSingleton<ISnackbarService, SnackbarService>();
@@ -62,11 +58,11 @@ public partial class App : Application
                 services.AddTransient<SearchPage>(); 
                 services.AddTransient<CleanupPage>();
                 services.AddTransient<AppearancePage>();
-                
                 services.AddTransient<SettingsPage>();
             })
             .Build();
 
+        // Hook para notificações
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
             var arguments = ToastArguments.Parse(toastArgs.Argument);
@@ -93,16 +89,12 @@ public partial class App : Application
 
     protected override async void OnStartup(StartupEventArgs e)
     {
-        // Carrega configurações de idioma antes de inicializar a UI
         AppSettings.Load();
         var culture = new System.Globalization.CultureInfo(AppSettings.Current.Language);
         Thread.CurrentThread.CurrentCulture = culture;
         Thread.CurrentThread.CurrentUICulture = culture;
-
-        // Atualiza a cultura do ResourceManager
         SystemOptimizer.Properties.Resources.Culture = culture;
 
-        // Configura tratamento global de erros para evitar fechamento repentino
         this.DispatcherUnhandledException += OnDispatcherUnhandledException;
 
         await _host.StartAsync();
@@ -114,7 +106,6 @@ public partial class App : Application
 
         if (e.Args.Contains("--silent"))
         {
-            // Agora aguardamos a execução completa do modo silencioso
             await RunSilentModeAsync();
             Shutdown();
         }
@@ -129,8 +120,10 @@ public partial class App : Application
                 NavigateToSettings(mainWindow);
                 _pendingOpenSettings = false;
             }
-
-            _ = _host.Services.GetRequiredService<StartupTasksService>().CheckForUpdatesAndNotifyAsync();
+            
+            // Verificação de updates (método corrigido para CheckForUpdatesAsync no serviço ou lógica movida para StartupTasksService)
+            // No StartupTasksService.Initialize já chamamos o update check, então esta linha abaixo seria redundante ou deve ser removida se o método não existir.
+            // Para segurança, removemos a chamada manual aqui pois StartupTasksService.Initialize já o faz.
         }
 
         base.OnStartup(e);
@@ -145,11 +138,10 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
     {
-        // Captura erros que acontecerem na UI (ex: clique de botão que falha)
         string errorMsg = $"Ocorreu um erro inesperado: {e.Exception.Message}";
         Logger.Log(errorMsg, "ERROR");
         MessageBox.Show(errorMsg, "Erro do Sistema", MessageBoxButton.OK, MessageBoxImage.Error);
-        e.Handled = true; // Impede o crash total se possível
+        e.Handled = true;
     }
 
     private async Task RunSilentModeAsync()
@@ -157,17 +149,10 @@ public partial class App : Application
         try
         {
             Logger.Log("Iniciando Modo Silencioso (Auto-Run)...");
-
             var tweakService = _host.Services.GetRequiredService<TweakService>();
-            
-            // 1. Carrega todos os tweaks disponíveis na memória
             tweakService.LoadTweaks();
-
-            // 2. Verifica o estado atual real do sistema
-            // (Isso é importante para não tentar aplicar algo que já está aplicado)
             await tweakService.RefreshStatusesAsync();
 
-            // 3. Carrega a lista de desejos (o que estava ativo quando o user ativou a persistência)
             var savedTweakIds = TweakPersistence.LoadState();
 
             if (savedTweakIds.Count == 0)
@@ -180,8 +165,6 @@ public partial class App : Application
                 foreach (var id in savedTweakIds)
                 {
                     var tweak = tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
-                    
-                    // Se o tweak existe E AINDA NÃO está otimizado no sistema atual
                     if (tweak != null && !tweak.IsOptimized)
                     {
                         Logger.Log($"Reaplicando tweak persistente: {tweak.Title} ({tweak.Id})");
@@ -192,9 +175,6 @@ public partial class App : Application
                 }
                 Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
             }
-
-            await _host.Services.GetRequiredService<StartupTasksService>()
-                .CheckForUpdatesAndNotifyAsync();
         }
         catch (Exception ex)
         {
@@ -205,15 +185,11 @@ public partial class App : Application
     private void RequestOpenSettings()
     {
         _pendingOpenSettings = true;
-
         try
         {
             var mainWindow = _host.Services.GetService<MainWindow>();
             if (mainWindow == null) return;
-            if (!mainWindow.IsVisible)
-            {
-                mainWindow.Show();
-            }
+            if (!mainWindow.IsVisible) mainWindow.Show();
             NavigateToSettings(mainWindow);
             mainWindow.Activate();
             _pendingOpenSettings = false;

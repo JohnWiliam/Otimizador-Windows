@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "om35fjDgdHo=",
+  "success": true,
+  "projectFilePath": "C:\\DEV\\Otimizador-Windows-2.2.0\\src\\IconResizer\\IconResizer.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\johnn\\.nuget\\packages\\microsoft.win32.systemevents\\8.0.0\\microsoft.win32.systemevents.8.0.0.nupkg.sha512",
+    "C:\\Users\\johnn\\.nuget\\packages\\system.drawing.common\\8.0.0\\system.drawing.common.8.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
