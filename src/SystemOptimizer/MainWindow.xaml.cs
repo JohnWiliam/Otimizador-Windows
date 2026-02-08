@@ -15,7 +15,7 @@ public partial class MainWindow : FluentWindow, INavigationWindow
     public MainViewModel ViewModel { get; }
     private readonly StartupActivationState _activationState;
 
-    // CORREÇÃO: Propriedade pública necessária para o ApplicationHostService acessar a navegação
+    // Acesso público para serviços externos
     public INavigationView NavigationView => RootNavigation;
 
     public MainWindow(
@@ -34,12 +34,14 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
         SystemThemeWatcher.Watch(this);
 
-        // Configuração dos serviços de UI
+        // --- CORREÇÃO 1: Configuração dos serviços de UI ---
         navigationService.SetNavigationControl(RootNavigation);
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
-        contentDialogService.SetDialogHost(RootContentDialogPresenter);
+        
+        // No WPF-UI 4.1, o método correto é SetContentPresenter
+        contentDialogService.SetContentPresenter(RootContentDialogPresenter);
 
-        // Injeção do ServiceProvider para resolução de páginas
+        // Injeção do ServiceProvider
         RootNavigation.SetServiceProvider(serviceProvider);
 
         Loaded += MainWindow_Loaded;
@@ -70,7 +72,9 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
     public void SetPageService(INavigationViewPageProvider pageService)
     {
-        // Método exigido pela interface, mas não utilizado diretamente nesta implementação
+        // --- CORREÇÃO 2: Vínculo do PageService com a Navegação ---
+        // O NavigationView precisa deste serviço para instanciar as páginas via injeção de dependência.
+        RootNavigation.SetPageService(pageService);
     }
 
     public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
