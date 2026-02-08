@@ -11,6 +11,15 @@ public static class Program
     {
         try
         {
+            var isSilent = Array.Exists(args, arg => string.Equals(arg, "--silent", StringComparison.OrdinalIgnoreCase));
+
+            if (isSilent)
+            {
+                var app = new App();
+                app.RunSilentModeWithoutUiAsync().GetAwaiter().GetResult();
+                return;
+            }
+
             var app = new App();
 
             // Carrega o App.xaml (recursos, estilos, temas).
