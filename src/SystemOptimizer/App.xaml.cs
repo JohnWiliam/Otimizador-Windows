@@ -40,6 +40,8 @@ public partial class App : Application
                 
                 // NOVO: Registro do serviço de atualização
                 services.AddSingleton<IUpdateService, UpdateService>();
+                services.AddSingleton<StartupActivationState>();
+                services.AddSingleton<StartupTasksService>();
 
                 // 3. UI Services
                 services.AddSingleton<INavigationViewPageProvider, PageService>();
@@ -102,6 +104,8 @@ public partial class App : Application
         }
         else
         {
+            var startupTasks = _host.Services.GetRequiredService<StartupTasksService>();
+            startupTasks.Initialize(e.Args);
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
         }

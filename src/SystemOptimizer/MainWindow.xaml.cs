@@ -13,16 +13,19 @@ namespace SystemOptimizer;
 public partial class MainWindow : FluentWindow, INavigationWindow
 {
     public MainViewModel ViewModel { get; }
+    private readonly StartupActivationState _activationState;
 
     public MainWindow(
         MainViewModel viewModel,
         INavigationService navigationService,
         IServiceProvider serviceProvider,
         ISnackbarService snackbarService,
-        IContentDialogService contentDialogService) // Injetando o serviço de diálogo
+        IContentDialogService contentDialogService,
+        StartupActivationState activationState) // Injetando o serviço de diálogo
     {
         ViewModel = viewModel;
         DataContext = ViewModel;
+        _activationState = activationState;
 
         InitializeComponent();
 
@@ -46,8 +49,16 @@ public partial class MainWindow : FluentWindow, INavigationWindow
     {
         Logger.Log("MainWindow_Loaded started.");
         await ViewModel.InitializeAsync();
-        Logger.Log("Initializing complete. Navigating to PrivacyPage...");
-        RootNavigation.Navigate(typeof(Views.Pages.PrivacyPage));
+        Logger.Log("Initializing complete. Navigating to startup page...");
+        if (_activationState.OpenSettingsRequested)
+        {
+            RootNavigation.Navigate(typeof(Views.Pages.SettingsPage));
+            _activationState.ClearOpenSettingsRequest();
+        }
+        else
+        {
+            RootNavigation.Navigate(typeof(Views.Pages.PrivacyPage));
+        }
         Logger.Log("Navigation call finished.");
     }
 

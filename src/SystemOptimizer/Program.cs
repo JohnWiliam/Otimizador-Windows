@@ -1,6 +1,8 @@
 using System;
 using System.Windows;
 using SystemOptimizer.Helpers;
+using CommunityToolkit.WinUI.Notifications;
+using SystemOptimizer.Services;
 
 namespace SystemOptimizer;
 
@@ -19,6 +21,9 @@ public static class Program
                 app.RunSilentModeWithoutUiAsync().GetAwaiter().GetResult();
                 return;
             }
+
+            ToastNotificationManagerCompat.RegisterAumidAndComServer<ToastNotificationActivator>(NotificationConstants.AppId);
+            ToastNotificationManagerCompat.RegisterActivator<ToastNotificationActivator>();
 
             var app = new App();
 
