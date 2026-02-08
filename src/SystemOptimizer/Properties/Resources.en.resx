@@ -192,6 +192,8 @@
   <data name="Settings_UpdateCheckDesc" xml:space="preserve"><value>Check for new versions available on GitHub</value></data>
   <data name="Btn_CheckUpdate" xml:space="preserve"><value>Check Now</value></data>
   <data name="Msg_UpdateAvailable_Title" xml:space="preserve"><value>Update Available: {0}</value></data>
+  <data name="Msg_UpdateAvailable_ToastBody" xml:space="preserve"><value>Click to open Settings and update the app.</value></data>
+  <data name="Msg_Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Btn_UpdateAndRestart" xml:space="preserve"><value>Update and Restart</value></data>
   <data name="Msg_Downloading" xml:space="preserve"><value>Downloading update...</value></data>
   <data name="Msg_Installing" xml:space="preserve"><value>Installing...</value></data>

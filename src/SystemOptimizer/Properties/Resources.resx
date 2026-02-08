@@ -191,6 +191,8 @@
   <data name="Settings_UpdateCheckDesc" xml:space="preserve"><value>Verifique se há novas versões disponíveis no GitHub</value></data>
   <data name="Btn_CheckUpdate" xml:space="preserve"><value>Verificar Agora</value></data>
   <data name="Msg_UpdateAvailable_Title" xml:space="preserve"><value>Atualização Disponível: {0}</value></data>
+  <data name="Msg_UpdateAvailable_ToastBody" xml:space="preserve"><value>Clique para abrir as Configurações e atualizar o aplicativo.</value></data>
+  <data name="Msg_Unknown" xml:space="preserve"><value>Desconhecido</value></data>
   <data name="Btn_UpdateAndRestart" xml:space="preserve"><value>Atualizar e Reiniciar</value></data>
   <data name="Msg_Downloading" xml:space="preserve"><value>Baixando atualização...</value></data>
   <data name="Msg_Installing" xml:space="preserve"><value>Instalando...</value></data>

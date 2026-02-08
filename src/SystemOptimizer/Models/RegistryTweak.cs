@@ -12,6 +12,7 @@ public class RegistryTweak : TweakBase
     private readonly object? _defaultValue; // Null if DELETE is expected/default
     private readonly RegistryValueKind _valueKind;
     private readonly RegistryHive _hive;
+    private readonly RegistryView _view;
 
     public RegistryTweak(string id, TweakCategory category, string title, string description,
                          string keyPath, string valueName, object optimizedValue, object? defaultValue, RegistryValueKind kind = RegistryValueKind.DWord)
@@ -39,6 +40,7 @@ public class RegistryTweak : TweakBase
         _optimizedValue = optimizedValue;
         _defaultValue = defaultValue;
         _valueKind = kind;
+        _view = Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32;
     }
 
     public override (bool Success, string Message) Apply()
@@ -98,6 +100,7 @@ public class RegistryTweak : TweakBase
         }
         catch (Exception ex)
         {
+            Logger.Log($"Erro ao restaurar tweak {Id} em {_hive}\\{_keyPath}\\{_valueName}: {ex.Message}", "ERROR");
             return (false, $"Erro ao restaurar: {ex.Message}");
         }
     }
