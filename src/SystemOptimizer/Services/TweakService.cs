@@ -137,9 +137,8 @@ public class TweakService
             () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("powershell",
-                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).AutoTuningLevelLocal\"").Trim();
-                return res.Equals("Normal", StringComparison.OrdinalIgnoreCase);
+                var res = CommandHelper.RunCommand("netsh", "int tcp show global");
+                return res.Contains("normal") || res.Contains("Normal");
             }
         ));
 
@@ -163,9 +162,8 @@ public class TweakService
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("powershell",
-                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).EcnCapability\"").Trim();
-                return res.Equals("Enabled", StringComparison.OrdinalIgnoreCase);
+                var res = CommandHelper.RunCommand("netsh", "int tcp show global");
+                return res.Contains("enabled") || res.Contains("habilitado");
             }
         ));
 
@@ -193,17 +191,17 @@ public class TweakService
 
     private void AddSearchTweaks()
     {
-        // SCH1: DisableSearchBoxSuggestions
+        // SCH1: DisableSearchBoxSuggestions - Alterado para HKCU\Software\Microsoft\Windows\CurrentVersion\Search para eficácia imediata
         Tweaks.Add(new RegistryTweak("SCH1", TweakCategory.Search, Resources.S_1_Title, Resources.S_1_Desc,
-            @"HKCU\Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions", 1, "DELETE"));
+            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 0, 1));
 
         // SCH2: DisableCloudSearch
         Tweaks.Add(new RegistryTweak("SCH2", TweakCategory.Search, Resources.S_2_Title, Resources.S_2_Desc,
-            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "DisableCloudSearch", 1, "DELETE"));
+            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "DisableCloudSearch", 1, 0));
 
-        // SCH3: BingSearchEnabled
+        // SCH3: BingSearchEnabled - Refatorado conforme RegistryService de referência
         Tweaks.Add(new RegistryTweak("SCH3", TweakCategory.Search, Resources.S_3_Title, Resources.S_3_Desc,
-            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0, "DELETE"));
+            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0, 1));
     }
 
     private void AddCustomTweaks()
