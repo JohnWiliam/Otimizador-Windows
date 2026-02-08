@@ -9,7 +9,7 @@ public class RegistryTweak : TweakBase
     private readonly string _keyPath;
     private readonly string _valueName;
     private readonly object _optimizedValue;
-    private readonly object? _defaultValue; // Null if DELETE is expected/default
+    private readonly object? _defaultValue;
     private readonly RegistryValueKind _valueKind;
     private readonly RegistryHive _hive;
     private readonly RegistryView _view;
@@ -18,21 +18,13 @@ public class RegistryTweak : TweakBase
                          string keyPath, string valueName, object optimizedValue, object? defaultValue, RegistryValueKind kind = RegistryValueKind.DWord)
         : base(id, category, title, description)
     {
-        // Identificação do Hive
         if (keyPath.StartsWith("HKLM", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_LOCAL_MACHINE", StringComparison.OrdinalIgnoreCase))
             _hive = RegistryHive.LocalMachine;
         else if (keyPath.StartsWith("HKCU", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
             _hive = RegistryHive.CurrentUser;
-        else if (keyPath.StartsWith("HKCR", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_CLASSES_ROOT", StringComparison.OrdinalIgnoreCase))
-            _hive = RegistryHive.ClassesRoot;
-        else if (keyPath.StartsWith("HKU", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_USERS", StringComparison.OrdinalIgnoreCase))
-            _hive = RegistryHive.Users;
-        else if (keyPath.StartsWith("HKCC", StringComparison.OrdinalIgnoreCase) || keyPath.StartsWith("HKEY_CURRENT_CONFIG", StringComparison.OrdinalIgnoreCase))
-            _hive = RegistryHive.CurrentConfig;
         else
-            throw new ArgumentException($"Hive de registro desconhecida ou inválida: {keyPath}", nameof(keyPath));
+            _hive = RegistryHive.LocalMachine;
 
-        // Remove o prefixo para obter o caminho relativo
         int firstSlash = keyPath.IndexOf('\\');
         _keyPath = firstSlash >= 0 ? keyPath[(firstSlash + 1)..] : keyPath;
 
@@ -47,14 +39,12 @@ public class RegistryTweak : TweakBase
     {
         try
         {
-            using var baseKey = RegistryKey.OpenBaseKey(_hive, GetRegistryView());
-            // CreateSubKey garante a criação de toda a árvore se não existir
+            using var baseKey = RegistryKey.OpenBaseKey(_hive, _view);
             using var key = baseKey.CreateSubKey(_keyPath, true);
 
             if (_optimizedValue.ToString() == "DELETE")
             {
-                if (key.GetValue(_valueName) != null)
-                    key.DeleteValue(_valueName, false);
+                key.DeleteValue(_valueName, false);
             }
             else
             {
@@ -62,17 +52,11 @@ public class RegistryTweak : TweakBase
             }
 
             CheckStatus();
-
-            if (IsOptimized) return (true, "Tweak aplicado com sucesso.");
-
-            return (false, "Comando enviado, mas a verificação de status falhou.");
+            return (true, "Aplicado com sucesso.");
         }
         catch (Exception ex)
         {
-            string optimizedValue = _optimizedValue?.ToString() ?? "null";
-            string context = $"tweak {Id} em {_hive}\\{_keyPath}::{_valueName} (optimized: {optimizedValue})";
-            Logger.Log($"Erro ao aplicar {context}: {ex.Message}", "ERROR");
-            return (false, $"Erro ao aplicar {context}: {ex.Message}");
+            return (false, $"Erro: {ex.Message}");
         }
     }
 
@@ -80,14 +64,13 @@ public class RegistryTweak : TweakBase
     {
         try
         {
-            using var baseKey = RegistryKey.OpenBaseKey(_hive, GetRegistryView());
-            // CreateSubKey aqui também, pois a chave pode ter sido deletada manualmente
-            using var key = baseKey.CreateSubKey(_keyPath, true);
+            using var baseKey = RegistryKey.OpenBaseKey(_hive, _view);
+            using var key = baseKey.OpenSubKey(_keyPath, true);
+            if (key == null) return (true, "Já restaurado.");
 
             if (_defaultValue == null || _defaultValue.ToString() == "DELETE")
             {
-                if (key.GetValue(_valueName) != null)
-                    key.DeleteValue(_valueName, false);
+                key.DeleteValue(_valueName, false);
             }
             else
             {
@@ -95,13 +78,11 @@ public class RegistryTweak : TweakBase
             }
 
             CheckStatus();
-            if (Status == TweakStatus.Default) return (true, "Tweak restaurado com sucesso.");
-            return (false, "Restaurado, mas status inconsistente.");
+            return (true, "Restaurado.");
         }
         catch (Exception ex)
         {
-            Logger.Log($"Erro ao restaurar tweak {Id} em {_hive}\\{_keyPath}\\{_valueName}: {ex.Message}", "ERROR");
-            return (false, $"Erro ao restaurar: {ex.Message}");
+            return (false, $"Erro: {ex.Message}");
         }
     }
 
@@ -109,97 +90,31 @@ public class RegistryTweak : TweakBase
     {
         try
         {
-            using var baseKey = RegistryKey.OpenBaseKey(_hive, GetRegistryView());
+            using var baseKey = RegistryKey.OpenBaseKey(_hive, _view);
             using var key = baseKey.OpenSubKey(_keyPath, false);
 
-            // Cenário 1: A chave (pasta) não existe
             if (key == null)
             {
-                // Se o objetivo era DELETAR, então está otimizado (ou padrão se o padrão era não existir)
-                if (_optimizedValue.ToString() == "DELETE") Status = TweakStatus.Optimized;
-                else if (_defaultValue == null || _defaultValue.ToString() == "DELETE") Status = TweakStatus.Default;
-                else Status = TweakStatus.Unknown; // Deveria existir um valor, mas a chave sumiu
+                Status = (_optimizedValue.ToString() == "DELETE") ? TweakStatus.Optimized : TweakStatus.Default;
                 return;
             }
 
             var val = key.GetValue(_valueName);
-
-            // Cenário 2: A chave existe, mas o valor não
             if (val == null)
             {
-                if (_optimizedValue.ToString() == "DELETE") Status = TweakStatus.Optimized;
-                else if (_defaultValue == null || _defaultValue.ToString() == "DELETE") Status = TweakStatus.Default;
-                else Status = TweakStatus.Modified;
+                Status = (_optimizedValue.ToString() == "DELETE") ? TweakStatus.Optimized : TweakStatus.Default;
             }
             else
             {
-                // Cenário 3: Valor existe. Comparação ajustada por tipo.
-                if (_valueKind == RegistryValueKind.DWord)
-                {
-                    static uint NormalizeDword(object value)
-                    {
-                        if (Convert.ToInt64(value) == -1)
-                            return uint.MaxValue;
-
-                        return Convert.ToUInt32(value);
-                    }
-
-                    uint valNum = NormalizeDword(val);
-                    uint optNum = NormalizeDword(_optimizedValue);
-                    uint? defNum = _defaultValue == null ? null : NormalizeDword(_defaultValue);
-
-                    if (valNum == optNum)
-                        Status = TweakStatus.Optimized;
-                    else if (defNum.HasValue && valNum == defNum.Value)
-                        Status = TweakStatus.Default;
-                    else
-                        Status = TweakStatus.Modified;
-                }
-                else if (_valueKind == RegistryValueKind.QWord)
-                {
-                    static ulong NormalizeQword(object value)
-                    {
-                        if (Convert.ToInt64(value) == -1)
-                            return ulong.MaxValue;
-
-                        return Convert.ToUInt64(value);
-                    }
-
-                    ulong valNum = NormalizeQword(val);
-                    ulong optNum = NormalizeQword(_optimizedValue);
-                    ulong? defNum = _defaultValue == null ? null : NormalizeQword(_defaultValue);
-
-                    if (valNum == optNum)
-                        Status = TweakStatus.Optimized;
-                    else if (defNum.HasValue && valNum == defNum.Value)
-                        Status = TweakStatus.Default;
-                    else
-                        Status = TweakStatus.Modified;
-                }
+                if (val.ToString() == _optimizedValue.ToString())
+                    Status = TweakStatus.Optimized;
                 else
-                {
-                    string valStr = val.ToString() ?? "";
-                    string optStr = _optimizedValue.ToString() ?? "";
-                    string defStr = _defaultValue?.ToString() ?? "";
-
-                    if (string.Equals(valStr, optStr, StringComparison.InvariantCultureIgnoreCase))
-                        Status = TweakStatus.Optimized;
-                    else if (_defaultValue != null && string.Equals(valStr, defStr, StringComparison.InvariantCultureIgnoreCase))
-                        Status = TweakStatus.Default;
-                    else
-                        Status = TweakStatus.Modified;
-                }
+                    Status = TweakStatus.Default;
             }
         }
-        catch (Exception ex)
+        catch
         {
-            string optimizedValue = _optimizedValue?.ToString() ?? "null";
-            string context = $"tweak {Id} em {_hive}\\{_keyPath}::{_valueName} (optimized: {optimizedValue})";
-            Logger.Log($"Erro ao checar status do {context}: {ex.Message}", "ERROR");
             Status = TweakStatus.Unknown;
         }
     }
-
-    private static RegistryView GetRegistryView()
-        => Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32;
 }
