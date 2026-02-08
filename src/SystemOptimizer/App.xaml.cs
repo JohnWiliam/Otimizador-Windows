@@ -14,12 +14,14 @@ using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
 using System.Net.Http;
+using CommunityToolkit.WinUI.Notifications;
 
 namespace SystemOptimizer;
 
 public partial class App : Application
 {
     private readonly IHost _host;
+    private bool _pendingOpenSettings;
 
     public App()
     {
@@ -40,6 +42,8 @@ public partial class App : Application
                 
                 // NOVO: Registro do serviço de atualização
                 services.AddSingleton<IUpdateService, UpdateService>();
+                services.AddSingleton<StartupTasksService>();
+                services.AddSingleton<UpdateNotificationService>();
 
                 // 3. UI Services
                 services.AddSingleton<INavigationViewPageProvider, PageService>();
@@ -62,6 +66,15 @@ public partial class App : Application
                 services.AddTransient<SettingsPage>();
             })
             .Build();
+
+        ToastNotificationManagerCompat.OnActivated += toastArgs =>
+        {
+            var arguments = ToastArguments.Parse(toastArgs.Argument);
+            if (arguments.TryGetValue("action", out var action) && action == "open-settings")
+            {
+                Dispatcher.InvokeAsync(RequestOpenSettings);
+            }
+        };
     }
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -80,6 +93,11 @@ public partial class App : Application
 
         await _host.StartAsync();
 
+        if (e.Args.Contains("--open-settings", StringComparer.OrdinalIgnoreCase))
+        {
+            _pendingOpenSettings = true;
+        }
+
         if (e.Args.Contains("--silent"))
         {
             // Agora aguardamos a execução completa do modo silencioso
@@ -89,6 +107,13 @@ public partial class App : Application
         {
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
+            if (_pendingOpenSettings)
+            {
+                NavigateToSettings(mainWindow);
+                _pendingOpenSettings = false;
+            }
+
+            _ = _host.Services.GetRequiredService<StartupTasksService>().CheckForUpdatesAndNotifyAsync();
         }
 
         base.OnStartup(e);
@@ -150,6 +175,9 @@ public partial class App : Application
                 }
                 Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
             }
+
+            await _host.Services.GetRequiredService<StartupTasksService>()
+                .CheckForUpdatesAndNotifyAsync();
         }
         catch (Exception ex)
         {
@@ -160,5 +188,32 @@ public partial class App : Application
             // Fecha a aplicação após concluir o trabalho em background
             Shutdown();
         }
+    }
+
+    private void RequestOpenSettings()
+    {
+        _pendingOpenSettings = true;
+
+        try
+        {
+            var mainWindow = _host.Services.GetService<MainWindow>();
+            if (mainWindow == null) return;
+            if (!mainWindow.IsVisible)
+            {
+                mainWindow.Show();
+            }
+            NavigateToSettings(mainWindow);
+            mainWindow.Activate();
+            _pendingOpenSettings = false;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Erro ao abrir Configurações via notificação: {ex.Message}", "ERROR");
+        }
+    }
+
+    private static void NavigateToSettings(MainWindow mainWindow)
+    {
+        mainWindow.Navigate(typeof(SettingsPage));
     }
 }

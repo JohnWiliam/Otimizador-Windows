@@ -126,7 +126,7 @@
   <data name="Theme_System" xml:space="preserve"><value>Padrão do Sistema</value></data>
   <data name="Theme_Light" xml:space="preserve"><value>Claro</value></data>
   <data name="Theme_Dark" xml:space="preserve"><value>Escuro</value></data>
-  <data name="Msg_RestartRequired" xml:space="preserve"><value>Para aplicar a alteração de idioma, é necessário reiniciar a aplicação.\nDeseja reiniciar agora?</value></data>
+  <data name="Msg_RestartRequired" xml:space="preserve"><value>Para aplicar a alteração de idioma, é necessário reiniciar a aplicação.&#10;Deseja reiniciar agora?</value></data>
   <data name="Msg_RestartTitle" xml:space="preserve"><value>Reinício Necessário</value></data>
   <data name="Nav_Privacy" xml:space="preserve"><value>Privacidade</value></data>
   <data name="Nav_Performance" xml:space="preserve"><value>Performance</value></data>
@@ -150,11 +150,11 @@
   <data name="Cleanup_CacheDesc" xml:space="preserve"><value>Libere espaço em disco removendo arquivos desnecessários.</value></data>
   <data name="Cleanup_LogTitle" xml:space="preserve"><value>Log de Execução</value></data>
   <data name="Log_Starting" xml:space="preserve"><value>Iniciando varredura e limpeza...</value></data>
-  <data name="Log_Finished" xml:space="preserve"><value>LIMPEZA CONCLUÍDA!\nLiberado: {0} MB</value></data>
+  <data name="Log_Finished" xml:space="preserve"><value>LIMPEZA CONCLUÍDA!&#10;Liberado: {0} MB</value></data>
   <data name="Log_DNS" xml:space="preserve"><value>Cache DNS: Limpo</value></data>
   <data name="Log_Removed" xml:space="preserve"><value>{0} : {1} MB removidos</value></data>
   <data name="Log_Clean" xml:space="preserve"><value>{0} : Limpo</value></data>
-  <data name="Log_WUServicesStopped" xml:space="preserve"><value>Serviços WU: Parados.\nTentando limpeza...</value></data>
+  <data name="Log_WUServicesStopped" xml:space="preserve"><value>Serviços WU: Parados.&#10;Tentando limpeza...</value></data>
   <data name="Log_WUServicesRestarted" xml:space="preserve"><value>Serviços WU: Reiniciados.</value></data>
   <data name="Log_WUError" xml:space="preserve"><value>Windows Update : Alguns arquivos estavam em uso.</value></data>
   <data name="Log_WUFailStop" xml:space="preserve"><value>Windows Update : Não foi possível parar serviços.</value></data>
@@ -162,8 +162,8 @@
   <data name="Msg_ResultTitle" xml:space="preserve"><value>Resultado</value></data>
   <data name="Msg_Applied" xml:space="preserve"><value>Otimizações aplicadas.</value></data>
   <data name="Msg_Restored" xml:space="preserve"><value>Configurações restauradas.</value></data>
-  <data name="Msg_RebootNeeded" xml:space="preserve"><value>\nREINICIE o computador.</value></data>
-  <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Concluído com erros.\nSucessos: {0}\nFalhas: {1}\nErro: {2}</value></data>
+  <data name="Msg_RebootNeeded" xml:space="preserve"><value>&#10;REINICIE o computador.</value></data>
+  <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Concluído com erros.&#10;Sucessos: {0}&#10;Falhas: {1}&#10;Erro: {2}</value></data>
   <data name="Msg_ErrorTitle" xml:space="preserve"><value>Erro</value></data>
   <data name="Msg_InitFail" xml:space="preserve"><value>Falha ao iniciar: {0}</value></data>
   <data name="App_Title" xml:space="preserve"><value>Otimizador de Sistema - Criado e Idealizado por John Wiliam &amp; IA v2.1.2</value></data>
@@ -191,6 +191,8 @@
   <data name="Settings_UpdateCheckDesc" xml:space="preserve"><value>Verifique se há novas versões disponíveis no GitHub</value></data>
   <data name="Btn_CheckUpdate" xml:space="preserve"><value>Verificar Agora</value></data>
   <data name="Msg_UpdateAvailable_Title" xml:space="preserve"><value>Atualização Disponível: {0}</value></data>
+  <data name="Msg_UpdateAvailable_ToastBody" xml:space="preserve"><value>Clique para abrir as Configurações e atualizar o aplicativo.</value></data>
+  <data name="Msg_Unknown" xml:space="preserve"><value>Desconhecido</value></data>
   <data name="Btn_UpdateAndRestart" xml:space="preserve"><value>Atualizar e Reiniciar</value></data>
   <data name="Msg_Downloading" xml:space="preserve"><value>Baixando atualização...</value></data>
   <data name="Msg_Installing" xml:space="preserve"><value>Instalando...</value></data>

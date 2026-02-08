@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System;
+using SystemOptimizer.Helpers;
 
 namespace SystemOptimizer.Models;
 
@@ -11,6 +12,7 @@ public class RegistryTweak : TweakBase
     private readonly object? _defaultValue; // Null if DELETE is expected/default
     private readonly RegistryValueKind _valueKind;
     private readonly RegistryHive _hive;
+    private readonly RegistryView _view;
 
     public RegistryTweak(string id, TweakCategory category, string title, string description,
                          string keyPath, string valueName, object optimizedValue, object? defaultValue, RegistryValueKind kind = RegistryValueKind.DWord)
@@ -38,13 +40,14 @@ public class RegistryTweak : TweakBase
         _optimizedValue = optimizedValue;
         _defaultValue = defaultValue;
         _valueKind = kind;
+        _view = Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32;
     }
 
     public override (bool Success, string Message) Apply()
     {
         try
         {
-            using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
+            using var baseKey = RegistryKey.OpenBaseKey(_hive, _view);
             // CreateSubKey garante a criação de toda a árvore se não existir
             using var key = baseKey.CreateSubKey(_keyPath, true);
 
@@ -66,6 +69,7 @@ public class RegistryTweak : TweakBase
         }
         catch (Exception ex)
         {
+            Logger.Log($"Erro ao aplicar tweak {Id} em {_hive}\\{_keyPath}\\{_valueName}: {ex.Message}", "ERROR");
             return (false, $"Erro ao aplicar: {ex.Message}");
         }
     }
@@ -74,7 +78,7 @@ public class RegistryTweak : TweakBase
     {
         try
         {
-            using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
+            using var baseKey = RegistryKey.OpenBaseKey(_hive, _view);
             // CreateSubKey aqui também, pois a chave pode ter sido deletada manualmente
             using var key = baseKey.CreateSubKey(_keyPath, true);
 
@@ -94,6 +98,7 @@ public class RegistryTweak : TweakBase
         }
         catch (Exception ex)
         {
+            Logger.Log($"Erro ao restaurar tweak {Id} em {_hive}\\{_keyPath}\\{_valueName}: {ex.Message}", "ERROR");
             return (false, $"Erro ao restaurar: {ex.Message}");
         }
     }
@@ -102,7 +107,7 @@ public class RegistryTweak : TweakBase
     {
         try
         {
-            using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
+            using var baseKey = RegistryKey.OpenBaseKey(_hive, _view);
             using var key = baseKey.OpenSubKey(_keyPath, false);
 
             // Cenário 1: A chave (pasta) não existe
@@ -184,8 +189,9 @@ public class RegistryTweak : TweakBase
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Log($"Erro ao verificar status do tweak {Id} em {_hive}\\{_keyPath}\\{_valueName}: {ex.Message}", "ERROR");
             Status = TweakStatus.Unknown;
         }
     }
