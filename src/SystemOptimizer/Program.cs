@@ -1,6 +1,8 @@
 using System;
 using System.Windows;
 using SystemOptimizer.Helpers;
+using CommunityToolkit.WinUI.Notifications;
+using SystemOptimizer.Services;
 
 namespace SystemOptimizer;
 
@@ -11,6 +13,18 @@ public static class Program
     {
         try
         {
+            var isSilent = Array.Exists(args, arg => string.Equals(arg, "--silent", StringComparison.OrdinalIgnoreCase));
+
+            if (isSilent)
+            {
+                var app = new App();
+                app.RunSilentModeWithoutUiAsync().GetAwaiter().GetResult();
+                return;
+            }
+
+            ToastNotificationManagerCompat.RegisterAumidAndComServer<ToastNotificationActivator>(NotificationConstants.AppId);
+            ToastNotificationManagerCompat.RegisterActivator<ToastNotificationActivator>();
+
             var app = new App();
 
             // Carrega o App.xaml (recursos, estilos, temas).
