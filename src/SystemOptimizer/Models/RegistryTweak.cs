@@ -67,7 +67,8 @@ public class RegistryTweak : TweakBase
         }
         catch (Exception ex)
         {
-            string context = $"tweak {Id} em {_hive}\\{_keyPath}::{_valueName}";
+            string optimizedValue = _optimizedValue?.ToString() ?? "null";
+            string context = $"tweak {Id} em {_hive}\\{_keyPath}::{_valueName} (optimized: {optimizedValue})";
             Logger.Log($"Erro ao aplicar {context}: {ex.Message}", "ERROR");
             return (false, $"Erro ao aplicar {context}: {ex.Message}");
         }
@@ -189,7 +190,8 @@ public class RegistryTweak : TweakBase
         }
         catch (Exception ex)
         {
-            string context = $"tweak {Id} em {_hive}\\{_keyPath}::{_valueName}";
+            string optimizedValue = _optimizedValue?.ToString() ?? "null";
+            string context = $"tweak {Id} em {_hive}\\{_keyPath}::{_valueName} (optimized: {optimizedValue})";
             Logger.Log($"Erro ao checar status do {context}: {ex.Message}", "ERROR");
             Status = TweakStatus.Unknown;
         }
