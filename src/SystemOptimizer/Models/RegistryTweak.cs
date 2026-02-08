@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System;
+using SystemOptimizer.Helpers;
 
 namespace SystemOptimizer.Models;
 
@@ -44,7 +45,7 @@ public class RegistryTweak : TweakBase
     {
         try
         {
-            using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
+            using var baseKey = RegistryKey.OpenBaseKey(_hive, GetRegistryView());
             // CreateSubKey garante a criação de toda a árvore se não existir
             using var key = baseKey.CreateSubKey(_keyPath, true);
 
@@ -66,7 +67,9 @@ public class RegistryTweak : TweakBase
         }
         catch (Exception ex)
         {
-            return (false, $"Erro ao aplicar: {ex.Message}");
+            string context = $"tweak {Id} em {_hive}\\{_keyPath}::{_valueName}";
+            Logger.Log($"Erro ao aplicar {context}: {ex.Message}", "ERROR");
+            return (false, $"Erro ao aplicar {context}: {ex.Message}");
         }
     }
 
@@ -74,7 +77,7 @@ public class RegistryTweak : TweakBase
     {
         try
         {
-            using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
+            using var baseKey = RegistryKey.OpenBaseKey(_hive, GetRegistryView());
             // CreateSubKey aqui também, pois a chave pode ter sido deletada manualmente
             using var key = baseKey.CreateSubKey(_keyPath, true);
 
@@ -102,7 +105,7 @@ public class RegistryTweak : TweakBase
     {
         try
         {
-            using var baseKey = RegistryKey.OpenBaseKey(_hive, RegistryView.Registry64);
+            using var baseKey = RegistryKey.OpenBaseKey(_hive, GetRegistryView());
             using var key = baseKey.OpenSubKey(_keyPath, false);
 
             // Cenário 1: A chave (pasta) não existe
@@ -184,9 +187,14 @@ public class RegistryTweak : TweakBase
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
+            string context = $"tweak {Id} em {_hive}\\{_keyPath}::{_valueName}";
+            Logger.Log($"Erro ao checar status do {context}: {ex.Message}", "ERROR");
             Status = TweakStatus.Unknown;
         }
     }
+
+    private static RegistryView GetRegistryView()
+        => Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Registry32;
 }
