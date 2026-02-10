@@ -41,6 +41,9 @@ public class CleanupService
         {
             OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_Starting, Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
             long totalBytes = 0;
+            int totalIgnored = 0;
+            int totalFailures = 0;
+            int successItems = 0;
 
             // 1. Windows Update
             if (options.CleanWindowsUpdate)
@@ -66,6 +69,9 @@ public class CleanupService
                         // Log individual para pastas importantes do sistema
                         var res = CleanDirectory(kvp.Value, null, false);
                         totalBytes += res.Bytes;
+                        totalIgnored += res.Skipped;
+                        totalFailures += res.Failures;
+                        successItems++;
                         if (res.Bytes > 0) LogAggregateResult(kvp.Key, res.Bytes, res.Skipped);
                         else if (res.Bytes == 0 && kvp.Key == (Resources.Label_TempFiles ?? "User Temp")) 
                              LogAggregateResult(kvp.Key, 0, 0); // Mostra que Temp está limpo
@@ -89,6 +95,9 @@ public class CleanupService
                         var res = CleanDirectory(path, null, false);
                         shaderBytes += res.Bytes;
                         shaderSkipped += res.Skipped;
+                        totalIgnored += res.Skipped;
+                        totalFailures += res.Failures;
+                        successItems++;
                     }
                 }
                 
@@ -112,6 +121,9 @@ public class CleanupService
                     {
                         var res = CleanDirectory(kvp.Value, kvp.Key, false);
                         totalBytes += res.Bytes;
+                        totalIgnored += res.Skipped;
+                        totalFailures += res.Failures;
+                        successItems++;
                         LogAggregateResult(kvp.Key, res.Bytes, res.Skipped);
                     }
                 }
@@ -125,6 +137,9 @@ public class CleanupService
                 {
                     var res = CleanDirectory(path, "Prefetch", false);
                     totalBytes += res.Bytes;
+                    totalIgnored += res.Skipped;
+                    totalFailures += res.Failures;
+                    successItems++;
                     LogAggregateResult("Prefetch", res.Bytes, res.Skipped);
                 }
             }
@@ -132,7 +147,11 @@ public class CleanupService
             // 5. Navegadores Unificado
             if (options.CleanBrowserCache)
             {
-                totalBytes += CleanBrowsersUnified();
+                var browserRes = CleanBrowsersUnified();
+                totalBytes += browserRes.Bytes;
+                totalIgnored += browserRes.Skipped;
+                totalFailures += browserRes.Failures;
+                successItems++;
             }
 
             // 6. DNS
@@ -142,8 +161,14 @@ public class CleanupService
                 {
                     CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
                     OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNSCleared, Icon = "Globe24", StatusColor = "Green" });
+                    successItems++;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    totalFailures++;
+                    Logger.Log($"Falha ao limpar cache DNS: {ex.Message}", "ERROR");
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = $"DNS: falha ao limpar cache ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+                }
             }
 
             // 7. Lixeira
@@ -153,8 +178,14 @@ public class CleanupService
                 {
                     SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
                     OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_RecycleBinEmptied, Icon = "Delete24", StatusColor = "Green" });
+                    successItems++;
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    totalFailures++;
+                    Logger.Log($"Falha ao esvaziar lixeira: {ex.Message}", "ERROR");
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = $"Lixeira: falha ao esvaziar ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+                }
             }
 
             double totalMb = Math.Round(totalBytes / 1024.0 / 1024.0, 2);
@@ -165,13 +196,21 @@ public class CleanupService
                 StatusColor = "#0078D4",
                 IsBold = true
             });
+
+            OnLogItem?.Invoke(new CleanupLogItem
+            {
+                Message = $"Resumo: sucesso={successItems}, ignorados={totalIgnored}, falhas={totalFailures}",
+                Icon = "Info24",
+                StatusColor = totalFailures > 0 ? "Orange" : "Green"
+            });
         });
     }
 
-    private long CleanBrowsersUnified()
+    private (long Bytes, int Skipped, int Failures) CleanBrowsersUnified()
     {
         long totalBytes = 0;
         int totalSkipped = 0;
+        int totalFailures = 0;
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
         // -- Chrome --
@@ -179,12 +218,14 @@ public class CleanupService
         var chromeRes = CleanChromiumBrowser(chromePath, false);
         totalBytes += chromeRes.Bytes;
         totalSkipped += chromeRes.Skipped;
+        totalFailures += chromeRes.Failures;
 
         // -- Edge --
         string edgePath = Path.Combine(localAppData, "Microsoft", "Edge", "User Data");
         var edgeRes = CleanChromiumBrowser(edgePath, false);
         totalBytes += edgeRes.Bytes;
         totalSkipped += edgeRes.Skipped;
+        totalFailures += edgeRes.Failures;
 
         // -- Firefox --
         string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
@@ -200,22 +241,34 @@ public class CleanupService
                         var res = CleanDirectory(cachePath, null, false);
                         totalBytes += res.Bytes;
                         totalSkipped += res.Skipped;
+                        totalFailures += res.Failures;
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                totalFailures++;
+                Logger.Log($"Falha ao limpar cache do Firefox: {ex.Message}", "ERROR");
+                OnLogItem?.Invoke(new CleanupLogItem { Message = $"Navegador (Firefox): erro ao limpar cache ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+            }
         }
 
         // Log Unificado para todos os navegadores
         LogAggregateResult(Resources.Label_BrowserCache ?? "Browser Cache", totalBytes, totalSkipped);
         
-        return totalBytes;
+        if (totalFailures > 0)
+        {
+            OnLogItem?.Invoke(new CleanupLogItem { Message = $"Navegadores: {totalFailures} falha(s) durante a limpeza.", Icon = "Warning24", StatusColor = "Orange" });
+        }
+
+        return (totalBytes, totalSkipped, totalFailures);
     }
 
-    private (long Bytes, int Skipped) CleanChromiumBrowser(string userDataPath, bool logOutput)
+    private (long Bytes, int Skipped, int Failures) CleanChromiumBrowser(string userDataPath, bool logOutput)
     {
         long bytes = 0;
         int skipped = 0;
+        int failures = 0;
 
         if (Directory.Exists(userDataPath))
         {
@@ -231,13 +284,19 @@ public class CleanupService
                             var res = CleanDirectory(cachePath, null, logOutput);
                             bytes += res.Bytes;
                             skipped += res.Skipped;
+                            failures += res.Failures;
                         }
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                failures++;
+                Logger.Log($"Falha ao limpar cache Chromium em '{userDataPath}': {ex.Message}", "ERROR");
+                OnLogItem?.Invoke(new CleanupLogItem { Message = $"Navegador: erro ao acessar perfil ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+            }
         }
-        return (bytes, skipped);
+        return (bytes, skipped, failures);
     }
 
     private void LogAggregateResult(string label, long bytes, int skipped)
@@ -264,10 +323,11 @@ public class CleanupService
         }
     }
 
-    private (long Bytes, int Skipped) CleanDirectory(string path, string? label, bool logOutput)
+    private (long Bytes, int Skipped, int Failures) CleanDirectory(string path, string? label, bool logOutput)
     {
         long categoryBytes = 0;
         int skippedCount = 0;
+        int failures = 0;
         var dirInfo = new DirectoryInfo(path);
 
         try {
@@ -279,23 +339,46 @@ public class CleanupService
                     file.Delete();
                     if (!file.Exists) categoryBytes += size;
                 }
-                catch { skippedCount++; }
+                catch (Exception ex)
+                {
+                    skippedCount++;
+                    failures++;
+                    Logger.Log($"Falha ao remover arquivo '{file.FullName}': {ex.Message}", "WARNING");
+                }
             }
-        } catch { }
+        }
+        catch (Exception ex)
+        {
+            failures++;
+            Logger.Log($"Erro ao enumerar arquivos em '{path}': {ex.Message}", "ERROR");
+            OnLogItem?.Invoke(new CleanupLogItem { Message = $"{(label ?? path)}: erro ao enumerar arquivos ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+        }
 
         try {
             foreach (var dir in dirInfo.EnumerateDirectories("*", SearchOption.AllDirectories))
             {
-                try { dir.Delete(true); } catch { }
+                try { dir.Delete(true); }
+                catch (Exception ex)
+                {
+                    skippedCount++;
+                    failures++;
+                    Logger.Log($"Falha ao remover diretório '{dir.FullName}': {ex.Message}", "WARNING");
+                }
             }
-        } catch { }
+        }
+        catch (Exception ex)
+        {
+            failures++;
+            Logger.Log($"Erro ao enumerar diretórios em '{path}': {ex.Message}", "ERROR");
+            OnLogItem?.Invoke(new CleanupLogItem { Message = $"{(label ?? path)}: erro ao enumerar diretórios ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+        }
 
         if (logOutput && label != null)
         {
             LogAggregateResult(label, categoryBytes, skippedCount);
         }
 
-        return (categoryBytes, skippedCount);
+        return (categoryBytes, skippedCount, failures);
     }
 
     private async Task CleanWindowsUpdateAsync()
@@ -322,8 +405,9 @@ public class CleanupService
                     if (res.Bytes > 0) LogAggregateResult("Windows Update", res.Bytes, res.Skipped);
                     else OnLogItem?.Invoke(new CleanupLogItem { Message = string.Format(Resources.Log_Clean, "Windows Update"), Icon = "Checkmark24", StatusColor = "Green" });
                 }
-                catch
+                catch (Exception ex)
                 {
+                    Logger.Log($"Tentativa {attempts + 1} de limpeza do Windows Update falhou: {ex.Message}", "WARNING");
                     attempts++;
                     await Task.Delay(500); 
                 }
@@ -371,8 +455,9 @@ public class CleanupService
                 }
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Log($"Falha ao {(start ? "iniciar" : "parar")} serviços do Windows Update: {ex.Message}", "ERROR");
                 return false;
             }
         });
