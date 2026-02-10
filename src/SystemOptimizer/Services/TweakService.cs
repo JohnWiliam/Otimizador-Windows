@@ -118,9 +118,62 @@ public class TweakService
             @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1));
 
         Tweaks.Add(new CustomTweak("PF8", TweakCategory.Performance, Resources.PF8_Title, Resources.PF8_Desc,
-            () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 0, RegistryValueKind.DWord); } return true; },
-            () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 1, RegistryValueKind.DWord); } return true; },
-            () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", -1); return val is int i && i == 0; }
+            () =>
+            {
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard", true))
+                {
+                    key.SetValue("EnableVirtualizationBasedSecurity", 0, RegistryValueKind.DWord);
+                    key.SetValue("RequirePlatformSecurityFeatures", 0, RegistryValueKind.DWord);
+                }
+
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true))
+                {
+                    key.SetValue("Enabled", 0, RegistryValueKind.DWord);
+                }
+
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", true))
+                {
+                    key.SetValue("EnableVirtualizationBasedSecurity", 0, RegistryValueKind.DWord);
+                    key.SetValue("HypervisorEnforcedCodeIntegrity", 0, RegistryValueKind.DWord);
+                }
+
+                return true;
+            },
+            () =>
+            {
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard", true))
+                {
+                    key.SetValue("EnableVirtualizationBasedSecurity", 1, RegistryValueKind.DWord);
+                    key.SetValue("RequirePlatformSecurityFeatures", 1, RegistryValueKind.DWord);
+                }
+
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true))
+                {
+                    key.SetValue("Enabled", 1, RegistryValueKind.DWord);
+                }
+
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", true))
+                {
+                    key.SetValue("EnableVirtualizationBasedSecurity", 1, RegistryValueKind.DWord);
+                    key.SetValue("HypervisorEnforcedCodeIntegrity", 1, RegistryValueKind.DWord);
+                }
+
+                return true;
+            },
+            () =>
+            {
+                var systemVbs = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard", "EnableVirtualizationBasedSecurity", -1);
+                var systemPlatform = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard", "RequirePlatformSecurityFeatures", -1);
+                var hvci = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", -1);
+                var policyVbs = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", "EnableVirtualizationBasedSecurity", -1);
+                var policyHvci = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", "HypervisorEnforcedCodeIntegrity", -1);
+
+                return (systemVbs is int i1 && i1 == 0)
+                    && (systemPlatform is int i2 && i2 == 0)
+                    && (hvci is int i3 && i3 == 0)
+                    && (policyVbs is int i4 && i4 == 0)
+                    && (policyHvci is int i5 && i5 == 0);
+            }
         ));
 
         Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, Resources.PF9_Title, Resources.PF9_Desc,

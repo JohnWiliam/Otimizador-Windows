@@ -84,8 +84,8 @@
   <data name="PF6_Desc" xml:space="preserve"><value>Remove limite de processamento de pacotes (Index FFFFFF).</value></data>
   <data name="PF7_Title" xml:space="preserve"><value>Agendamento GPU</value></data>
   <data name="PF7_Desc" xml:space="preserve"><value>Habilita agendamento acelerado por hardware (Requer reinício).</value></data>
-  <data name="PF8_Title" xml:space="preserve"><value>Desativar VBS / HVCI</value></data>
-  <data name="PF8_Desc" xml:space="preserve"><value>Aumenta FPS, mas reduz a segurança do sistema (Requer reinício).</value></data>
+  <data name="PF8_Title" xml:space="preserve"><value>Desativar VBS/HVCI (sistema + políticas)</value></data>
+  <data name="PF8_Desc" xml:space="preserve"><value>Desativa VBS e HVCI nas chaves do sistema e nas políticas DeviceGuard. Requer reinício para aplicar totalmente.</value></data>
   <data name="PF9_Title" xml:space="preserve"><value>Desativar Hibernação</value></data>
   <data name="PF9_Desc" xml:space="preserve"><value>Libera GBs de espaço em disco (Remove hiberfil.sys).</value></data>
   <data name="N1_Title" xml:space="preserve"><value>TCP Auto-Tuning</value></data>
