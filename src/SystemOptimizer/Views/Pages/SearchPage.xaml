@@ -18,12 +18,33 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" 
-                   Text="{x:Static p:Resources.Search_Title}" 
-                   FontSize="26" 
-                   FontWeight="SemiBold" 
-                   Margin="0,0,0,16" 
-                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="{x:Static p:Resources.Search_Title}"
+                           FontSize="26"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+
+                <TextBlock Text="{x:Static p:Resources.Search_Subtitle}"
+                           FontSize="13"
+                           Margin="0,4,0,0"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+
+            <ui:Button Grid.Column="1"
+                       Appearance="Secondary"
+                       Icon="{ui:SymbolIcon ArrowSync24}"
+                       Command="{Binding DataContext.RestartExplorerCommand, RelativeSource={RelativeSource AncestorType=Page}}"
+                       Content="{x:Static p:Resources.Btn_RestartExplorer}"
+                       ToolTip="{x:Static p:Resources.Btn_RestartExplorer}"
+                       IsEnabled="{Binding DataContext.IsBusy, RelativeSource={RelativeSource AncestorType=Page}, Converter={StaticResource InverseBoolConverter}}"
+                       VerticalAlignment="Top" />
+        </Grid>
 
         <ui:DynamicScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding SearchTweaks}">
