@@ -10,7 +10,7 @@
         xmlns:helpers="clr-namespace:SystemOptimizer.Helpers"
         xmlns:p="clr-namespace:SystemOptimizer.Properties"
         mc:Ignorable="d"
-        Title="Otimizador de Sistema" 
+        Title="Otimizador de Sistema"
         Height="700" Width="1000"
         MinWidth="700" MinHeight="500"
         WindowStartupLocation="CenterScreen"
@@ -23,7 +23,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
-       </Grid.RowDefinitions>
+        </Grid.RowDefinitions>
        
         <ui:TitleBar Grid.Row="0" Title="{Binding ApplicationTitle}" />
 
@@ -44,17 +44,17 @@
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Gauge24" />
                     </ui:NavigationViewItem.Icon>
-                 </ui:NavigationViewItem>
+                </ui:NavigationViewItem>
                  
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Network}" TargetPageType="{x:Type pages:NetworkPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Globe24" />
-                     </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem.Icon>
                  </ui:NavigationViewItem>
                  
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Security}" TargetPageType="{x:Type pages:SecurityPage}">
                     <ui:NavigationViewItem.Icon>
-                       <ui:SymbolIcon Symbol="LockClosed24" />
+                        <ui:SymbolIcon Symbol="LockClosed24" />
                      </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
@@ -66,18 +66,18 @@
                 
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Visual}" TargetPageType="{x:Type pages:AppearancePage}">
                     <ui:NavigationViewItem.Icon>
-                       <ui:SymbolIcon Symbol="PaintBrush24" />
+                        <ui:SymbolIcon Symbol="PaintBrush24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Tweaks}" TargetPageType="{x:Type pages:TweaksPage}">
-                     <ui:NavigationViewItem.Icon>
+                    <ui:NavigationViewItem.Icon>
                          <ui:SymbolIcon Symbol="WrenchScrewdriver24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
                 
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Cleanup}" TargetPageType="{x:Type pages:CleanupPage}">
-                     <ui:NavigationViewItem.Icon>
+                    <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Broom24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>

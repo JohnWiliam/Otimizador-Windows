@@ -13,30 +13,35 @@ namespace SystemOptimizer;
 public partial class MainWindow : FluentWindow, INavigationWindow
 {
     public MainViewModel ViewModel { get; }
+    private readonly StartupActivationState _activationState;
+
+    // Acesso público para serviços externos
+    public INavigationView NavigationView => RootNavigation;
 
     public MainWindow(
         MainViewModel viewModel,
         INavigationService navigationService,
         IServiceProvider serviceProvider,
         ISnackbarService snackbarService,
-        IContentDialogService contentDialogService) // Injetando o serviço de diálogo
+        IContentDialogService contentDialogService,
+        StartupActivationState activationState)
     {
         ViewModel = viewModel;
         DataContext = ViewModel;
+        _activationState = activationState;
 
         InitializeComponent();
 
-        // ATIVA A SINCRONIZAÇÃO AUTOMÁTICA COM O TEMA DO WINDOWS
         SystemThemeWatcher.Watch(this);
 
-        // Configura o controlo de navegação
+        // --- Configuração dos serviços de UI ---
         navigationService.SetNavigationControl(RootNavigation);
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
         
-        // CORREÇÃO: SetContentPresenter foi substituído por SetDialogHost na versão mais recente
+        // CORREÇÃO: SetContentPresenter (obsoleto) -> SetDialogHost (novo)
         contentDialogService.SetDialogHost(RootContentDialogPresenter);
 
-        // INJETA O SERVICE PROVIDER NO NAVIGATIONVIEW
+        // Injeção do ServiceProvider
         RootNavigation.SetServiceProvider(serviceProvider);
 
         Loaded += MainWindow_Loaded;
@@ -46,18 +51,29 @@ public partial class MainWindow : FluentWindow, INavigationWindow
     {
         Logger.Log("MainWindow_Loaded started.");
         await ViewModel.InitializeAsync();
-        Logger.Log("Initializing complete. Navigating to PrivacyPage...");
-        RootNavigation.Navigate(typeof(Views.Pages.PrivacyPage));
-        Logger.Log("Navigation call finished.");
+        
+        Logger.Log("Verificando requisições de navegação inicial...");
+        if (_activationState.OpenSettingsRequested)
+        {
+            RootNavigation.Navigate(typeof(Views.Pages.SettingsPage));
+            _activationState.ClearOpenSettingsRequest();
+        }
+        else
+        {
+            RootNavigation.Navigate(typeof(Views.Pages.PrivacyPage));
+        }
+        Logger.Log("Navegação inicial concluída.");
     }
 
+    // Métodos da interface INavigationWindow
     public INavigationView GetNavigation() => RootNavigation;
 
     public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
 
     public void SetPageService(INavigationViewPageProvider pageService)
     {
-        // Não é necessário fazer nada aqui na versão 4.x do WPF-UI
+        // CORREÇÃO: Na versão 4.1+, o método correto é SetPageProviderService
+        RootNavigation.SetPageProviderService(pageService);
     }
 
     public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);

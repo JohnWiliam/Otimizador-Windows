@@ -1,36 +1,27 @@
 using System;
 using System.Windows;
-using SystemOptimizer.Helpers;
+using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO
 
-namespace SystemOptimizer;
-
-public static class Program
+namespace SystemOptimizer
 {
-    [STAThread] // Essencial para aplicações WPF
-    public static void Main(string[] args)
+    public static class Program
     {
-        try
+        [STAThread]
+        public static void Main(string[] args)
         {
-            var app = new App();
-
-            // Carrega o App.xaml (recursos, estilos, temas).
-            // Sem isso, a MainWindow falha ao tentar renderizar os controles do Wpf.Ui.
-            app.InitializeComponent();
-
-            // Inicia a aplicação
-            app.Run();
-        }
-        catch (Exception ex)
-        {
-            // Se algo der errado antes da janela abrir, mostramos uma mensagem
-            // Isso ajuda a diagnosticar erros de inicialização (ex: falta de dll, erro de config)
-            MessageBox.Show($"Erro fatal na inicialização:\n\n{ex.Message}\n\n{ex.StackTrace}",
-                            "SystemOptimizer - Erro Fatal",
-                            MessageBoxButton.OK,
-                            MessageBoxImage.Error);
-
-            // Tenta logar também
-            Logger.Log($"FATAL CRASH: {ex}", "CRITICAL");
+            // O Toolkit gerencia a ativação automaticamente se configurado corretamente no App.xaml.cs/StartupService
+            
+            try 
+            {
+                var app = new App();
+                app.InitializeComponent();
+                app.Run();
+            }
+            catch (Exception ex)
+            {
+                // Fallback simples de log caso o app falhe na inicialização
+                MessageBox.Show($"Fatal Error: {ex.Message}", "SystemOptimizer Critical Error");
+            }
         }
     }
 }

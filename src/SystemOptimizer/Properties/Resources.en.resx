@@ -83,9 +83,9 @@
   <data name="PF6_Title" xml:space="preserve"><value>Network Throttling</value></data>
   <data name="PF6_Desc" xml:space="preserve"><value>Removes packet processing limit (Index FFFFFF).</value></data>
   <data name="PF7_Title" xml:space="preserve"><value>GPU Scheduling</value></data>
-  <data name="PF7_Desc" xml:space="preserve"><value>Enables hardware-accelerated scheduling (Requires Restart).</value></data>
-  <data name="PF8_Title" xml:space="preserve"><value>Disable VBS / HVCI</value></data>
-  <data name="PF8_Desc" xml:space="preserve"><value>Increases FPS, but reduces system security (REQUIRES RESTART).</value></data>
+  <data name="PF7_Desc" xml:space="preserve"><value>Enables hardware-accelerated scheduling (Requires restart).</value></data>
+  <data name="PF8_Title" xml:space="preserve"><value>Disable VBS/HVCI (system + policies)</value></data>
+  <data name="PF8_Desc" xml:space="preserve"><value>Disables VBS and HVCI in system keys and DeviceGuard policies. Requires restart for full effect.</value></data>
   <data name="PF9_Title" xml:space="preserve"><value>Disable Hibernation</value></data>
   <data name="PF9_Desc" xml:space="preserve"><value>Frees up GBs of disk space (Removes hiberfil.sys).</value></data>
   <data name="N1_Title" xml:space="preserve"><value>TCP Auto-Tuning</value></data>
@@ -126,7 +126,7 @@
   <data name="Theme_System" xml:space="preserve"><value>System Default</value></data>
   <data name="Theme_Light" xml:space="preserve"><value>Light</value></data>
   <data name="Theme_Dark" xml:space="preserve"><value>Dark</value></data>
-  <data name="Msg_RestartRequired" xml:space="preserve"><value>To apply the language change, the application needs to be restarted.\nDo you want to restart now?</value></data>
+  <data name="Msg_RestartRequired" xml:space="preserve"><value>To apply the language change, the application needs to be restarted.&#10;Do you want to restart now?</value></data>
   <data name="Msg_RestartTitle" xml:space="preserve"><value>Restart Required</value></data>
   <data name="Nav_Privacy" xml:space="preserve"><value>Privacy</value></data>
   <data name="Nav_Performance" xml:space="preserve"><value>Performance</value></data>
@@ -152,11 +152,11 @@
   <data name="Cleanup_CacheDesc" xml:space="preserve"><value>Free up disk space by removing unnecessary files.</value></data>
   <data name="Cleanup_LogTitle" xml:space="preserve"><value>Execution Log</value></data>
   <data name="Log_Starting" xml:space="preserve"><value>Starting scan and cleanup...</value></data>
-  <data name="Log_Finished" xml:space="preserve"><value>CLEANUP FINISHED!\nFreed: {0} MB</value></data>
+  <data name="Log_Finished" xml:space="preserve"><value>CLEANUP FINISHED!&#10;Freed: {0} MB</value></data>
   <data name="Log_DNS" xml:space="preserve"><value>DNS Cache: Cleaned</value></data>
   <data name="Log_Removed" xml:space="preserve"><value>{0} : {1} MB removed</value></data>
   <data name="Log_Clean" xml:space="preserve"><value>{0} : Cleaned</value></data>
-  <data name="Log_WUServicesStopped" xml:space="preserve"><value>WU Services: Stopped.\nAttempting cleanup...</value></data>
+  <data name="Log_WUServicesStopped" xml:space="preserve"><value>WU Services: Stopped.&#10;Attempting cleanup...</value></data>
   <data name="Log_WUServicesRestarted" xml:space="preserve"><value>WU Services: Restarted.</value></data>
   <data name="Log_WUError" xml:space="preserve"><value>Windows Update : Some files were in use.</value></data>
   <data name="Log_WUFailStop" xml:space="preserve"><value>Windows Update : Could not stop services.</value></data>
@@ -164,11 +164,11 @@
   <data name="Msg_ResultTitle" xml:space="preserve"><value>Result</value></data>
   <data name="Msg_Applied" xml:space="preserve"><value>Optimizations applied.</value></data>
   <data name="Msg_Restored" xml:space="preserve"><value>Settings restored.</value></data>
-  <data name="Msg_RebootNeeded" xml:space="preserve"><value>\nRESTART the computer.</value></data>
-  <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Completed with errors.\nSuccesses: {0}\nFailures: {1}\nError: {2}</value></data>
+  <data name="Msg_RebootNeeded" xml:space="preserve"><value>&#10;RESTART the computer.</value></data>
+  <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Completed with errors.&#10;Successes: {0}&#10;Failures: {1}&#10;Error: {2}</value></data>
   <data name="Msg_ErrorTitle" xml:space="preserve"><value>Error</value></data>
   <data name="Msg_InitFail" xml:space="preserve"><value>Failed to start: {0}</value></data>
-  <data name="App_Title" xml:space="preserve"><value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.1.2</value></data>
+  <data name="App_Title" xml:space="preserve"><value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.2.0</value></data>
   <data name="S_1_Title" xml:space="preserve"><value>Search Box Suggestions</value></data>
   <data name="S_1_Desc" xml:space="preserve"><value>Disables online and recent suggestions when typing in the search bar.</value></data>
   <data name="S_2_Title" xml:space="preserve"><value>Cloud Search</value></data>
@@ -188,10 +188,12 @@
   <data name="Cleanup_OptionWindowsUpdate" xml:space="preserve"><value>Windows Update Cache</value></data>
   <data name="Log_RecycleBin" xml:space="preserve"><value>Recycle Bin: Emptied</value></data>
   <data name="Settings_Update" xml:space="preserve"><value>Update</value></data>
-  <data name="Settings_UpdateSystemVersion" xml:space="preserve"><value>System Version</value></data>
+  <data name="Settings_UpdateSystemVersion" xml:space="preserve"><value>Application Update</value></data>
   <data name="Settings_UpdateCheckDesc" xml:space="preserve"><value>Check for new versions available on GitHub</value></data>
   <data name="Btn_CheckUpdate" xml:space="preserve"><value>Check Now</value></data>
   <data name="Msg_UpdateAvailable_Title" xml:space="preserve"><value>Update Available: {0}</value></data>
+  <data name="Msg_UpdateAvailable_ToastBody" xml:space="preserve"><value>Click to open Settings and update the app.</value></data>
+  <data name="Msg_Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Btn_UpdateAndRestart" xml:space="preserve"><value>Update and Restart</value></data>
   <data name="Msg_Downloading" xml:space="preserve"><value>Downloading update...</value></data>
   <data name="Msg_Installing" xml:space="preserve"><value>Installing...</value></data>

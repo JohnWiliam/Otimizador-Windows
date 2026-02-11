@@ -94,8 +94,20 @@ public class TweakService
                 Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold2", "0", RegistryValueKind.String);
                 return true;
             },
-            () => { Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", "1", RegistryValueKind.String); return true; },
-            () => { var val = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", null); return val != null && val.ToString() == "0"; }
+            () => {
+                Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", "1", RegistryValueKind.String);
+                Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold1", "6", RegistryValueKind.String);
+                Registry.SetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold2", "10", RegistryValueKind.String);
+                return true;
+            },
+            () => {
+                var speed = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseSpeed", null);
+                var threshold1 = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold1", null);
+                var threshold2 = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Mouse", "MouseThreshold2", null);
+                return speed?.ToString() == "0"
+                    && threshold1?.ToString() == "0"
+                    && threshold2?.ToString() == "0";
+            }
         ));
 
         Tweaks.Add(new RegistryTweak("PF5", TweakCategory.Performance, Resources.PF5_Title, Resources.PF5_Desc,
@@ -106,9 +118,62 @@ public class TweakService
             @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1));
 
         Tweaks.Add(new CustomTweak("PF8", TweakCategory.Performance, Resources.PF8_Title, Resources.PF8_Desc,
-            () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 0, RegistryValueKind.DWord); } return true; },
-            () => { using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true)) { key.SetValue("Enabled", 1, RegistryValueKind.DWord); } return true; },
-            () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", -1); return val is int i && i == 0; }
+            () =>
+            {
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard", true))
+                {
+                    key.SetValue("EnableVirtualizationBasedSecurity", 0, RegistryValueKind.DWord);
+                    key.SetValue("RequirePlatformSecurityFeatures", 0, RegistryValueKind.DWord);
+                }
+
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true))
+                {
+                    key.SetValue("Enabled", 0, RegistryValueKind.DWord);
+                }
+
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", true))
+                {
+                    key.SetValue("EnableVirtualizationBasedSecurity", 0, RegistryValueKind.DWord);
+                    key.SetValue("HypervisorEnforcedCodeIntegrity", 0, RegistryValueKind.DWord);
+                }
+
+                return true;
+            },
+            () =>
+            {
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard", true))
+                {
+                    key.SetValue("EnableVirtualizationBasedSecurity", 1, RegistryValueKind.DWord);
+                    key.SetValue("RequirePlatformSecurityFeatures", 1, RegistryValueKind.DWord);
+                }
+
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true))
+                {
+                    key.SetValue("Enabled", 1, RegistryValueKind.DWord);
+                }
+
+                using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", true))
+                {
+                    key.SetValue("EnableVirtualizationBasedSecurity", 1, RegistryValueKind.DWord);
+                    key.SetValue("HypervisorEnforcedCodeIntegrity", 1, RegistryValueKind.DWord);
+                }
+
+                return true;
+            },
+            () =>
+            {
+                var systemVbs = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard", "EnableVirtualizationBasedSecurity", -1);
+                var systemPlatform = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard", "RequirePlatformSecurityFeatures", -1);
+                var hvci = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", -1);
+                var policyVbs = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", "EnableVirtualizationBasedSecurity", -1);
+                var policyHvci = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", "HypervisorEnforcedCodeIntegrity", -1);
+
+                return (systemVbs is int i1 && i1 == 0)
+                    && (systemPlatform is int i2 && i2 == 0)
+                    && (hvci is int i3 && i3 == 0)
+                    && (policyVbs is int i4 && i4 == 0)
+                    && (policyHvci is int i5 && i5 == 0);
+            }
         ));
 
         Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, Resources.PF9_Title, Resources.PF9_Desc,
@@ -123,7 +188,11 @@ public class TweakService
         Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, Resources.N1_Title, Resources.N1_Desc,
             () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
-            () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).AutoTuningLevelLocal").Trim(); return res.Equals("Normal", StringComparison.OrdinalIgnoreCase); }
+            () =>
+            {
+                var res = CommandHelper.RunCommand("netsh", "int tcp show global");
+                return res.Contains("normal") || res.Contains("Normal");
+            }
         ));
 
         Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, Resources.N2_Title, Resources.N2_Desc,
@@ -133,13 +202,22 @@ public class TweakService
                 return true;
             },
             () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
-            () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).CongestionProvider").Trim().ToUpper(); return res == "CUBIC" || res == "CTCP"; }
+            () =>
+            {
+                var res = CommandHelper.RunCommand("powershell",
+                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).CongestionProvider\"").Trim().ToUpper();
+                return res == "CUBIC" || res == "CTCP";
+            }
         ));
 
         Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, Resources.N3_Title, Resources.N3_Desc,
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
-            () => { var res = CommandHelper.RunCommand("powershell", "(Get-NetTCPSetting -SettingName Internet).EcnCapability").Trim(); return res.Equals("Enabled", StringComparison.OrdinalIgnoreCase); }
+            () =>
+            {
+                var res = CommandHelper.RunCommand("netsh", "int tcp show global");
+                return res.Contains("enabled") || res.Contains("habilitado");
+            }
         ));
 
         Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, Resources.N4_Title, Resources.N4_Desc,
@@ -166,17 +244,17 @@ public class TweakService
 
     private void AddSearchTweaks()
     {
-        // SCH1: DisableSearchBoxSuggestions
+        // SCH1: DisableSearchBoxSuggestions - Alterado para HKCU\Software\Microsoft\Windows\CurrentVersion\Search para eficácia imediata
         Tweaks.Add(new RegistryTweak("SCH1", TweakCategory.Search, Resources.S_1_Title, Resources.S_1_Desc,
-            @"HKCU\Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions", 1, "DELETE"));
+            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 0, 1));
 
         // SCH2: DisableCloudSearch
         Tweaks.Add(new RegistryTweak("SCH2", TweakCategory.Search, Resources.S_2_Title, Resources.S_2_Desc,
-            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "DisableCloudSearch", 1, "DELETE"));
+            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "DisableCloudSearch", 1, 0));
 
-        // SCH3: BingSearchEnabled
+        // SCH3: BingSearchEnabled - Refatorado conforme RegistryService de referência
         Tweaks.Add(new RegistryTweak("SCH3", TweakCategory.Search, Resources.S_3_Title, Resources.S_3_Desc,
-            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0, "DELETE"));
+            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0, 1));
     }
 
     private void AddCustomTweaks()
