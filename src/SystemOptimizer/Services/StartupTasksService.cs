@@ -7,7 +7,7 @@ using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
-using System.Collections.Generic; // Necessário para List<>
+using System.Collections.Generic;
 
 namespace SystemOptimizer.Services;
 
@@ -16,7 +16,7 @@ public sealed class StartupTasksService
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
     private readonly StartupActivationState _activationState;
-    // DEPENDÊNCIA NOVA: Precisamos do TweakService para reaplicar as otimizações
+    // DEPENDÊNCIA: Precisamos do TweakService para reaplicar as otimizações
     private readonly TweakService _tweakService;
     private bool _toastActivationRegistered;
 
@@ -101,9 +101,17 @@ public sealed class StartupTasksService
                             if (!tweak.IsOptimized)
                             {
                                 Logger.Log($"Detectado tweak revertido: {tweak.Id}. Reaplicando...", "INFO");
-                                if (tweak.Apply())
+                                
+                                // CORREÇÃO AQUI: Capturamos o retorno da Tupla (Success, Message)
+                                var result = tweak.Apply();
+                                
+                                if (result.Success)
                                 {
                                     reappliedCount++;
+                                }
+                                else
+                                {
+                                    Logger.Log($"Falha ao reaplicar tweak {tweak.Id}: {result.Message}", "WARN");
                                 }
                             }
                         }
