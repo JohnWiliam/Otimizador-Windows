@@ -16,7 +16,6 @@ public sealed class StartupTasksService
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
     private readonly StartupActivationState _activationState;
-    // DEPENDÊNCIA: Precisamos do TweakService para reaplicar as otimizações
     private readonly TweakService _tweakService;
     private bool _toastActivationRegistered;
 
@@ -24,7 +23,7 @@ public sealed class StartupTasksService
         IUpdateService updateService,
         INavigationService navigationService,
         StartupActivationState activationState,
-        TweakService tweakService) // Injeção do TweakService
+        TweakService tweakService)
     {
         _updateService = updateService;
         _navigationService = navigationService;
@@ -37,10 +36,11 @@ public sealed class StartupTasksService
         RegisterToastActivation();
         ProcessActivationArguments(args);
 
-        // Só verifica atualizações se NÃO estivermos no modo silencioso (persistência)
+        // Se NÃO for modo silencioso, iniciamos a verificação em background (fire-and-forget)
+        // Se FOR modo silencioso, a verificação será feita dentro de RunPersistenceCheckAsync
         if (!IsSilentMode(args))
         {
-            RunUpdateCheckInBackground();
+             _ = ExecuteUpdateCheckAsync();
         }
     }
 
@@ -51,10 +51,9 @@ public sealed class StartupTasksService
 
     public void ProcessActivationArguments(string[] args)
     {
-        // LÓGICA DE PERSISTÊNCIA ADICIONADA
         if (IsSilentMode(args))
         {
-            // Executa a verificação em background para não travar a thread de UI inicial
+            // Executa a verificação completa (Tweaks + Updates) e depois fecha
             Task.Run(async () => await RunPersistenceCheckAsync());
             return;
         }
@@ -72,21 +71,16 @@ public sealed class StartupTasksService
         {
             Logger.Log("Iniciando verificação de persistência (Modo Silencioso)...", "INFO");
 
-            // 1. Carrega as definições dos tweaks
-            _tweakService.LoadTweaks();
+            // 1. Inicia a verificação de UPDATE em paralelo (não bloqueia os tweaks)
+            var updateTask = ExecuteUpdateCheckAsync();
 
-            // 2. Carrega quais tweaks o usuário salvou como ativos
+            // 2. Lógica de persistência dos TWEAKS
+            _tweakService.LoadTweaks();
             var savedIds = TweakPersistence.LoadState();
             
-            if (savedIds.Count == 0)
-            {
-                Logger.Log("Nenhum estado de persistência encontrado. Encerrando.", "INFO");
-            }
-            else
+            if (savedIds.Count > 0)
             {
                 int reappliedCount = 0;
-
-                // 3. Itera sobre os tweaks salvos e verifica se precisam ser reaplicados
                 foreach (var id in savedIds)
                 {
                     var tweak = _tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
@@ -94,36 +88,26 @@ public sealed class StartupTasksService
                     {
                         try
                         {
-                            // Verifica o estado atual real no sistema
                             tweak.CheckStatus();
-
-                            // Se deveria estar otimizado (está na lista savedIds) mas não está...
                             if (!tweak.IsOptimized)
                             {
                                 Logger.Log($"Detectado tweak revertido: {tweak.Id}. Reaplicando...", "INFO");
-                                
-                                // CORREÇÃO AQUI: Capturamos o retorno da Tupla (Success, Message)
                                 var result = tweak.Apply();
-                                
-                                if (result.Success)
-                                {
-                                    reappliedCount++;
-                                }
-                                else
-                                {
-                                    Logger.Log($"Falha ao reaplicar tweak {tweak.Id}: {result.Message}", "WARN");
-                                }
+                                if (result.Success) reappliedCount++;
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            Logger.Log($"Erro ao processar tweak {tweak.Id}: {ex.Message}", "ERROR");
+                        catch (Exception ex) 
+                        { 
+                            Logger.Log($"Erro ao processar tweak {tweak.Id}: {ex.Message}", "ERROR"); 
                         }
                     }
                 }
-                
-                Logger.Log($"Persistência concluída. {reappliedCount} tweaks foram reaplicados.", "INFO");
+                Logger.Log($"Persistência concluída. {reappliedCount} tweaks reaplicados.", "INFO");
             }
+
+            // 3. Aguarda a verificação de UPDATE terminar antes de fechar o app
+            // Isso garante que a notificação seja enviada se houver update
+            await updateTask;
         }
         catch (Exception ex)
         {
@@ -131,12 +115,25 @@ public sealed class StartupTasksService
         }
         finally
         {
-            // IMPORTANTE: Encerra o aplicativo após a tarefa silenciosa
-            // Usamos o Dispatcher pois Shutdown deve ser chamado na thread da UI
-            Application.Current.Dispatcher.Invoke(() => 
+            // Encerra o processo para não ficar rodando em background
+            Application.Current.Dispatcher.Invoke(() => Application.Current.Shutdown());
+        }
+    }
+
+    // Método refatorado para retornar Task (pode ser aguardado)
+    private async Task ExecuteUpdateCheckAsync()
+    {
+        try
+        {
+            var updateInfo = await _updateService.CheckForUpdatesAsync();
+            if (updateInfo.IsAvailable)
             {
-                Application.Current.Shutdown();
-            });
+                ShowUpdateToast(updateInfo);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Erro ao verificar atualizações: {ex.Message}", "ERROR");
         }
     }
 
@@ -197,30 +194,11 @@ public sealed class StartupTasksService
         });
     }
 
-    private void RunUpdateCheckInBackground()
-    {
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                var updateInfo = await _updateService.CheckForUpdatesAsync();
-                if (updateInfo.IsAvailable)
-                {
-                    ShowUpdateToast(updateInfo);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Erro ao verificar atualizações em background: {ex.Message}", "ERROR");
-            }
-        });
-    }
-
     private static void ShowUpdateToast(UpdateInfo updateInfo)
     {
         new ToastContentBuilder()
             .AddText("Atualização disponível")
-            .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
+            .AddText($"Versão {updateInfo.Version} disponível. Toque para atualizar.")
             .AddArgument("action", "open-settings")
             .Show();
     }
