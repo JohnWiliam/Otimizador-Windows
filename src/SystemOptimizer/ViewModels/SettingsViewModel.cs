@@ -265,15 +265,33 @@ public partial class SettingsViewModel : ObservableObject
         {
             string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
             if (string.IsNullOrEmpty(currentExe)) return;
+            
             if (!Directory.Exists(_appDataPath)) Directory.CreateDirectory(_appDataPath);
-            File.Copy(currentExe, _targetExePath, true);
+
+            // CORREÇÃO: Verificar se já estamos rodando do local de destino para evitar "FileInUseException"
+            string normalizedCurrent = Path.GetFullPath(currentExe);
+            string normalizedTarget = Path.GetFullPath(_targetExePath);
+
+            if (!string.Equals(normalizedCurrent, normalizedTarget, StringComparison.OrdinalIgnoreCase))
+            {
+                // Só copia se não for o mesmo arquivo
+                File.Copy(currentExe, _targetExePath, true);
+            }
+            else
+            {
+                Logger.Log("Executável já reside no local de persistência. Cópia ignorada.");
+            }
+
             if (_tweakService.Tweaks.Count == 0) _tweakService.LoadTweaks();
             await _tweakService.RefreshStatusesAsync();
             TweakPersistence.SaveState(_tweakService.Tweaks);
+            
             string cmd = $"/create /tn \"{TaskName}\" /tr \"\\\"{_targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
             var res = CommandHelper.RunCommand("schtasks", cmd);
+            
             if (res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Falha ao criar tarefa agendada: " + res);
+            
             Logger.Log("Persistência ativada e configurações salvas com sucesso.");
         }
         catch (Exception ex)
