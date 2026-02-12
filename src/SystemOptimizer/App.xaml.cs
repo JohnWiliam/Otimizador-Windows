@@ -144,7 +144,12 @@ public partial class App : Application
         try
         {
             Logger.Log("Iniciando Modo Silencioso (Auto-Run)...");
+            var updateService = _host.Services.GetRequiredService<IUpdateService>();
             var tweakService = _host.Services.GetRequiredService<TweakService>();
+
+            // A verificação de atualização roda em paralelo para não atrasar a reaplicação de tweaks.
+            var updateTask = updateService.CheckForUpdatesAsync();
+
             tweakService.LoadTweaks();
             await tweakService.RefreshStatusesAsync();
 
@@ -160,7 +165,14 @@ public partial class App : Application
                 foreach (var id in savedTweakIds)
                 {
                     var tweak = tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
-                    if (tweak != null && !tweak.IsOptimized)
+                    if (tweak == null)
+                    {
+                        Logger.Log($"Tweak persistente não encontrado: {id}", "WARN");
+                        continue;
+                    }
+
+                    tweak.CheckStatus();
+                    if (!tweak.IsOptimized)
                     {
                         Logger.Log($"Reaplicando tweak persistente: {tweak.Title} ({tweak.Id})");
                         var result = tweak.Apply();
@@ -170,11 +182,27 @@ public partial class App : Application
                 }
                 Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
             }
+
+            var updateInfo = await updateTask;
+            if (updateInfo.IsAvailable)
+            {
+                Logger.Log($"Atualização encontrada no modo silencioso: {updateInfo.Version}", "INFO");
+                ShowUpdateToast(updateInfo);
+            }
         }
         catch (Exception ex)
         {
             Logger.Log($"Erro crítico no modo silencioso: {ex.Message}", "ERROR");
         }
+    }
+
+    private static void ShowUpdateToast(UpdateInfo updateInfo)
+    {
+        new ToastContentBuilder()
+            .AddText("Atualização disponível")
+            .AddText($"Versão {updateInfo.Version} disponível. Toque para atualizar.")
+            .AddArgument("action", "open-settings")
+            .Show();
     }
 
     private void RequestOpenSettings()
