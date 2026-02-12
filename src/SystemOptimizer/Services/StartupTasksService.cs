@@ -2,11 +2,12 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO
+using Microsoft.Toolkit.Uwp.Notifications; 
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
+using System.Collections.Generic; // Necessário para List<>
 
 namespace SystemOptimizer.Services;
 
@@ -15,27 +16,49 @@ public sealed class StartupTasksService
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
     private readonly StartupActivationState _activationState;
+    // DEPENDÊNCIA NOVA: Precisamos do TweakService para reaplicar as otimizações
+    private readonly TweakService _tweakService;
     private bool _toastActivationRegistered;
 
     public StartupTasksService(
         IUpdateService updateService,
         INavigationService navigationService,
-        StartupActivationState activationState)
+        StartupActivationState activationState,
+        TweakService tweakService) // Injeção do TweakService
     {
         _updateService = updateService;
         _navigationService = navigationService;
         _activationState = activationState;
+        _tweakService = tweakService;
     }
 
     public void Initialize(string[] args)
     {
         RegisterToastActivation();
         ProcessActivationArguments(args);
-        RunUpdateCheckInBackground();
+
+        // Só verifica atualizações se NÃO estivermos no modo silencioso (persistência)
+        if (!IsSilentMode(args))
+        {
+            RunUpdateCheckInBackground();
+        }
+    }
+
+    private bool IsSilentMode(string[] args)
+    {
+        return args.Any(arg => string.Equals(arg, "--silent", StringComparison.OrdinalIgnoreCase));
     }
 
     public void ProcessActivationArguments(string[] args)
     {
+        // LÓGICA DE PERSISTÊNCIA ADICIONADA
+        if (IsSilentMode(args))
+        {
+            // Executa a verificação em background para não travar a thread de UI inicial
+            Task.Run(async () => await RunPersistenceCheckAsync());
+            return;
+        }
+
         if (args.Any(arg => string.Equals(arg, "--open-settings", StringComparison.OrdinalIgnoreCase)))
         {
             RequestOpenSettings();
@@ -43,14 +66,78 @@ public sealed class StartupTasksService
         }
     }
 
+    private async Task RunPersistenceCheckAsync()
+    {
+        try
+        {
+            Logger.Log("Iniciando verificação de persistência (Modo Silencioso)...", "INFO");
+
+            // 1. Carrega as definições dos tweaks
+            _tweakService.LoadTweaks();
+
+            // 2. Carrega quais tweaks o usuário salvou como ativos
+            var savedIds = TweakPersistence.LoadState();
+            
+            if (savedIds.Count == 0)
+            {
+                Logger.Log("Nenhum estado de persistência encontrado. Encerrando.", "INFO");
+            }
+            else
+            {
+                int reappliedCount = 0;
+
+                // 3. Itera sobre os tweaks salvos e verifica se precisam ser reaplicados
+                foreach (var id in savedIds)
+                {
+                    var tweak = _tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
+                    if (tweak != null)
+                    {
+                        try
+                        {
+                            // Verifica o estado atual real no sistema
+                            tweak.CheckStatus();
+
+                            // Se deveria estar otimizado (está na lista savedIds) mas não está...
+                            if (!tweak.IsOptimized)
+                            {
+                                Logger.Log($"Detectado tweak revertido: {tweak.Id}. Reaplicando...", "INFO");
+                                if (tweak.Apply())
+                                {
+                                    reappliedCount++;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Log($"Erro ao processar tweak {tweak.Id}: {ex.Message}", "ERROR");
+                        }
+                    }
+                }
+                
+                Logger.Log($"Persistência concluída. {reappliedCount} tweaks foram reaplicados.", "INFO");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Erro fatal durante a persistência: {ex.Message}", "ERROR");
+        }
+        finally
+        {
+            // IMPORTANTE: Encerra o aplicativo após a tarefa silenciosa
+            // Usamos o Dispatcher pois Shutdown deve ser chamado na thread da UI
+            Application.Current.Dispatcher.Invoke(() => 
+            {
+                Application.Current.Shutdown();
+            });
+        }
+    }
+
     private void RegisterToastActivation()
     {
         if (_toastActivationRegistered) return;
 
-        // Este evento dispara mesmo se o app foi aberto pelo Toast
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
-            // Precisamos despachar para a UI Thread pois isso vem de um thread background
             Application.Current.Dispatcher.Invoke(() => 
             {
                 HandleToastArguments(toastArgs.Argument);
