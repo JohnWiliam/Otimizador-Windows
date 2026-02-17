@@ -15,9 +15,6 @@ public partial class MainWindow : FluentWindow, INavigationWindow
     public MainViewModel ViewModel { get; }
     private readonly StartupActivationState _activationState;
 
-    // Acesso público para serviços externos
-    public INavigationView NavigationView => RootNavigation;
-
     public MainWindow(
         MainViewModel viewModel,
         INavigationService navigationService,
@@ -34,11 +31,11 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
         SystemThemeWatcher.Watch(this);
 
-        // --- Configuração dos serviços de UI ---
+        // Configuração dos serviços de UI
         navigationService.SetNavigationControl(RootNavigation);
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
         
-        // CORREÇÃO: SetContentPresenter (obsoleto) -> SetDialogHost (novo)
+        // REVISÃO DE RISCO: Respeitando seu código original que indicava ser o método novo.
         contentDialogService.SetDialogHost(RootContentDialogPresenter);
 
         // Injeção do ServiceProvider
@@ -65,18 +62,21 @@ public partial class MainWindow : FluentWindow, INavigationWindow
         Logger.Log("Navegação inicial concluída.");
     }
 
-    // Métodos da interface INavigationWindow
     public INavigationView GetNavigation() => RootNavigation;
 
     public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
 
+    // REVISÃO DE RISCO: Mantendo INavigationViewPageProvider para evitar erro
+    // de compilação caso a interface INavigationWindow exija esse tipo específico.
     public void SetPageService(INavigationViewPageProvider pageService)
     {
-        // CORREÇÃO: Na versão 4.1+, o método correto é SetPageProviderService
-        RootNavigation.SetPageProviderService(pageService);
+        RootNavigation.SetPageService(pageService);
     }
 
-    public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
+    public void SetServiceProvider(IServiceProvider serviceProvider) 
+    {
+        RootNavigation.SetServiceProvider(serviceProvider);
+    }
 
     public void ShowWindow() => Show();
 
