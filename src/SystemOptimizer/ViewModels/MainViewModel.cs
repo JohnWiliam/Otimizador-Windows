@@ -208,12 +208,13 @@ public partial class MainViewModel : ObservableObject
         int failCount = 0;
         string lastError = "";
         bool rebootNeeded = false;
+        var selectedTweaks = list.Where(x => x.IsSelected).ToList();
 
         try
         {
             await Task.Run(() =>
             {
-                foreach (var item in list.Where(x => x.IsSelected))
+                foreach (var item in selectedTweaks)
                 {
                     if (IsRebootRequired(item.Id)) rebootNeeded = true;
                     var result = applying ? item.Tweak.Apply() : item.Tweak.Revert();
@@ -221,6 +222,12 @@ public partial class MainViewModel : ObservableObject
                     else { failCount++; lastError = result.Message; }
                 }
             });
+
+            if (selectedTweaks.Count > 0)
+            {
+                await _tweakService.RefreshStatusesAsync();
+                TweakPersistence.SaveState(_tweakService.Tweaks);
+            }
 
             foreach (var item in list) { item.IsSelected = false; item.UpdateStatusUI(); }
         }
