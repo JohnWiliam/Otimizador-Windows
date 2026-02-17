@@ -15,6 +15,7 @@ using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
 using System.Net.Http;
 using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO: Namespace compatível com v7.1.3
+using SystemOptimizer.Models;
 
 namespace SystemOptimizer;
 
@@ -145,6 +146,7 @@ public partial class App : Application
         {
             Logger.Log("Iniciando Modo Silencioso (Auto-Run)...");
             var tweakService = _host.Services.GetRequiredService<TweakService>();
+            var updateService = _host.Services.GetRequiredService<IUpdateService>();
             tweakService.LoadTweaks();
             await tweakService.RefreshStatusesAsync();
 
@@ -170,11 +172,42 @@ public partial class App : Application
                 }
                 Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
             }
+
+            await CheckForUpdatesAndNotifyAsync(updateService);
         }
         catch (Exception ex)
         {
             Logger.Log($"Erro crítico no modo silencioso: {ex.Message}", "ERROR");
         }
+    }
+
+    private static async Task CheckForUpdatesAndNotifyAsync(IUpdateService updateService)
+    {
+        try
+        {
+            var updateInfo = await updateService.CheckForUpdatesAsync();
+            if (!updateInfo.IsAvailable)
+            {
+                Logger.Log("Modo silencioso: nenhuma atualização encontrada.");
+                return;
+            }
+
+            ShowUpdateToast(updateInfo);
+            Logger.Log($"Modo silencioso: atualização {updateInfo.Version} detectada e notificação exibida.");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Erro ao verificar atualizações no modo silencioso: {ex.Message}", "ERROR");
+        }
+    }
+
+    private static void ShowUpdateToast(UpdateInfo updateInfo)
+    {
+        new ToastContentBuilder()
+            .AddText("Atualização disponível")
+            .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
+            .AddArgument("action", "open-settings")
+            .Show();
     }
 
     private void RequestOpenSettings()
