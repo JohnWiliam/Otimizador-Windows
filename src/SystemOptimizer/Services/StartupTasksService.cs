@@ -15,6 +15,8 @@ public sealed class StartupTasksService
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
     private readonly StartupActivationState _activationState;
+    private readonly object _openSettingsLock = new();
+    private DateTime _lastOpenSettingsRequestUtc = DateTime.MinValue;
     private bool _toastActivationRegistered;
 
     public StartupTasksService(
@@ -38,6 +40,7 @@ public sealed class StartupTasksService
     {
         if (args.Any(arg => string.Equals(arg, "--open-settings", StringComparison.OrdinalIgnoreCase)))
         {
+            Logger.Log("Argumento --open-settings detectado na inicialização.");
             RequestOpenSettings();
             return;
         }
@@ -85,6 +88,18 @@ public sealed class StartupTasksService
 
     private void RequestOpenSettings()
     {
+        lock (_openSettingsLock)
+        {
+            var now = DateTime.UtcNow;
+            if ((now - _lastOpenSettingsRequestUtc).TotalMilliseconds < 1000)
+            {
+                Logger.Log("Ação open-settings duplicada ignorada.");
+                return;
+            }
+
+            _lastOpenSettingsRequestUtc = now;
+        }
+
         Logger.Log("Ação open-settings recebida. Solicitando navegação.");
         _activationState.RequestOpenSettings();
         _ = TryNavigateToSettingsAsync();
