@@ -47,6 +47,8 @@ public sealed class StartupTasksService
     {
         if (_toastActivationRegistered) return;
 
+        Logger.Log("Registrando manipulador único de ativação por toast.");
+
         // Este evento dispara mesmo se o app foi aberto pelo Toast
         ToastNotificationManagerCompat.OnActivated += toastArgs =>
         {
@@ -63,6 +65,8 @@ public sealed class StartupTasksService
     private void HandleToastArguments(string? argument)
     {
         if (string.IsNullOrWhiteSpace(argument)) return;
+
+        Logger.Log($"Evento de ativação de toast recebido: {argument}");
 
         try 
         {
@@ -81,6 +85,7 @@ public sealed class StartupTasksService
 
     private void RequestOpenSettings()
     {
+        Logger.Log("Ação open-settings recebida. Solicitando navegação.");
         _activationState.RequestOpenSettings();
         _ = TryNavigateToSettingsAsync();
     }
@@ -94,6 +99,7 @@ public sealed class StartupTasksService
             try
             {
                 _navigationService.Navigate(typeof(SettingsPage));
+                _activationState.ClearOpenSettingsRequest();
             }
             catch (Exception ex)
             {

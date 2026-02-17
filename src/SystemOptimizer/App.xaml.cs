@@ -14,7 +14,7 @@ using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
 using System.Net.Http;
-using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO: Namespace compatível com v7.1.3
+using Microsoft.Toolkit.Uwp.Notifications;
 using SystemOptimizer.Models;
 
 namespace SystemOptimizer;
@@ -22,7 +22,6 @@ namespace SystemOptimizer;
 public partial class App : Application
 {
     private readonly IHost _host;
-    private bool _pendingOpenSettings;
     private bool _isSilentMode;
 
     public App()
@@ -63,15 +62,6 @@ public partial class App : Application
             })
             .Build();
 
-        // Hook para notificações
-        ToastNotificationManagerCompat.OnActivated += toastArgs =>
-        {
-            var arguments = ToastArguments.Parse(toastArgs.Argument);
-            if (arguments.TryGetValue("action", out var action) && action == "open-settings")
-            {
-                Dispatcher.InvokeAsync(RequestOpenSettings);
-            }
-        };
     }
 
     public async Task RunSilentModeWithoutUiAsync()
@@ -102,11 +92,6 @@ public partial class App : Application
 
         await _host.StartAsync();
 
-        if (e.Args.Contains("--open-settings", StringComparer.OrdinalIgnoreCase))
-        {
-            _pendingOpenSettings = true;
-        }
-
         if (_isSilentMode)
         {
             try
@@ -126,11 +111,6 @@ public partial class App : Application
             startupTasks.Initialize(e.Args);
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
-            if (_pendingOpenSettings)
-            {
-                NavigateToSettings(mainWindow);
-                _pendingOpenSettings = false;
-            }
         }
 
         base.OnStartup(e);
@@ -239,26 +219,4 @@ public partial class App : Application
             .Show();
     }
 
-    private void RequestOpenSettings()
-    {
-        _pendingOpenSettings = true;
-        try
-        {
-            var mainWindow = _host.Services.GetService<MainWindow>();
-            if (mainWindow == null) return;
-            if (!mainWindow.IsVisible) mainWindow.Show();
-            NavigateToSettings(mainWindow);
-            mainWindow.Activate();
-            _pendingOpenSettings = false;
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Erro ao abrir Configurações via notificação: {ex.Message}", "ERROR");
-        }
-    }
-
-    private static void NavigateToSettings(MainWindow mainWindow)
-    {
-        mainWindow.Navigate(typeof(SettingsPage));
-    }
 }
