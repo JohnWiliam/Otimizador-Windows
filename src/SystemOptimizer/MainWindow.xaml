@@ -24,7 +24,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-       
+
         <ui:TitleBar Grid.Row="0" Title="{Binding ApplicationTitle}" />
 
         <ui:NavigationView x:Name="RootNavigation"
@@ -39,19 +39,19 @@
                         <ui:SymbolIcon Symbol="Shield24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                
+
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Performance}" TargetPageType="{x:Type pages:PerformancePage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Gauge24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                 
+
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Network}" TargetPageType="{x:Type pages:NetworkPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Globe24" />
                     </ui:NavigationViewItem.Icon>
                  </ui:NavigationViewItem>
-                 
+
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Security}" TargetPageType="{x:Type pages:SecurityPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="LockClosed24" />
@@ -63,7 +63,7 @@
                         <ui:SymbolIcon Symbol="Search24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                
+
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Visual}" TargetPageType="{x:Type pages:AppearancePage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="PaintBrush24" />
@@ -71,11 +71,11 @@
                 </ui:NavigationViewItem>
 
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Tweaks}" TargetPageType="{x:Type pages:TweaksPage}">
-                     <ui:NavigationViewItem.Icon>
+                    <ui:NavigationViewItem.Icon>
                          <ui:SymbolIcon Symbol="WrenchScrewdriver24" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
-                
+
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Cleanup}" TargetPageType="{x:Type pages:CleanupPage}">
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Broom24" />
@@ -88,14 +88,13 @@
                     <ui:NavigationViewItem.Icon>
                         <ui:SymbolIcon Symbol="Settings24" />
                     </ui:NavigationViewItem.Icon>
-                </ui:NavigationViewItem>
+                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
 
             <ui:NavigationView.ContentOverlay>
                  <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
             </ui:NavigationView.ContentOverlay>
-
-            </ui:NavigationView>
+        </ui:NavigationView>
 
         <Border Grid.Row="0" Grid.RowSpan="2" 
                 Panel.ZIndex="1000"
@@ -103,7 +102,7 @@
                 ClipToBounds="True">
             <ContentPresenter x:Name="RootContentDialogPresenter" />
         </Border>
-        
+
         <Grid Grid.Row="0" Grid.RowSpan="2" 
               Panel.ZIndex="1002"
               Background="{DynamicResource ApplicationBackgroundBrush}"
