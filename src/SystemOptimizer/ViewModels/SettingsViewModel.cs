@@ -343,9 +343,19 @@ public partial class SettingsViewModel : ObservableObject
             await _tweakService.RefreshStatusesAsync();
             TweakPersistence.SaveState(_tweakService.Tweaks);
             string cmd = $"/create /tn \"{TaskName}\" /tr \"\\\"{_targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
-            var res = CommandHelper.RunCommand("schtasks", cmd);
-            if (res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Falha ao criar tarefa agendada: " + res);
+            var result = CommandHelper.RunCommandDetailed("schtasks", cmd);
+
+            Logger.Log($"Resultado schtasks/create -> Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
+
+            if (!result.Started)
+                throw new Exception("Falha ao criar tarefa agendada: processo não iniciou.");
+
+            if (result.TimedOut)
+                throw new Exception("Falha ao criar tarefa agendada: timeout na execução.");
+
+            if (result.ExitCode != 0)
+                throw new Exception($"Falha ao criar tarefa agendada. ExitCode={result.ExitCode}. StdErr={result.StdErr}. StdOut={result.StdOut}");
+
             Logger.Log("Persistência ativada e configurações salvas com sucesso.");
         }
         catch (Exception ex)
@@ -361,7 +371,8 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            CommandHelper.RunCommand("schtasks", $"/delete /tn \"{TaskName}\" /f");
+            var result = CommandHelper.RunCommandDetailed("schtasks", $"/delete /tn \"{TaskName}\" /f");
+            Logger.Log($"Resultado schtasks/delete -> Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
             Logger.Log("Persistência desativada.");
         }
         catch (Exception ex)

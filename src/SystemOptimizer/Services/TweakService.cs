@@ -60,9 +60,15 @@ public class TweakService
                 var list = CommandHelper.RunCommand("powercfg", "/list");
                 string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
                 if (!list.Contains(ultimateGuid)) CommandHelper.RunCommand("powercfg", $"-duplicatescheme {ultimateGuid}");
-                CommandHelper.RunCommand("powercfg", $"/setactive {ultimateGuid}");
+                var activateResult = CommandHelper.RunCommandDetailed("powercfg", $"/setactive {ultimateGuid}");
+                Logger.Log($"Resultado powercfg/setactive(ultimate) -> Started={activateResult.Started}, TimedOut={activateResult.TimedOut}, ExitCode={activateResult.ExitCode}, StdOut='{activateResult.StdOut}', StdErr='{activateResult.StdErr}'", "CMD_POWERCFG");
+
                 var check = CommandHelper.RunCommand("powercfg", "/getactivescheme");
-                if (!check.Contains(ultimateGuid)) CommandHelper.RunCommand("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+                if (!activateResult.IsSuccess || !check.Contains(ultimateGuid))
+                {
+                    var fallbackResult = CommandHelper.RunCommandDetailed("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+                    Logger.Log($"Resultado powercfg/setactive(fallback) -> Started={fallbackResult.Started}, TimedOut={fallbackResult.TimedOut}, ExitCode={fallbackResult.ExitCode}, StdOut='{fallbackResult.StdOut}', StdErr='{fallbackResult.StdErr}'", "CMD_POWERCFG");
+                }
                 return true;
             },
             () => { CommandHelper.RunCommand("powercfg", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e"); return true; },
@@ -197,8 +203,14 @@ public class TweakService
 
         Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, Resources.N2_Title, Resources.N2_Desc,
             () => {
-                var res = CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=cubic");
-                if (res.Contains("falha") || res.Contains("failed")) CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
+                var cubicResult = CommandHelper.RunCommandDetailed("netsh", "int tcp set supplementary template=internet congestionprovider=cubic");
+                Logger.Log($"Resultado netsh/cubic -> Started={cubicResult.Started}, TimedOut={cubicResult.TimedOut}, ExitCode={cubicResult.ExitCode}, StdOut='{cubicResult.StdOut}', StdErr='{cubicResult.StdErr}'", "CMD_NETSH");
+
+                if (!cubicResult.IsSuccess)
+                {
+                    var fallbackResult = CommandHelper.RunCommandDetailed("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
+                    Logger.Log($"Resultado netsh/ctcp(fallback) -> Started={fallbackResult.Started}, TimedOut={fallbackResult.TimedOut}, ExitCode={fallbackResult.ExitCode}, StdOut='{fallbackResult.StdOut}', StdErr='{fallbackResult.StdErr}'", "CMD_NETSH");
+                }
                 return true;
             },
             () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
