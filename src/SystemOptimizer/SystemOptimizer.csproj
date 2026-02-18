@@ -8,9 +8,9 @@
     <UseWPF>true</UseWPF>
     <LangVersion>14.0</LangVersion>
     <StartupObject>SystemOptimizer.Program</StartupObject>
-    <Version>2.2.0</Version>
-    <FileVersion>2.2.0.0</FileVersion>
-    <AssemblyVersion>2.2.0.0</AssemblyVersion>
+    <Version>2.2.1</Version>
+    <FileVersion>2.2.1.0</FileVersion>
+    <AssemblyVersion>2.2.1.0</AssemblyVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
     <Platforms>AnyCPU;x64</Platforms>
