@@ -15,10 +15,13 @@ public partial class MainWindow : FluentWindow, INavigationWindow
     public MainViewModel ViewModel { get; }
     private readonly StartupActivationState _activationState;
 
+    // Acesso público para serviços externos
+    public INavigationView NavigationView => RootNavigation;
+
     public MainWindow(
         MainViewModel viewModel,
         INavigationService navigationService,
-        INavigationViewPageProvider navigationViewPageProvider,
+        IServiceProvider serviceProvider,
         ISnackbarService snackbarService,
         IContentDialogService contentDialogService,
         StartupActivationState activationState)
@@ -31,15 +34,15 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
         SystemThemeWatcher.Watch(this);
 
-        // Configuração dos serviços de UI
+        // --- Configuração dos serviços de UI ---
         navigationService.SetNavigationControl(RootNavigation);
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
-        
-        // REVISÃO DE RISCO: Respeitando seu código original que indicava ser o método novo.
+
+        // CORREÇÃO: SetContentPresenter (obsoleto) -> SetDialogHost (novo)
         contentDialogService.SetDialogHost(RootContentDialogPresenter);
 
-        // O contrato de INavigationWindow em WPF-UI 4.1.0 exige INavigationViewPageProvider.
-        SetPageService(navigationViewPageProvider);
+        // Injeção do ServiceProvider
+        RootNavigation.SetServiceProvider(serviceProvider);
 
         Loaded += MainWindow_Loaded;
     }
@@ -48,7 +51,7 @@ public partial class MainWindow : FluentWindow, INavigationWindow
     {
         Logger.Log("MainWindow_Loaded started.");
         await ViewModel.InitializeAsync();
-        
+
         Logger.Log("Verificando requisições de navegação inicial...");
         if (_activationState.OpenSettingsRequested)
         {
@@ -62,19 +65,18 @@ public partial class MainWindow : FluentWindow, INavigationWindow
         Logger.Log("Navegação inicial concluída.");
     }
 
+    // Métodos da interface INavigationWindow
     public INavigationView GetNavigation() => RootNavigation;
 
     public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
 
-    public void SetPageService(INavigationViewPageProvider navigationViewPageProvider)
+    public void SetPageService(INavigationViewPageProvider pageService)
     {
-        RootNavigation.SetPageService(pageService);
+        // CORREÇÃO: Na versão 4.1+, o método correto é SetPageProviderService
+        RootNavigation.SetPageProviderService(pageService);
     }
 
-    public void SetServiceProvider(IServiceProvider serviceProvider) 
-    {
-        RootNavigation.SetServiceProvider(serviceProvider);
-    }
+    public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
 
     public void ShowWindow() => Show();
 
