@@ -253,11 +253,14 @@ public partial class SettingsViewModel : ObservableObject
             $task = Get-ScheduledTask -TaskName '{TaskName}'
             $action = $task.Actions | Select-Object -First 1
             $hasOnLogonTrigger = $task.Triggers | Where-Object {{ $_.TriggerType -eq 'Logon' }}
+            $actionExecute = if ($null -ne $action.Execute) {{ $action.Execute }} else {{ '' }}
+            $actionArguments = if ($null -ne $action.Arguments) {{ $action.Arguments }} else {{ '' }}
+            $runLevel = if ($null -ne $task.Principal.RunLevel) {{ $task.Principal.RunLevel }} else {{ '' }}
 
-            Write-Output ('EXE=' + ($action.Execute ?? ''))
-            Write-Output ('ARGS=' + ($action.Arguments ?? ''))
+            Write-Output ('EXE=' + $actionExecute)
+            Write-Output ('ARGS=' + $actionArguments)
             Write-Output ('HAS_ONLOGON=' + ([bool]$hasOnLogonTrigger))
-            Write-Output ('RUNLEVEL=' + ($task.Principal.RunLevel ?? ''))
+            Write-Output ('RUNLEVEL=' + $runLevel)
         ";
 
         var escapedScript = script.Replace("\"", "\\\"").Replace("\r", " ").Replace("\n", "; ");
