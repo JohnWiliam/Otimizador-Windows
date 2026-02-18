@@ -68,7 +68,7 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
     public void SetPageService(INavigationViewPageProvider navigationViewPageProvider)
     {
-        RootNavigation.SetPageProviderService(navigationViewPageProvider);
+        RootNavigation.SetPageService(pageService);
     }
 
     public void SetServiceProvider(IServiceProvider serviceProvider) 
