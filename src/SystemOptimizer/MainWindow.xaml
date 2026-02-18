@@ -54,7 +54,7 @@
                  
                 <ui:NavigationViewItem Content="{x:Static p:Resources.Nav_Security}" TargetPageType="{x:Type pages:SecurityPage}">
                     <ui:NavigationViewItem.Icon>
-                        <ui:SymbolIcon Symbol="LockClosed24" />
+                         <ui:SymbolIcon Symbol="LockClosed24" />
                      </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
 
@@ -94,6 +94,10 @@
             <ui:NavigationView.ContentOverlay>
                  <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
             </ui:NavigationView.ContentOverlay>
+
+            <ui:NavigationView.Content>
+                <Frame x:Name="RootFrame" NavigationUIVisibility="Hidden" />
+            </ui:NavigationView.Content>
         </ui:NavigationView>
 
         <Border Grid.Row="0" Grid.RowSpan="2" 

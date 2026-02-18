@@ -42,7 +42,13 @@ public partial class App : Application
                 services.AddSingleton<StartupTasksService>();
 
                 // 3. UI Services
-                services.AddSingleton<Wpf.Ui.Abstractions.INavigationViewPageProvider, PageService>();
+                // REVISÃO DE RISCO: Registrando como INavigationViewPageProvider para garantir
+                // compatibilidade com a assinatura do MainWindow.
+                services.AddSingleton<INavigationViewPageProvider, PageService>();
+                
+                // Nota: Se precisar acessar como IPageService em outro lugar, pode adicionar:
+                // services.AddSingleton<IPageService>(sp => sp.GetRequiredService<INavigationViewPageProvider>() as IPageService);
+
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
                 services.AddSingleton<ISnackbarService, SnackbarService>();
@@ -61,7 +67,6 @@ public partial class App : Application
                 services.AddTransient<SettingsPage>();
             })
             .Build();
-
     }
 
     public async Task RunSilentModeWithoutUiAsync()
@@ -218,5 +223,4 @@ public partial class App : Application
             .AddArgument("action", "open-settings")
             .Show();
     }
-
 }
