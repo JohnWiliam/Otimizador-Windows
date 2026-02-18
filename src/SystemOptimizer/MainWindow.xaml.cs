@@ -66,11 +66,9 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
     public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
 
-    // REVISÃO DE RISCO: Mantendo INavigationViewPageProvider para evitar erro
-    // de compilação caso a interface INavigationWindow exija esse tipo específico.
-    public void SetPageService(INavigationViewPageProvider pageService)
+    public void SetPageService(INavigationViewPageProvider navigationViewPageProvider)
     {
-        RootNavigation.SetPageService(pageService);
+        RootNavigation.SetPageService(navigationViewPageProvider);
     }
 
     public void SetServiceProvider(IServiceProvider serviceProvider) 

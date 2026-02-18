@@ -42,12 +42,9 @@ public partial class App : Application
                 services.AddSingleton<StartupTasksService>();
 
                 // 3. UI Services
-                // REVISÃO DE RISCO: Registrando como INavigationViewPageProvider para garantir
-                // compatibilidade com a assinatura do MainWindow.
+                // WPF-UI 4.1.0: INavigationViewPageProvider pertence a Wpf.Ui.Abstractions
                 services.AddSingleton<INavigationViewPageProvider, PageService>();
                 
-                // Nota: Se precisar acessar como IPageService em outro lugar, pode adicionar:
-                // services.AddSingleton<IPageService>(sp => sp.GetRequiredService<INavigationViewPageProvider>() as IPageService);
 
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
