@@ -168,7 +168,7 @@
   <data name="Msg_CompletedWithErrors" xml:space="preserve"><value>Completed with errors.&#10;Successes: {0}&#10;Failures: {1}&#10;Error: {2}</value></data>
   <data name="Msg_ErrorTitle" xml:space="preserve"><value>Error</value></data>
   <data name="Msg_InitFail" xml:space="preserve"><value>Failed to start: {0}</value></data>
-  <data name="App_Title" xml:space="preserve"><value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.2.0</value></data>
+  <data name="App_Title" xml:space="preserve"><value>System Optimizer - Created and Idealized by John Wiliam &amp; AI v2.2.1</value></data>
   <data name="S_1_Title" xml:space="preserve"><value>Search Box Suggestions</value></data>
   <data name="S_1_Desc" xml:space="preserve"><value>Disables online and recent suggestions when typing in the search bar.</value></data>
   <data name="S_2_Title" xml:space="preserve"><value>Cloud Search</value></data>
