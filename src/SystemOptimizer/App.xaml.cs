@@ -29,32 +29,27 @@ public partial class App : Application
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                // 1. ViewModels
+                // ViewModels
                 services.AddSingleton<MainViewModel>();
                 services.AddSingleton<SettingsViewModel>();
                 services.AddTransient<TweakViewModel>();
 
-                // 2. Core Services
+                // Serviços de núcleo
                 services.AddSingleton<TweakService>();
                 services.AddSingleton<CleanupService>();
                 services.AddSingleton<IUpdateService, UpdateService>();
                 services.AddSingleton<StartupActivationState>();
                 services.AddSingleton<StartupTasksService>();
 
-                // 3. UI Services
-                // REVISÃO DE RISCO: Registrando como INavigationViewPageProvider para garantir
-                // compatibilidade com a assinatura do MainWindow.
-                services.AddSingleton<INavigationViewPageProvider, PageService>();
-                
-                // Nota: Se precisar acessar como IPageService em outro lugar, pode adicionar:
-                // services.AddSingleton<IPageService>(sp => sp.GetRequiredService<INavigationViewPageProvider>() as IPageService);
-
+                // Serviços de UI
+                services.AddSingleton<PageService>();
+                services.AddSingleton<INavigationViewPageProvider>(sp => sp.GetRequiredService<PageService>());
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
                 services.AddSingleton<ISnackbarService, SnackbarService>();
                 services.AddSingleton<IContentDialogService, ContentDialogService>();
 
-                // 4. Windows & Pages
+                // Janela principal e páginas
                 services.AddSingleton<MainWindow>();
                 services.AddTransient<TweaksPage>();
                 services.AddTransient<PerformancePage>();
