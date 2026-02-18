@@ -29,27 +29,26 @@ public partial class App : Application
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                // ViewModels
+                // 1. ViewModels
                 services.AddSingleton<MainViewModel>();
                 services.AddSingleton<SettingsViewModel>();
                 services.AddTransient<TweakViewModel>();
 
-                // Serviços de núcleo
+                // 2. Core Services
                 services.AddSingleton<TweakService>();
                 services.AddSingleton<CleanupService>();
                 services.AddSingleton<IUpdateService, UpdateService>();
                 services.AddSingleton<StartupActivationState>();
                 services.AddSingleton<StartupTasksService>();
 
-                // Serviços de UI
-                services.AddSingleton<PageService>();
-                services.AddSingleton<INavigationViewPageProvider>(sp => sp.GetRequiredService<PageService>());
+                // 3. UI Services
+                services.AddSingleton<Wpf.Ui.Abstractions.INavigationViewPageProvider, PageService>();
                 services.AddSingleton<INavigationService, NavigationService>();
                 services.AddSingleton<IDialogService, DialogService>();
                 services.AddSingleton<ISnackbarService, SnackbarService>();
                 services.AddSingleton<IContentDialogService, ContentDialogService>();
 
-                // Janela principal e páginas
+                // 4. Windows & Pages
                 services.AddSingleton<MainWindow>();
                 services.AddTransient<TweaksPage>();
                 services.AddTransient<PerformancePage>();
@@ -62,6 +61,7 @@ public partial class App : Application
                 services.AddTransient<SettingsPage>();
             })
             .Build();
+
     }
 
     public async Task RunSilentModeWithoutUiAsync()
@@ -218,4 +218,5 @@ public partial class App : Application
             .AddArgument("action", "open-settings")
             .Show();
     }
+
 }
