@@ -108,6 +108,9 @@ public partial class MainViewModel : ObservableObject
 
     private bool IsRebootRequired(string tweakId)
     {
+        // CORRIGIDO: Apenas tweaks que REALMENTE requerem reinício do sistema
+        // PF7: Agendamento GPU (HwSchMode) - configuração de driver de hardware
+        // PF8: VBS/HVCI - segurança de hypervisor
         HashSet<string> rebootIds = ["PF7", "PF8"];
         return rebootIds.Contains(tweakId);
     }
@@ -154,6 +157,8 @@ public partial class MainViewModel : ObservableObject
         await ProcessTweaks(list, false);
     }
 
+    // --- NOVOS COMANDOS (SearchPage) ---
+
     [RelayCommand]
     private async Task ApplySingle(string tweakId)
     {
@@ -186,9 +191,7 @@ public partial class MainViewModel : ObservableObject
                 try { process.Kill(); } catch { }
             }
             Thread.Sleep(500);
-            
-            // CORREÇÃO SEGURA: Mantendo UseShellExecute=true pois é essencial no .NET moderno
-            Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true });
+            Process.Start("explorer.exe");
         }
         catch (Exception ex)
         {
@@ -196,6 +199,8 @@ public partial class MainViewModel : ObservableObject
             await _dialogService.ShowMessageAsync(Resources.Msg_ErrorTitle, "Não foi possível reiniciar o Windows Explorer automaticamente.", DialogType.Error);
         }
     }
+
+    // ----------------------------------------------------------------------
 
     private async Task ProcessTweaks(IEnumerable<TweakViewModel> list, bool applying)
     {
@@ -239,7 +244,7 @@ public partial class MainViewModel : ObservableObject
         {
             string msg = applying ? Resources.Msg_Applied : Resources.Msg_Restored;
             if (rebootNeeded) msg += Resources.Msg_RebootNeeded;
-            
+
             await _dialogService.ShowMessageAsync(Resources.Msg_SuccessTitle, msg, DialogType.Success);
         }
     }
