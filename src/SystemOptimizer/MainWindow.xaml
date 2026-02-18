@@ -95,9 +95,7 @@
                  <ui:SnackbarPresenter x:Name="SnackbarPresenter" />
             </ui:NavigationView.ContentOverlay>
 
-            <Frame x:Name="RootFrame" NavigationUIVisibility="Hidden" />
-
-        </ui:NavigationView>
+            </ui:NavigationView>
 
         <Border Grid.Row="0" Grid.RowSpan="2" 
                 Panel.ZIndex="1000"
