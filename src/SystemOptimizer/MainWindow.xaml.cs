@@ -39,7 +39,7 @@ public partial class MainWindow : FluentWindow, INavigationWindow
         contentDialogService.SetDialogHost(RootContentDialogPresenter);
 
         // O contrato de INavigationWindow em WPF-UI 4.1.0 exige INavigationViewPageProvider.
-        RootNavigation.SetPageService(navigationViewPageProvider);
+        SetPageService(navigationViewPageProvider);
 
         Loaded += MainWindow_Loaded;
     }
@@ -66,7 +66,7 @@ public partial class MainWindow : FluentWindow, INavigationWindow
 
     public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
 
-    public void SetPageService(INavigationViewPageProvider pageService)
+    public void SetPageService(INavigationViewPageProvider navigationViewPageProvider)
     {
         RootNavigation.SetPageService(pageService);
     }
