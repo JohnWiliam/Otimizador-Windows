@@ -340,15 +340,28 @@ public partial class SettingsViewModel : ObservableObject
         {
             string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
             if (string.IsNullOrEmpty(currentExe)) return;
-            if (!Directory.Exists(_appDataPath)) Directory.CreateDirectory(_appDataPath);
-            File.Copy(currentExe, _targetExePath, true);
+
+            // (a) Garantir diretório
+            Logger.Log($"PERSISTENCE_STEP=ensure_directory path='{_appDataPath}'", "PERSISTENCE");
+            if (!Directory.Exists(_appDataPath))
+                Directory.CreateDirectory(_appDataPath);
+
+            // (b) Preparar binário
+            Logger.Log($"PERSISTENCE_STEP=prepare_binary source='{currentExe}' target='{_targetExePath}'", "PERSISTENCE");
+            PreparePersistenceBinary(currentExe);
+
+            // (c) Salvar estado dos tweaks
+            Logger.Log("PERSISTENCE_STEP=save_tweaks_state", "PERSISTENCE");
             if (_tweakService.Tweaks.Count == 0) _tweakService.LoadTweaks();
             await _tweakService.RefreshStatusesAsync();
             TweakPersistence.SaveState(_tweakService.Tweaks);
+
+            // (d) Criar/atualizar tarefa (etapa final obrigatória)
+            Logger.Log($"PERSISTENCE_STEP=task_create task='{TaskName}'", "PERSISTENCE");
             string cmd = $"/create /tn \"{TaskName}\" /tr \"\\\"{_targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
             var result = CommandHelper.RunCommandDetailed("schtasks", cmd);
 
-            Logger.Log($"Resultado schtasks/create -> Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
+            Logger.Log($"PERSISTENCE_STEP=task_create result Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
 
             if (!result.Started)
                 throw new Exception("Falha ao criar tarefa agendada: processo não iniciou.");
@@ -363,10 +376,38 @@ public partial class SettingsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Logger.Log($"Erro ao habilitar persistência: {ex.Message}", "ERROR");
+            Logger.Log($"PERSISTENCE_STEP=failed error='{ex.Message}'", "ERROR");
 #pragma warning disable MVVMTK0034
             SetProperty(ref _isPersistenceEnabled, false, nameof(IsPersistenceEnabled));
 #pragma warning restore MVVMTK0034
+        }
+    }
+
+    private void PreparePersistenceBinary(string currentExe)
+    {
+        try
+        {
+            File.Copy(currentExe, _targetExePath, true);
+            Logger.Log("PERSISTENCE_STEP=copy status=overwritten", "PERSISTENCE");
+        }
+        catch (IOException ex) when (File.Exists(_targetExePath))
+        {
+            string expectedPath = Path.Combine(_appDataPath, "SystemOptimizer.exe");
+            bool hasExpectedPath = PathsAreEquivalent(_targetExePath, expectedPath);
+            bool hasExpectedName = string.Equals(
+                Path.GetFileName(_targetExePath),
+                Path.GetFileName(expectedPath),
+                StringComparison.OrdinalIgnoreCase);
+
+            if (hasExpectedPath && hasExpectedName)
+            {
+                Logger.Log($"PERSISTENCE_STEP=copy status=skipped_locked validated=true message='{ex.Message}'", "PERSISTENCE");
+                return;
+            }
+
+            throw new IOException(
+                $"Binário de persistência bloqueado e não corresponde ao executável esperado. target='{_targetExePath}', current='{currentExe}'.",
+                ex);
         }
     }
 
