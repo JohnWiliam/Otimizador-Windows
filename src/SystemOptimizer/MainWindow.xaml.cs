@@ -37,7 +37,7 @@ public partial class MainWindow : FluentWindow, INavigationWindow
         // --- Configuração dos serviços de UI ---
         navigationService.SetNavigationControl(RootNavigation);
         snackbarService.SetSnackbarPresenter(SnackbarPresenter);
-        
+
         // CORREÇÃO: SetContentPresenter (obsoleto) -> SetDialogHost (novo)
         contentDialogService.SetDialogHost(RootContentDialogPresenter);
 
@@ -51,7 +51,7 @@ public partial class MainWindow : FluentWindow, INavigationWindow
     {
         Logger.Log("MainWindow_Loaded started.");
         await ViewModel.InitializeAsync();
-        
+
         Logger.Log("Verificando requisições de navegação inicial...");
         if (_activationState.OpenSettingsRequested)
         {

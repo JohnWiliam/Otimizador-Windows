@@ -1,7 +1,6 @@
 using System;
 using System.Windows;
-using Wpf.Ui;
-using Wpf.Ui.Abstractions; // Adicionado para corrigir o erro CS0246
+using Wpf.Ui.Abstractions;
 
 namespace SystemOptimizer.Services;
 

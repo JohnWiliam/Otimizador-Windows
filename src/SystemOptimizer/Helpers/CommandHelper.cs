@@ -7,7 +7,30 @@ namespace SystemOptimizer.Helpers;
 
 public static class CommandHelper
 {
+    public sealed record CommandResult(bool Started, bool TimedOut, int? ExitCode, string StdOut, string StdErr)
+    {
+        public bool IsSuccess => Started && !TimedOut && ExitCode == 0;
+    }
+
     public static string RunCommand(string fileName, string arguments, int timeoutMs = 5000)
+    {
+        var result = RunCommandDetailed(fileName, arguments, timeoutMs);
+
+        if (!result.Started || result.TimedOut)
+        {
+            return string.Empty;
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.StdErr) && string.IsNullOrWhiteSpace(result.StdOut) && result.ExitCode != 0)
+        {
+            Logger.Log($"Command returned error: {result.StdErr}", "CMD_STDERR");
+            return $"[ERRO CMD] {result.StdErr}";
+        }
+
+        return result.StdOut;
+    }
+
+    public static CommandResult RunCommandDetailed(string fileName, string arguments, int timeoutMs = 5000)
     {
         Logger.Log($"Executing command: {fileName} {arguments}", "CMD_START");
         try
@@ -29,7 +52,7 @@ public static class CommandHelper
             if (process == null)
             {
                 Logger.Log($"Failed to start process: {fileName}", "CMD_ERROR");
-                return string.Empty;
+                return new CommandResult(false, false, null, string.Empty, string.Empty);
             }
 
             // Leitura assíncrona para evitar Deadlocks
@@ -48,7 +71,9 @@ public static class CommandHelper
                 {
                     Logger.Log($"Failed to kill timed out process: {kEx.Message}", "CMD_ERROR");
                 }
-                return string.Empty;
+                string timeoutStdOut = outputTask.IsCompletedSuccessfully ? outputTask.Result : string.Empty;
+                string timeoutStdErr = errorTask.IsCompletedSuccessfully ? errorTask.Result : string.Empty;
+                return new CommandResult(true, true, null, timeoutStdOut, timeoutStdErr);
             }
 
             // Se o processo terminou, aguardamos as tarefas de leitura terminarem
@@ -58,19 +83,16 @@ public static class CommandHelper
             string error = errorTask.Result;
 
             Logger.Log($"Command finished. ExitCode: {process.ExitCode}. OutputLen: {output.Length}. ErrorLen: {error.Length}", "CMD_END");
-
-            if (!string.IsNullOrWhiteSpace(error) && string.IsNullOrWhiteSpace(output) && process.ExitCode != 0)
+            if (!string.IsNullOrWhiteSpace(error))
             {
-                Logger.Log($"Command returned error: {error}", "CMD_STDERR");
-                return $"[ERRO CMD] {error}";
+                Logger.Log($"Command stderr: {error}", "CMD_STDERR");
             }
-
-            return output;
+            return new CommandResult(true, false, process.ExitCode, output, error);
         }
         catch (Exception ex)
         {
             Logger.Log($"Exception running command {fileName}: {ex.Message}", "CMD_EXCEPTION");
-            return string.Empty;
+            return new CommandResult(false, false, null, string.Empty, ex.Message);
         }
     }
 

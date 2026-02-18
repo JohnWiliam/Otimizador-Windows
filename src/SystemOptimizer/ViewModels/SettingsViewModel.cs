@@ -248,15 +248,90 @@ public partial class SettingsViewModel : ObservableObject
 
     private void CheckPersistenceStatus()
     {
-        var res = CommandHelper.RunCommand("schtasks", $"/query /tn \"{TaskName}\"");
-        bool exists = !string.IsNullOrWhiteSpace(res) &&
-                      !res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) &&
-                      !res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) &&
-                      !res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase);
+        var script = $@"
+            $ErrorActionPreference = 'Stop'
+            $task = Get-ScheduledTask -TaskName '{TaskName}'
+            $action = $task.Actions | Select-Object -First 1
+            $hasOnLogonTrigger = $task.Triggers | Where-Object {{ $_.TriggerType -eq 'Logon' }}
+            $actionExecute = if ($null -ne $action.Execute) {{ $action.Execute }} else {{ '' }}
+            $actionArguments = if ($null -ne $action.Arguments) {{ $action.Arguments }} else {{ '' }}
+            $runLevel = if ($null -ne $task.Principal.RunLevel) {{ $task.Principal.RunLevel }} else {{ '' }}
+
+            Write-Output ('EXE=' + $actionExecute)
+            Write-Output ('ARGS=' + $actionArguments)
+            Write-Output ('HAS_ONLOGON=' + ([bool]$hasOnLogonTrigger))
+            Write-Output ('RUNLEVEL=' + $runLevel)
+        ";
+
+        var escapedScript = script.Replace("\"", "\\\"").Replace("\r", " ").Replace("\n", "; ");
+        var res = CommandHelper.RunCommand("powershell.exe", $"-NoProfile -Command \"{escapedScript}\"");
+
+        if (string.IsNullOrWhiteSpace(res) ||
+            res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) ||
+            res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
+            res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase))
+        {
+            Logger.Log("Persistência inválida: tarefa agendada não encontrada ou inacessível.", "WARNING");
+#pragma warning disable MVVMTK0034
+            SetProperty(ref _isPersistenceEnabled, false, nameof(IsPersistenceEnabled));
+#pragma warning restore MVVMTK0034
+            return;
+        }
+
+        var lines = res
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim())
+            .ToArray();
+
+        string exe = GetTaskInfoValue(lines, "EXE");
+        string args = GetTaskInfoValue(lines, "ARGS");
+        string hasOnLogon = GetTaskInfoValue(lines, "HAS_ONLOGON");
+        string runLevel = GetTaskInfoValue(lines, "RUNLEVEL");
+
+        bool isExeValid = PathsAreEquivalent(exe, _targetExePath);
+        if (!isExeValid)
+            Logger.Log($"Persistência inválida: executável divergente. Esperado '{_targetExePath}', encontrado '{exe}'.", "WARNING");
+
+        bool hasSilentArgument = args.Contains("--silent", StringComparison.OrdinalIgnoreCase);
+        if (!hasSilentArgument)
+            Logger.Log($"Persistência inválida: argumento '--silent' ausente. Argumentos atuais: '{args}'.", "WARNING");
+
+        bool isOnLogonTrigger = bool.TryParse(hasOnLogon, out bool hasTrigger) && hasTrigger;
+        if (!isOnLogonTrigger)
+            Logger.Log("Persistência inválida: gatilho de logon (onlogon) ausente.", "WARNING");
+
+        bool isHighestRunLevel = string.Equals(runLevel, "Highest", StringComparison.OrdinalIgnoreCase);
+        if (!isHighestRunLevel)
+            Logger.Log($"Persistência inválida: nível de execução divergente. Esperado 'Highest', encontrado '{runLevel}'.", "WARNING");
+
+        bool isValid = isExeValid && hasSilentArgument && isOnLogonTrigger && isHighestRunLevel;
         
 #pragma warning disable MVVMTK0034
-        SetProperty(ref _isPersistenceEnabled, exists, nameof(IsPersistenceEnabled));
+        SetProperty(ref _isPersistenceEnabled, isValid, nameof(IsPersistenceEnabled));
 #pragma warning restore MVVMTK0034
+    }
+
+    private static string GetTaskInfoValue(string[] lines, string key)
+    {
+        string prefix = key + "=";
+        var line = lines.FirstOrDefault(l => l.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        return line?[prefix.Length..].Trim() ?? string.Empty;
+    }
+
+    private static bool PathsAreEquivalent(string left, string right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right)) return false;
+
+        try
+        {
+            string leftFull = Path.GetFullPath(left.Trim('"'));
+            string rightFull = Path.GetFullPath(right.Trim('"'));
+            return string.Equals(leftFull, rightFull, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private async void EnablePersistence()
@@ -271,9 +346,19 @@ public partial class SettingsViewModel : ObservableObject
             await _tweakService.RefreshStatusesAsync();
             TweakPersistence.SaveState(_tweakService.Tweaks);
             string cmd = $"/create /tn \"{TaskName}\" /tr \"\\\"{_targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
-            var res = CommandHelper.RunCommand("schtasks", cmd);
-            if (res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) || res.Contains("ACCESS DENIED", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Falha ao criar tarefa agendada: " + res);
+            var result = CommandHelper.RunCommandDetailed("schtasks", cmd);
+
+            Logger.Log($"Resultado schtasks/create -> Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
+
+            if (!result.Started)
+                throw new Exception("Falha ao criar tarefa agendada: processo não iniciou.");
+
+            if (result.TimedOut)
+                throw new Exception("Falha ao criar tarefa agendada: timeout na execução.");
+
+            if (result.ExitCode != 0)
+                throw new Exception($"Falha ao criar tarefa agendada. ExitCode={result.ExitCode}. StdErr={result.StdErr}. StdOut={result.StdOut}");
+
             Logger.Log("Persistência ativada e configurações salvas com sucesso.");
         }
         catch (Exception ex)
@@ -289,7 +374,8 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            CommandHelper.RunCommand("schtasks", $"/delete /tn \"{TaskName}\" /f");
+            var result = CommandHelper.RunCommandDetailed("schtasks", $"/delete /tn \"{TaskName}\" /f");
+            Logger.Log($"Resultado schtasks/delete -> Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
             Logger.Log("Persistência desativada.");
         }
         catch (Exception ex)

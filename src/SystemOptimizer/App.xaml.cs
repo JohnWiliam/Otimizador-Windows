@@ -14,14 +14,15 @@ using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
 using System.Net.Http;
-using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO: Namespace compatível com v7.1.3
+using Microsoft.Toolkit.Uwp.Notifications;
+using SystemOptimizer.Models;
 
 namespace SystemOptimizer;
 
 public partial class App : Application
 {
     private readonly IHost _host;
-    private bool _pendingOpenSettings;
+    private bool _isSilentMode;
 
     public App()
     {
@@ -61,15 +62,6 @@ public partial class App : Application
             })
             .Build();
 
-        // Hook para notificações
-        ToastNotificationManagerCompat.OnActivated += toastArgs =>
-        {
-            var arguments = ToastArguments.Parse(toastArgs.Argument);
-            if (arguments.TryGetValue("action", out var action) && action == "open-settings")
-            {
-                Dispatcher.InvokeAsync(RequestOpenSettings);
-            }
-        };
     }
 
     public async Task RunSilentModeWithoutUiAsync()
@@ -88,6 +80,8 @@ public partial class App : Application
 
     protected override async void OnStartup(StartupEventArgs e)
     {
+        _isSilentMode = e.Args.Contains("--silent", StringComparer.OrdinalIgnoreCase);
+
         AppSettings.Load();
         var culture = new System.Globalization.CultureInfo(AppSettings.Current.Language);
         Thread.CurrentThread.CurrentCulture = culture;
@@ -98,15 +92,18 @@ public partial class App : Application
 
         await _host.StartAsync();
 
-        if (e.Args.Contains("--open-settings", StringComparer.OrdinalIgnoreCase))
+        if (_isSilentMode)
         {
-            _pendingOpenSettings = true;
-        }
-
-        if (e.Args.Contains("--silent"))
-        {
-            await RunSilentModeAsync();
-            Shutdown();
+            try
+            {
+                await RunSilentModeAsync();
+                Shutdown();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Falha ao iniciar modo silencioso: {ex}", "ERROR");
+                Shutdown(1);
+            }
         }
         else
         {
@@ -114,11 +111,6 @@ public partial class App : Application
             startupTasks.Initialize(e.Args);
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
-            if (_pendingOpenSettings)
-            {
-                NavigateToSettings(mainWindow);
-                _pendingOpenSettings = false;
-            }
         }
 
         base.OnStartup(e);
@@ -133,10 +125,24 @@ public partial class App : Application
 
     private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
     {
-        string errorMsg = $"Ocorreu um erro inesperado: {e.Exception.Message}";
+        string errorMsg = $"Ocorreu um erro inesperado: {e.Exception}";
         Logger.Log(errorMsg, "ERROR");
-        MessageBox.Show(errorMsg, "Erro do Sistema", MessageBoxButton.OK, MessageBoxImage.Error);
+
+        if (!_isSilentMode)
+        {
+            MessageBox.Show(
+                $"Ocorreu um erro inesperado: {e.Exception.Message}",
+                "Erro do Sistema",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+
         e.Handled = true;
+
+        if (_isSilentMode)
+        {
+            Shutdown(1);
+        }
     }
 
     private async Task RunSilentModeAsync()
@@ -145,6 +151,7 @@ public partial class App : Application
         {
             Logger.Log("Iniciando Modo Silencioso (Auto-Run)...");
             var tweakService = _host.Services.GetRequiredService<TweakService>();
+            var updateService = _host.Services.GetRequiredService<IUpdateService>();
             tweakService.LoadTweaks();
             await tweakService.RefreshStatusesAsync();
 
@@ -170,33 +177,46 @@ public partial class App : Application
                 }
                 Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
             }
+
+            await CheckForUpdatesAndNotifyAsync(updateService);
         }
         catch (Exception ex)
         {
-            Logger.Log($"Erro crítico no modo silencioso: {ex.Message}", "ERROR");
+            Logger.Log($"Erro crítico no modo silencioso: {ex}", "ERROR");
+            if (_isSilentMode)
+            {
+                Shutdown(1);
+            }
         }
     }
 
-    private void RequestOpenSettings()
+    private static async Task CheckForUpdatesAndNotifyAsync(IUpdateService updateService)
     {
-        _pendingOpenSettings = true;
         try
         {
-            var mainWindow = _host.Services.GetService<MainWindow>();
-            if (mainWindow == null) return;
-            if (!mainWindow.IsVisible) mainWindow.Show();
-            NavigateToSettings(mainWindow);
-            mainWindow.Activate();
-            _pendingOpenSettings = false;
+            var updateInfo = await updateService.CheckForUpdatesAsync();
+            if (!updateInfo.IsAvailable)
+            {
+                Logger.Log("Modo silencioso: nenhuma atualização encontrada.");
+                return;
+            }
+
+            ShowUpdateToast(updateInfo);
+            Logger.Log($"Modo silencioso: atualização {updateInfo.Version} detectada e notificação exibida.");
         }
         catch (Exception ex)
         {
-            Logger.Log($"Erro ao abrir Configurações via notificação: {ex.Message}", "ERROR");
+            Logger.Log($"Erro ao verificar atualizações no modo silencioso: {ex.Message}", "ERROR");
         }
     }
 
-    private static void NavigateToSettings(MainWindow mainWindow)
+    private static void ShowUpdateToast(UpdateInfo updateInfo)
     {
-        mainWindow.Navigate(typeof(SettingsPage));
+        new ToastContentBuilder()
+            .AddText("Atualização disponível")
+            .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
+            .AddArgument("action", "open-settings")
+            .Show();
     }
+
 }
