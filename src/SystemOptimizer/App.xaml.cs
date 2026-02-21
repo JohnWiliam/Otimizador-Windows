@@ -14,7 +14,7 @@ using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
 using System.Net.Http;
-using Microsoft.Toolkit.Uwp.Notifications;
+using CommunityToolkit.WinUI.Notifications;
 using SystemOptimizer.Models;
 
 namespace SystemOptimizer;

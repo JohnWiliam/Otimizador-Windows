@@ -1,6 +1,6 @@
 using System;
 using System.Windows;
-using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO
+using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
 
 namespace SystemOptimizer
 {
