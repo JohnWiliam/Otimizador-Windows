@@ -46,7 +46,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     public ObservableCollection<CleanupCategorySummaryItem> ScanResults { get; } = [];
 
-    public CleanupPage(MainViewModel viewModel, CleanupService cleanupService)
+    public CleanupPage(MainViewModel viewModel)
     {
         InitializeComponent();
         _viewModel = viewModel;
