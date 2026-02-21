@@ -103,6 +103,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     public bool CanAnalyze => !IsBusyLocal;
     public bool CanCleanup => !IsBusyLocal && HasScanResults;
+    public bool HasLogs => _viewModel.CleanupLogs.Count > 0;
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
     public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
 
@@ -249,6 +250,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 AppendLog(item);
             }
         }
+
+        OnPropertyChanged(nameof(HasLogs));
     }
 
     private void AppendLog(CleanupLogItem item)

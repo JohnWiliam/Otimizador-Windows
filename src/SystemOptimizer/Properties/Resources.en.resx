@@ -220,4 +220,6 @@
   <data name="Cleanup_FeedbackSelectCategory" xml:space="preserve"><value>Select at least one category to clean.</value></data>
   <data name="Cleanup_FeedbackCleanupCanceled" xml:space="preserve"><value>Cleanup canceled.</value></data>
   <data name="Cleanup_FeedbackCleanupError" xml:space="preserve"><value>Cleanup error: {0}</value></data>
+  <data name="Cleanup_ScanSummaryEmpty" xml:space="preserve"><value>Run an analysis to populate available categories.</value></data>
+  <data name="Cleanup_LogEmpty" xml:space="preserve"><value>Execution history will appear here.</value></data>
 </root>

@@ -219,4 +219,6 @@
   <data name="Cleanup_FeedbackSelectCategory" xml:space="preserve"><value>Selecione ao menos uma categoria para limpar.</value></data>
   <data name="Cleanup_FeedbackCleanupCanceled" xml:space="preserve"><value>Limpeza cancelada.</value></data>
   <data name="Cleanup_FeedbackCleanupError" xml:space="preserve"><value>Erro durante a limpeza: {0}</value></data>
+  <data name="Cleanup_ScanSummaryEmpty" xml:space="preserve"><value>Execute uma análise para preencher as categorias disponíveis.</value></data>
+  <data name="Cleanup_LogEmpty" xml:space="preserve"><value>O histórico de execução aparecerá aqui.</value></data>
 </root>
