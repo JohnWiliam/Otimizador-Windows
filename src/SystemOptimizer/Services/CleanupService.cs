@@ -114,14 +114,14 @@ public class CleanupService
             totalIgnored += aggregate.ItemsIgnored;
             totalFailures += aggregate.Failures;
 
-            LogAggregateResult(category.DisplayName, aggregate.BytesRemoved, aggregate.ItemsIgnored, aggregate.Failures);
+            LogAggregateResult(category.DisplayName, aggregate.BytesRemoved, aggregate.ItemsRemoved, aggregate.ItemsIgnored, aggregate.Failures);
             ReportProgress(ToPercent(index + 1, plan.Count), $"Concluído: {category.DisplayName}", aggregate.ItemsRemoved, plan.Count);
         }
 
         double totalMb = Math.Round(totalBytes / 1024d / 1024d, 2);
         OnLogItem?.Invoke(new CleanupLogItem
         {
-            Message = string.Format(Resources.Log_Finished, totalMb),
+            Message = FormatSafe(Resources.Log_Finished, totalMb, 0, 0, 0),
             Icon = "CheckmarkCircle24",
             StatusColor = "#0078D4",
             IsBold = true
@@ -264,14 +264,34 @@ public class CleanupService
         return (int)Math.Round((double)currentStep / totalSteps * 100, MidpointRounding.AwayFromZero);
     }
 
-    private void LogAggregateResult(string label, long bytes, int skipped, int failures)
+
+    private static string FormatSafe(string? template, params object[] args)
+    {
+        if (string.IsNullOrWhiteSpace(template))
+            return string.Empty;
+
+        try
+        {
+            return string.Format(template, args);
+        }
+        catch (FormatException)
+        {
+            return template;
+        }
+    }
+    private void LogAggregateResult(string label, long bytes, int itemsRemoved, int skipped, int failures)
     {
         if (bytes > 0)
         {
             double mb = Math.Round(bytes / 1024d / 1024d, 2);
-            var message = string.Format(Resources.Log_Removed, label, mb);
-            if (skipped > 0)
-                message += string.Format(Resources.Log_Ignored, skipped);
+            int totalProcessed = Math.Max(0, itemsRemoved + skipped + failures);
+            int successPercent = totalProcessed > 0
+                ? Math.Max(0, Math.Min(100, (int)Math.Round((double)itemsRemoved / totalProcessed * 100, MidpointRounding.AwayFromZero)))
+                : 100;
+
+            var message = FormatSafe(Resources.Log_Removed, label, mb, itemsRemoved, totalProcessed, successPercent);
+            if (skipped > 0 || failures > 0)
+                message += FormatSafe(Resources.Log_Ignored, skipped + failures, skipped, failures);
 
             OnLogItem?.Invoke(new CleanupLogItem
             {
@@ -284,7 +304,7 @@ public class CleanupService
 
         OnLogItem?.Invoke(new CleanupLogItem
         {
-            Message = string.Format(Resources.Log_Clean ?? "{0}: limpo", label),
+            Message = FormatSafe(Resources.Log_Clean ?? "{0}: limpo", label, itemsRemoved, failures > 0 ? 0 : 100),
             Icon = failures > 0 ? "Warning24" : "Info24",
             StatusColor = failures > 0 ? "Orange" : "Gray"
         });
