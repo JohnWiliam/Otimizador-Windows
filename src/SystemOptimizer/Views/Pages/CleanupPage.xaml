@@ -26,7 +26,8 @@
                    FontWeight="SemiBold"
                    Margin="0,0,0,16" />
 
-        <ui:CardExpander Grid.Row="1" Margin="0,0,0,16"
+        <ui:CardExpander x:Name="OptionsCard"
+                         Grid.Row="1" Margin="0,0,0,16"
                          IsExpanded="{Binding IsOptionsExpanded, ElementName=RootPage, Mode=TwoWay}">
             <ui:CardExpander.Header>
                 <Grid>
@@ -170,10 +171,15 @@
             </StackPanel>
         </ui:CardExpander>
 
-        <ui:Card Grid.Row="2"
+        <ui:Card x:Name="SummaryCard"
+                 Grid.Row="2"
                  Padding="0"
                  Margin="0,0,0,16"
+                 RenderTransformOrigin="0.5,0.5"
                  Visibility="{Binding ShouldShowSummaryCard, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <ui:Card.RenderTransform>
+                <TranslateTransform Y="0"/>
+            </ui:Card.RenderTransform>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -287,6 +293,30 @@
 
                     <ItemsControl ItemsSource="{Binding ScanResults, ElementName=RootPage}"
                                   Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Opacity" Value="0"/>
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform Y="8"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                 To="1"
+                                                                 Duration="0:0:0.20"/>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                 To="0"
+                                                                 Duration="0:0:0.20"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid Margin="0,0,0,6">
@@ -313,10 +343,15 @@
             </Grid>
         </ui:Card>
 
-        <ui:Card Grid.Row="3"
+        <ui:Card x:Name="LogsCard"
+                 Grid.Row="3"
                  Padding="0"
+                 RenderTransformOrigin="0.5,0.5"
                  VerticalAlignment="Stretch"
                  VerticalContentAlignment="Stretch">
+            <ui:Card.RenderTransform>
+                <TranslateTransform Y="0"/>
+            </ui:Card.RenderTransform>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>

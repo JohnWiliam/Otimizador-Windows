@@ -12,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using SystemOptimizer.Models;
 using SystemOptimizer.Properties;
 using Res = SystemOptimizer.Properties.Resources;
@@ -59,6 +60,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        Loaded += CleanupPage_Loaded;
     }
 
     public bool IsOptionsExpanded
@@ -144,6 +146,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             }
 
             HasScanResults = ScanResults.Any(result => result.Items > 0);
+
+            if (HasScanResults)
+            {
+                AnimateSummaryCardEntrance();
+            }
         }
         catch (OperationCanceledException)
         {
@@ -250,6 +257,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         else if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
         {
+            if (e.NewItems.Count > 0)
+            {
+                AnimateLogsCardPulse();
+            }
+
             foreach (CleanupLogItem item in e.NewItems)
             {
                 AppendLog(item);
@@ -363,6 +375,66 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4FC3F7"));
 
         return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
+    }
+
+    private void CleanupPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        AnimateCardOnLoad(OptionsCard, fromY: -10, durationMs: 220);
+        AnimateCardOnLoad(SummaryCard, fromY: 10, durationMs: 260);
+        AnimateCardOnLoad(LogsCard, fromY: 14, durationMs: 300);
+    }
+
+    private static void AnimateCardOnLoad(UIElement target, double fromY, int durationMs)
+    {
+        target.Opacity = 0;
+        target.RenderTransform = new TranslateTransform(0, fromY);
+
+        var storyboard = new Storyboard();
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(durationMs))
+        {
+            EasingFunction = ease
+        };
+        Storyboard.SetTarget(fade, target);
+        Storyboard.SetTargetProperty(fade, new PropertyPath("Opacity"));
+
+        var slide = new DoubleAnimation(fromY, 0, TimeSpan.FromMilliseconds(durationMs))
+        {
+            EasingFunction = ease
+        };
+        Storyboard.SetTarget(slide, target);
+        Storyboard.SetTargetProperty(slide, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.Y)"));
+
+        storyboard.Children.Add(fade);
+        storyboard.Children.Add(slide);
+        storyboard.Begin();
+    }
+
+    private void AnimateSummaryCardEntrance()
+    {
+        var transform = SummaryCard.RenderTransform as TranslateTransform ?? new TranslateTransform();
+        SummaryCard.RenderTransform = transform;
+
+        var ease = new QuinticEase { EasingMode = EasingMode.EaseOut };
+        var animation = new DoubleAnimation(10, 0, TimeSpan.FromMilliseconds(220))
+        {
+            EasingFunction = ease
+        };
+
+        transform.BeginAnimation(TranslateTransform.YProperty, animation);
+        SummaryCard.BeginAnimation(OpacityProperty, new DoubleAnimation(0.6, 1, TimeSpan.FromMilliseconds(220)));
+    }
+
+    private void AnimateLogsCardPulse()
+    {
+        var animation = new DoubleAnimation(1, 0.93, TimeSpan.FromMilliseconds(120))
+        {
+            AutoReverse = true,
+            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        LogsCard.BeginAnimation(OpacityProperty, animation);
     }
 }
 
