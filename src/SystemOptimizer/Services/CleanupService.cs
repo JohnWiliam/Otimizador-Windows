@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -170,10 +171,29 @@ public class CleanupService
             CleanupExecutionStrategy.DeleteDirectoryContents => await ScanDirectoryAsync(target.Path, cancellationToken),
             CleanupExecutionStrategy.CleanupWindowsUpdate => await ScanDirectoryAsync(target.Path, cancellationToken),
             CleanupExecutionStrategy.CleanupBrowserCache => await ScanBrowserCacheAsync(cancellationToken),
-            CleanupExecutionStrategy.ExecuteCommand => new ScanResult(0, 1),
-            CleanupExecutionStrategy.EmptyRecycleBin => new ScanResult(0, 1),
+            CleanupExecutionStrategy.ExecuteCommand => new ScanResult(0, 0),
+            CleanupExecutionStrategy.EmptyRecycleBin => QueryRecycleBin(),
             _ => new ScanResult(0, 0)
         };
+    }
+
+    private static ScanResult QueryRecycleBin()
+    {
+        var query = new SHQUERYRBINFO
+        {
+            cbSize = Marshal.SizeOf<SHQUERYRBINFO>()
+        };
+
+        var hr = SHQueryRecycleBin(null, ref query);
+        if (hr != 0)
+        {
+            Logger.Log($"Erro ao consultar a Lixeira (HRESULT={hr}).", "WARNING");
+            return new ScanResult(0, 0);
+        }
+
+        int items = query.i64NumItems > int.MaxValue ? int.MaxValue : (int)Math.Max(0, query.i64NumItems);
+        long bytes = Math.Max(0, query.i64Size);
+        return new ScanResult(bytes, items);
     }
 
     private static async Task<ScanResult> ScanBrowserCacheAsync(CancellationToken cancellationToken)
@@ -331,6 +351,17 @@ public class CleanupService
     private sealed record CleanupCategoryDefinition(string Key, string DisplayName, IReadOnlyList<CleanupTarget> Targets);
 
     private sealed record ScanResult(long Bytes, int Items);
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct SHQUERYRBINFO
+    {
+        public int cbSize;
+        public long i64Size;
+        public long i64NumItems;
+    }
+
+    [DllImport("Shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHQueryRecycleBin(string? pszRootPath, ref SHQUERYRBINFO pSHQueryRBInfo);
 }
 
 public sealed record CleanupCategoryResult(string Key, string DisplayName, long Bytes, int Items, bool IsSelected);

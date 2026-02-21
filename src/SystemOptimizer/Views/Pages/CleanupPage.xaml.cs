@@ -40,6 +40,10 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private bool _cleanRecycleBin;
 
     private const int LogAnimationDelayMs = 180;
+    private static readonly HashSet<string> CategoriesWithoutSize = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "dns"
+    };
 
     private readonly Queue<CleanupLogItem> _pendingLogs = new();
     private readonly object _pendingLogsLock = new();
@@ -141,16 +145,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             var results = await _viewModel.RunCleanupScanAsync(options, _cleanupCts.Token);
 
             foreach (var result in results)
-            {
-                ScanResults.Add(new CleanupCategorySummaryItem
-                {
-                    Key = result.Key,
-                    DisplayName = result.DisplayName,
-                    Bytes = result.Bytes,
-                    Items = result.Items,
-                    IsSelected = result.IsSelected
-                });
-            }
+                ScanResults.Add(CreateSummaryItem(result));
 
             HasScanResults = ScanResults.Any(result => result.Items > 0);
 
@@ -234,6 +229,21 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             CleanBrowserCache = IsEnabled("browser-cache", CleanBrowser),
             CleanDns = IsEnabled("dns", CleanDns),
             CleanRecycleBin = IsEnabled("recycle-bin", CleanRecycleBin)
+        };
+    }
+
+    private static CleanupCategorySummaryItem CreateSummaryItem(CleanupCategoryResult result)
+    {
+        bool shouldDisplaySize = !CategoriesWithoutSize.Contains(result.Key);
+
+        return new CleanupCategorySummaryItem
+        {
+            Key = result.Key,
+            DisplayName = result.DisplayName,
+            Bytes = result.Bytes,
+            Items = result.Items,
+            IsSelected = result.IsSelected,
+            ShouldDisplaySize = shouldDisplaySize
         };
     }
 
@@ -526,6 +536,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 public class CleanupCategorySummaryItem : INotifyPropertyChanged
 {
     private bool _isSelected = true;
+    private bool _shouldDisplaySize = true;
 
     public string Key { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
@@ -533,6 +544,17 @@ public class CleanupCategorySummaryItem : INotifyPropertyChanged
     public int Items { get; set; }
     public string HumanSize => $"{Math.Round(Bytes / 1024.0 / 1024.0, 2)} MB";
     public string ItemsLabel => string.Format(Res.Cleanup_SummaryItemsLabel, Items);
+    public string SizeLabel => ShouldDisplaySize ? HumanSize : "—";
+    public bool ShouldDisplaySize
+    {
+        get => _shouldDisplaySize;
+        set
+        {
+            _shouldDisplaySize = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShouldDisplaySize)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SizeLabel)));
+        }
+    }
 
     public bool IsSelected
     {
