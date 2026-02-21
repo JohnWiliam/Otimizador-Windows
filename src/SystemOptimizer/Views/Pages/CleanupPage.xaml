@@ -30,10 +30,13 @@
                          IsExpanded="{Binding IsOptionsExpanded, ElementName=RootPage, Mode=TwoWay}">
             <ui:CardExpander.Header>
                 <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
                     <ui:SymbolIcon Symbol="Broom24" FontSize="24" Margin="0,0,12,0" />
@@ -42,7 +45,8 @@
                         <TextBlock Text="{x:Static p:Resources.Cleanup_CacheTitle}"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                    FontSize="15"
-                                   FontWeight="Medium" />
+                                   FontWeight="Medium"
+                                   TextWrapping="Wrap" />
                         <TextBlock Text="{x:Static p:Resources.Cleanup_CacheDesc}"
                                    FontSize="13"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
@@ -50,28 +54,48 @@
                                    TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,8,0">
-                        <ui:Button Command="{Binding AnalyzeCommand, ElementName=RootPage}" Appearance="Primary" Height="36" Padding="16,0" Margin="0,0,8,0">
+                    <WrapPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                               Orientation="Horizontal"
+                               VerticalAlignment="Center"
+                               HorizontalAlignment="Right"
+                               Margin="16,0,8,0"
+                               ItemHeight="36">
+                        <ui:Button Command="{Binding AnalyzeCommand, ElementName=RootPage}"
+                                   IsEnabled="{Binding CanAnalyze, ElementName=RootPage}"
+                                   Appearance="Primary"
+                                   Height="36"
+                                   Padding="16,0"
+                                   Margin="0,0,8,8">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="Search24" Margin="0,0,8,0"/>
-                                <TextBlock Text="Analisar"/>
+                                <TextBlock Text="{x:Static p:Resources.Cleanup_ActionAnalyze}"/>
                             </StackPanel>
                         </ui:Button>
 
-                        <ui:Button Command="{Binding CleanupSelectedCommand, ElementName=RootPage}" Appearance="Primary" Height="36" Padding="16,0" Margin="0,0,8,0">
+                        <ui:Button Command="{Binding CleanupSelectedCommand, ElementName=RootPage}"
+                                   IsEnabled="{Binding CanCleanup, ElementName=RootPage}"
+                                   Appearance="Primary"
+                                   Height="36"
+                                   Padding="16,0"
+                                   Margin="0,0,8,8">
                             <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Play24" Margin="0,0,8,0"/>
-                                <TextBlock Text="Limpar selecionados"/>
+                                <ui:SymbolIcon Symbol="Delete24" Margin="0,0,8,0"/>
+                                <TextBlock Text="{x:Static p:Resources.Cleanup_ActionClean}"/>
                             </StackPanel>
                         </ui:Button>
 
-                        <ui:Button Command="{Binding CancelCommand, ElementName=RootPage}" Appearance="Secondary" Height="36" Padding="16,0">
+                        <ui:Button Command="{Binding CancelCommand, ElementName=RootPage}"
+                                   Visibility="{Binding CancelVisibility, ElementName=RootPage}"
+                                   Appearance="Secondary"
+                                   Height="36"
+                                   Padding="16,0"
+                                   Margin="0,0,0,8">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="Dismiss24" Margin="0,0,8,0"/>
-                                <TextBlock Text="Cancelar"/>
+                                <TextBlock Text="{x:Static p:Resources.Cleanup_ActionCancel}"/>
                             </StackPanel>
                         </ui:Button>
-                    </StackPanel>
+                    </WrapPanel>
                 </Grid>
             </ui:CardExpander.Header>
 
@@ -93,16 +117,21 @@
                               IsChecked="{Binding CleanBrowser, ElementName=RootPage}" Margin="0,0,8,12" />
                     <CheckBox Content="{x:Static p:Resources.Cleanup_OptionDNS}"
                               IsChecked="{Binding CleanDns, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionRecycleBin}"
-                              IsChecked="{Binding CleanRecycleBin, ElementName=RootPage}" Margin="0,0,8,12"
-                              Foreground="{DynamicResource PaletteRedBrush}"/>
+                    <CheckBox IsChecked="{Binding CleanRecycleBin, ElementName=RootPage}" Margin="0,0,8,12">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Delete20"
+                                           Margin="0,0,6,0"
+                                           Foreground="#D46A6A" />
+                            <TextBlock Text="{x:Static p:Resources.Cleanup_OptionRecycleBin}"/>
+                        </StackPanel>
+                    </CheckBox>
                 </UniformGrid>
             </StackPanel>
         </ui:CardExpander>
 
         <ui:Card Grid.Row="2" Padding="16" Margin="0,0,0,16">
             <StackPanel>
-                <TextBlock Text="Resumo da análise" FontWeight="SemiBold" Margin="0,0,0,8" />
+                <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryTitle}" FontWeight="SemiBold" Margin="0,0,0,8" />
                 <ItemsControl ItemsSource="{Binding ScanResults, ElementName=RootPage}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
@@ -115,7 +144,7 @@
                                 </Grid.ColumnDefinitions>
                                 <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="{Binding Items, StringFormat={}Itens: {0}}" Margin="0,0,12,0"/>
+                                <TextBlock Grid.Column="2" Text="{Binding ItemsLabel}" Margin="0,0,12,0"/>
                                 <TextBlock Grid.Column="3" Text="{Binding HumanSize}" FontWeight="SemiBold"/>
                             </Grid>
                         </DataTemplate>
@@ -125,7 +154,7 @@
                 <TextBlock Margin="0,8,0,4" Text="{Binding DataContext.CleanupProgressCategory, ElementName=RootPage}" />
                 <ProgressBar Height="10" Minimum="0" Maximum="100" Value="{Binding DataContext.CleanupProgressPercentage, ElementName=RootPage}" />
                 <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           Text="{Binding DataContext.CleanupProcessedItems, ElementName=RootPage, StringFormat={}Itens processados: {0}}"/>
+                           Text="{Binding CleanupProcessedItemsLabel, ElementName=RootPage}"/>
             </StackPanel>
         </ui:Card>
 
