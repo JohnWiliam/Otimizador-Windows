@@ -36,6 +36,14 @@ public partial class App : Application
 
                 // 2. Core Services
                 services.AddSingleton<TweakService>();
+                services.AddSingleton<CleanupExecutionEngine>();
+                services.AddSingleton<ICleanupTargetProvider, UserTempCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, SystemTempCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, PrefetchCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, BrowserCacheCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, DnsCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, WindowsUpdateCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, RecycleBinCleanupTargetProvider>();
                 services.AddSingleton<CleanupService>();
                 services.AddSingleton<IUpdateService, UpdateService>();
                 services.AddSingleton<StartupActivationState>();

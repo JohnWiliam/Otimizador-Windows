@@ -14,6 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using SystemOptimizer.Models;
 using SystemOptimizer.Properties;
+using Res = SystemOptimizer.Properties.Resources;
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
 using Wpf.Ui.Controls;
@@ -46,7 +47,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     public ObservableCollection<CleanupCategorySummaryItem> ScanResults { get; } = [];
 
-    public CleanupPage(MainViewModel viewModel, CleanupService cleanupService)
+    public CleanupPage(MainViewModel viewModel)
     {
         InitializeComponent();
         _viewModel = viewModel;
@@ -103,7 +104,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public bool CanAnalyze => !IsBusyLocal;
     public bool CanCleanup => !IsBusyLocal && HasScanResults;
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
-    public string CleanupProcessedItemsLabel => string.Format(Resources.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
+    public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
 
     private async Task AnalyzeAsync()
     {
@@ -142,11 +143,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         catch (OperationCanceledException)
         {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Resources.Cleanup_FeedbackAnalyzeCanceled, Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Res.Cleanup_FeedbackAnalyzeCanceled, Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
         }
         catch (Exception ex)
         {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = string.Format(Resources.Cleanup_FeedbackAnalyzeError, ex.Message), Icon = "ErrorCircle24", StatusColor = "#E57373", IsBold = true });
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = string.Format(Res.Cleanup_FeedbackAnalyzeError, ex.Message), Icon = "ErrorCircle24", StatusColor = "#E57373", IsBold = true });
         }
         finally
         {
@@ -171,7 +172,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
             if (selected.Count == 0)
             {
-                _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Resources.Cleanup_FeedbackSelectCategory, Icon = "Info24", StatusColor = "Orange" });
+                _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Res.Cleanup_FeedbackSelectCategory, Icon = "Info24", StatusColor = "Orange" });
                 return;
             }
 
@@ -179,11 +180,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         catch (OperationCanceledException)
         {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Resources.Cleanup_FeedbackCleanupCanceled, Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Res.Cleanup_FeedbackCleanupCanceled, Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
         }
         catch (Exception ex)
         {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = string.Format(Resources.Cleanup_FeedbackCleanupError, ex.Message), Icon = "ErrorCircle24", StatusColor = "#E57373", IsBold = true });
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = string.Format(Res.Cleanup_FeedbackCleanupError, ex.Message), Icon = "ErrorCircle24", StatusColor = "#E57373", IsBold = true });
         }
         finally
         {
@@ -366,7 +367,7 @@ public class CleanupCategorySummaryItem : INotifyPropertyChanged
     public long Bytes { get; set; }
     public int Items { get; set; }
     public string HumanSize => $"{Math.Round(Bytes / 1024.0 / 1024.0, 2)} MB";
-    public string ItemsLabel => string.Format(Resources.Cleanup_SummaryItemsLabel, Items);
+    public string ItemsLabel => string.Format(Res.Cleanup_SummaryItemsLabel, Items);
 
     public bool IsSelected
     {
