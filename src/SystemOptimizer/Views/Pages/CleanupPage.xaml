@@ -30,10 +30,6 @@
                          IsExpanded="{Binding IsOptionsExpanded, ElementName=RootPage, Mode=TwoWay}">
             <ui:CardExpander.Header>
                 <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -53,53 +49,50 @@
                                    Margin="0,4,0,0"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
-
-                    <WrapPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                               Orientation="Horizontal"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Right"
-                               Margin="16,0,8,0"
-                               ItemHeight="36">
-                        <ui:Button Command="{Binding AnalyzeCommand, ElementName=RootPage}"
-                                   IsEnabled="{Binding CanAnalyze, ElementName=RootPage}"
-                                   Appearance="Primary"
-                                   Height="36"
-                                   Padding="16,0"
-                                   Margin="0,0,8,8">
-                            <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Search24" Margin="0,0,8,0"/>
-                                <TextBlock Text="{x:Static p:Resources.Cleanup_ActionAnalyze}"/>
-                            </StackPanel>
-                        </ui:Button>
-
-                        <ui:Button Command="{Binding CleanupSelectedCommand, ElementName=RootPage}"
-                                   IsEnabled="{Binding CanCleanup, ElementName=RootPage}"
-                                   Appearance="Primary"
-                                   Height="36"
-                                   Padding="16,0"
-                                   Margin="0,0,8,8">
-                            <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Delete24" Margin="0,0,8,0"/>
-                                <TextBlock Text="{x:Static p:Resources.Cleanup_ActionClean}"/>
-                            </StackPanel>
-                        </ui:Button>
-
-                        <ui:Button Command="{Binding CancelCommand, ElementName=RootPage}"
-                                   Visibility="{Binding CancelVisibility, ElementName=RootPage}"
-                                   Appearance="Secondary"
-                                   Height="36"
-                                   Padding="16,0"
-                                   Margin="0,0,0,8">
-                            <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Dismiss24" Margin="0,0,8,0"/>
-                                <TextBlock Text="{x:Static p:Resources.Cleanup_ActionCancel}"/>
-                            </StackPanel>
-                        </ui:Button>
-                    </WrapPanel>
                 </Grid>
             </ui:CardExpander.Header>
 
             <StackPanel Margin="0,8,0,0">
+                <WrapPanel Orientation="Horizontal"
+                           VerticalAlignment="Center"
+                           Margin="0,0,0,12">
+                    <ui:Button Command="{Binding AnalyzeCommand, ElementName=RootPage}"
+                               IsEnabled="{Binding CanAnalyze, ElementName=RootPage}"
+                               Appearance="Primary"
+                               Height="36"
+                               Padding="16,0"
+                               Margin="0,0,8,8">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Search24" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static p:Resources.Cleanup_ActionAnalyze}"/>
+                        </StackPanel>
+                    </ui:Button>
+
+                    <ui:Button Command="{Binding CleanupSelectedCommand, ElementName=RootPage}"
+                               IsEnabled="{Binding CanCleanup, ElementName=RootPage}"
+                               Appearance="Primary"
+                               Height="36"
+                               Padding="16,0"
+                               Margin="0,0,8,8">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Delete24" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static p:Resources.Cleanup_ActionClean}"/>
+                        </StackPanel>
+                    </ui:Button>
+
+                    <ui:Button Command="{Binding CancelCommand, ElementName=RootPage}"
+                               Visibility="{Binding CancelVisibility, ElementName=RootPage}"
+                               Appearance="Secondary"
+                               Height="36"
+                               Padding="16,0"
+                               Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Dismiss24" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static p:Resources.Cleanup_ActionCancel}"/>
+                        </StackPanel>
+                    </ui:Button>
+                </WrapPanel>
+
                 <TextBlock Text="{x:Static p:Resources.Cleanup_SelectOptions}"
                            FontWeight="SemiBold" Margin="0,0,0,12"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
@@ -132,7 +125,13 @@
         <ui:Card Grid.Row="2" Padding="16" Margin="0,0,0,16">
             <StackPanel>
                 <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryTitle}" FontWeight="SemiBold" Margin="0,0,0,8" />
-                <ItemsControl ItemsSource="{Binding ScanResults, ElementName=RootPage}">
+                <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryEmpty}"
+                           Margin="0,0,0,8"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+
+                <ItemsControl ItemsSource="{Binding ScanResults, ElementName=RootPage}"
+                              Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Grid Margin="0,0,0,6">
@@ -195,6 +194,14 @@
                              FontSize="12">
                     <FlowDocument PagePadding="0" TextAlignment="Left" FontFamily="Segoe UI"/>
                 </RichTextBox>
+
+                <TextBlock Grid.Row="1"
+                           IsHitTestVisible="False"
+                           Text="{x:Static p:Resources.Cleanup_LogEmpty}"
+                           Margin="16"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Top"
+                           Visibility="{Binding HasLogs, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
             </Grid>
         </ui:Card>
     </Grid>
