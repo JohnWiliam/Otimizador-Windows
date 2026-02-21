@@ -5,22 +5,16 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Threading.Tasks;
-using SystemOptimizer.Helpers;
 using SystemOptimizer.Models;
-using SystemOptimizer.Properties; 
+using SystemOptimizer.Properties;
 
 namespace SystemOptimizer.Services;
 
 public class CleanupService
 {
+    private readonly CleanupExecutionEngine _executionEngine = new();
+
     public event Action<CleanupLogItem>? OnLogItem;
-
-    [DllImport("shell32.dll")]
-    static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint dwFlags);
-
-    const uint SHERB_NOCONFIRMATION = 0x00000001;
-    const uint SHERB_NOPROGRESSUI = 0x00000002;
-    const uint SHERB_NOSOUND = 0x00000004;
 
     private sealed class CleanupResult
     {
@@ -79,15 +73,15 @@ public class CleanupService
 
     public async Task RunCleanupAsync()
     {
-        await RunCleanupAsync(new CleanupOptions 
-        { 
-            CleanUserTemp = true, 
+        await RunCleanupAsync(new CleanupOptions
+        {
+            CleanUserTemp = true,
             CleanSystemTemp = true,
             CleanPrefetch = true,
             CleanBrowserCache = true,
             CleanDns = true,
             CleanWindowsUpdate = true,
-            CleanRecycleBin = false 
+            CleanRecycleBin = false
         });
     }
 
@@ -268,7 +262,7 @@ public class CleanupService
         string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
         if (Directory.Exists(firefoxPath))
         {
-            try
+            foreach (var target in provider.GetTargets())
             {
                 foreach (var dir in Directory.GetDirectories(firefoxPath))
                 {
@@ -468,10 +462,7 @@ public class CleanupService
                 OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUError, Icon = "Warning24", StatusColor = "Orange" });
             }
 
-            await ToggleServicesAsync(services, true);
-            OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUServicesRestarted, Icon = "Play24", StatusColor = "Green" });
-        }
-        else
+        OnLogItem?.Invoke(new CleanupLogItem
         {
             result.RegisterOtherError();
             OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUFailStop, Icon = "Warning24", StatusColor = "Orange" });
@@ -480,40 +471,13 @@ public class CleanupService
         return result;
     }
 
-    private static async Task<bool> ToggleServicesAsync(string[] services, bool start)
+    private static void UpdateTotals(CleanupResult totals, CleanupResult current)
     {
-        return await Task.Run(() =>
-        {
-            try
-            {
-                foreach (var s in services)
-                {
-                    using var sc = new ServiceController(s);
-                    if (start)
-                    {
-                        if (sc.Status != ServiceControllerStatus.Running)
-                        {
-                            sc.Start();
-                            sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(10));
-                        }
-                    }
-                    else
-                    {
-                        if (sc.Status != ServiceControllerStatus.Stopped)
-                        {
-                            sc.Stop();
-                            sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(10));
-                        }
-                    }
-                }
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Falha ao {(start ? "iniciar" : "parar")} serviços do Windows Update: {ex.Message}", "ERROR");
-                return false;
-            }
-        });
+        totals.BytesRemoved += current.BytesRemoved;
+        totals.ItemsRemoved += current.ItemsRemoved;
+        totals.ItemsIgnored += current.ItemsIgnored;
+        totals.Failures += current.Failures;
+        totals.Duration += current.Duration;
     }
 }
 
