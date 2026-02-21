@@ -122,39 +122,59 @@
             </StackPanel>
         </ui:CardExpander>
 
-        <ui:Card Grid.Row="2" Padding="16" Margin="0,0,0,16">
-            <StackPanel>
-                <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryTitle}" FontWeight="SemiBold" Margin="0,0,0,8" />
-                <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryEmpty}"
-                           Margin="0,0,0,8"
-                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+        <ui:Card Grid.Row="2"
+                 Padding="0"
+                 Margin="0,0,0,16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-                <ItemsControl ItemsSource="{Binding ScanResults, ElementName=RootPage}"
-                              Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Margin="0,0,0,6">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="{Binding ItemsLabel}" Margin="0,0,12,0"/>
-                                <TextBlock Grid.Column="3" Text="{Binding HumanSize}" FontWeight="SemiBold"/>
-                            </Grid>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <Border Grid.Row="0"
+                        Padding="16,10"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="0,0,0,1"
+                        CornerRadius="4,4,0,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="DataHistogram20" Margin="0,0,10,0" FontSize="16"/>
+                        <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryTitle}" FontWeight="Medium" FontSize="13" />
+                    </StackPanel>
+                </Border>
 
-                <TextBlock Margin="0,8,0,4" Text="{Binding DataContext.CleanupProgressCategory, ElementName=RootPage}" />
-                <ProgressBar Height="10" Minimum="0" Maximum="100" Value="{Binding DataContext.CleanupProgressPercentage, ElementName=RootPage}" />
-                <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                           Text="{Binding CleanupProcessedItemsLabel, ElementName=RootPage}"/>
-            </StackPanel>
+                <StackPanel Grid.Row="1" Margin="16,12,16,16">
+                    <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryEmpty}"
+                               Margin="0,0,0,8"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+
+                    <ItemsControl ItemsSource="{Binding ScanResults, ElementName=RootPage}"
+                                  Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding ItemsLabel}" Margin="0,0,12,0"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding HumanSize}" FontWeight="SemiBold"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Margin="0,8,0,4" Text="{Binding DataContext.CleanupProgressCategory, ElementName=RootPage}" />
+                    <ProgressBar Height="10" Minimum="0" Maximum="100" Value="{Binding DataContext.CleanupProgressPercentage, ElementName=RootPage}" />
+                    <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Text="{Binding CleanupProcessedItemsLabel, ElementName=RootPage}"/>
+                </StackPanel>
+            </Grid>
         </ui:Card>
 
         <ui:Card Grid.Row="3"
