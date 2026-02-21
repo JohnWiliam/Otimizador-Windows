@@ -49,13 +49,13 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     public CleanupPage(MainViewModel viewModel)
     {
-        InitializeComponent();
-        _viewModel = viewModel;
-        DataContext = viewModel;
-
         AnalyzeCommand = new AsyncRelayCommand(AnalyzeAsync, () => !IsBusyLocal);
         CleanupSelectedCommand = new AsyncRelayCommand(CleanupSelectedAsync, () => !IsBusyLocal && HasScanResults);
         CancelCommand = new RelayCommand(CancelCurrentOperation, () => IsBusyLocal);
+
+        InitializeComponent();
+        _viewModel = viewModel;
+        DataContext = viewModel;
 
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
