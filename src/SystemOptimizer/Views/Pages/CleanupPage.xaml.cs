@@ -42,6 +42,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private const int LogAnimationDelayMs = 180;
 
     private readonly Queue<CleanupLogItem> _pendingLogs = new();
+    private readonly object _pendingLogsLock = new();
     private CancellationTokenSource? _cleanupCts;
     private CancellationTokenSource? _logRenderCts;
     private Task? _logRenderTask;
@@ -261,15 +262,21 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     {
         if (e.Action == NotifyCollectionChangedAction.Reset)
         {
-            _pendingLogs.Clear();
+            lock (_pendingLogsLock)
+            {
+                _pendingLogs.Clear();
+            }
             _logRenderCts?.Cancel();
             LogOutput.Document.Blocks.Clear();
         }
         else if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
         {
-            foreach (CleanupLogItem item in e.NewItems)
+            lock (_pendingLogsLock)
             {
-                _pendingLogs.Enqueue(item);
+                foreach (CleanupLogItem item in e.NewItems)
+                {
+                    _pendingLogs.Enqueue(item);
+                }
             }
 
             StartLogRenderLoop();
@@ -294,10 +301,22 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     {
         try
         {
-            while (_pendingLogs.Count > 0)
+            while (true)
             {
                 token.ThrowIfCancellationRequested();
-                var item = _pendingLogs.Dequeue();
+                CleanupLogItem? item = null;
+                lock (_pendingLogsLock)
+                {
+                    if (_pendingLogs.Count > 0)
+                    {
+                        item = _pendingLogs.Dequeue();
+                    }
+                }
+
+                if (item is null)
+                {
+                    break;
+                }
 
                 await Dispatcher.InvokeAsync(() =>
                 {
@@ -310,6 +329,20 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         catch (OperationCanceledException)
         {
+        }
+        finally
+        {
+            _logRenderTask = null;
+            bool hasPending;
+            lock (_pendingLogsLock)
+            {
+                hasPending = _pendingLogs.Count > 0;
+            }
+
+            if (hasPending && !token.IsCancellationRequested)
+            {
+                StartLogRenderLoop();
+            }
         }
     }
 

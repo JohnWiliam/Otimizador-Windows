@@ -50,6 +50,8 @@ public class CleanupService
     {
         var plan = BuildPlan(options);
         var results = new List<CleanupCategoryResult>(plan.Count);
+        int totalItems = 0;
+        long totalBytes = 0;
 
         ReportProgress(0, "Iniciando análise", 0, plan.Count);
 
@@ -69,13 +71,18 @@ public class CleanupService
                 items += scan.Items;
             }
 
+            totalBytes += bytes;
+            totalItems += items;
+
             results.Add(new CleanupCategoryResult(category.Key, category.DisplayName, bytes, items, true));
             ReportProgress(ToPercent(index + 1, plan.Count), $"Análise concluída: {category.DisplayName}", items, plan.Count);
         }
 
+        double totalMb = Math.Round(totalBytes / 1024d / 1024d, 2);
+
         OnLogItem?.Invoke(new CleanupLogItem
         {
-            Message = $"Análise concluída. Categorias avaliadas: {results.Count}.",
+            Message = $"Análise concluída. Categorias avaliadas: {results.Count}. Potencial: {totalMb} MB em {totalItems} item(ns).",
             Icon = "CheckmarkCircle24",
             StatusColor = "#0078D4",
             IsBold = true
@@ -91,6 +98,7 @@ public class CleanupService
         OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_Starting, Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
 
         long totalBytes = 0;
+        int totalItemsRemoved = 0;
         int totalIgnored = 0;
         int totalFailures = 0;
 
@@ -111,6 +119,7 @@ public class CleanupService
             }
 
             totalBytes += aggregate.BytesRemoved;
+            totalItemsRemoved += aggregate.ItemsRemoved;
             totalIgnored += aggregate.ItemsIgnored;
             totalFailures += aggregate.Failures;
 
@@ -121,7 +130,7 @@ public class CleanupService
         double totalMb = Math.Round(totalBytes / 1024d / 1024d, 2);
         OnLogItem?.Invoke(new CleanupLogItem
         {
-            Message = FormatSafe(Resources.Log_Finished, totalMb, 0, 0, 0),
+            Message = FormatSafe(Resources.Log_Finished, totalMb, totalItemsRemoved, totalItemsRemoved + totalIgnored + totalFailures, CalculateSuccessPercent(totalItemsRemoved, totalIgnored, totalFailures)),
             Icon = "CheckmarkCircle24",
             StatusColor = "#0078D4",
             IsBold = true
@@ -285,9 +294,7 @@ public class CleanupService
         {
             double mb = Math.Round(bytes / 1024d / 1024d, 2);
             int totalProcessed = Math.Max(0, itemsRemoved + skipped + failures);
-            int successPercent = totalProcessed > 0
-                ? Math.Max(0, Math.Min(100, (int)Math.Round((double)itemsRemoved / totalProcessed * 100, MidpointRounding.AwayFromZero)))
-                : 100;
+            int successPercent = CalculateSuccessPercent(itemsRemoved, skipped, failures);
 
             var message = FormatSafe(Resources.Log_Removed, label, mb, itemsRemoved, totalProcessed, successPercent);
             if (skipped > 0 || failures > 0)
@@ -304,10 +311,21 @@ public class CleanupService
 
         OnLogItem?.Invoke(new CleanupLogItem
         {
-            Message = FormatSafe(Resources.Log_Clean ?? "{0}: limpo", label, itemsRemoved, failures > 0 ? 0 : 100),
+            Message = FormatSafe(Resources.Log_Clean ?? "{0}: limpo", label, itemsRemoved, CalculateSuccessPercent(itemsRemoved, skipped, failures)),
             Icon = failures > 0 ? "Warning24" : "Info24",
             StatusColor = failures > 0 ? "Orange" : "Gray"
         });
+    }
+
+    private static int CalculateSuccessPercent(int itemsRemoved, int skipped, int failures)
+    {
+        int totalProcessed = Math.Max(0, itemsRemoved + skipped + failures);
+        if (totalProcessed == 0)
+        {
+            return 100;
+        }
+
+        return Math.Max(0, Math.Min(100, (int)Math.Round((double)itemsRemoved / totalProcessed * 100, MidpointRounding.AwayFromZero)));
     }
 
     private sealed record CleanupCategoryDefinition(string Key, string DisplayName, IReadOnlyList<CleanupTarget> Targets);
