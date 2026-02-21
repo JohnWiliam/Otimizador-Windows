@@ -270,6 +270,12 @@ namespace SystemOptimizer.Properties {
             }
         }
         
+        public static string Cleanup_ScanEmptyState {
+            get {
+                return ResourceManager.GetString("Cleanup_ScanEmptyState", resourceCulture);
+            }
+        }
+        
         public static string Cleanup_SummaryItemsLabel {
             get {
                 return ResourceManager.GetString("Cleanup_SummaryItemsLabel", resourceCulture);

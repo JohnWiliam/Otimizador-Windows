@@ -25,7 +25,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 {
     private readonly MainViewModel _viewModel;
 
-    private bool _isOptionsExpanded = true;
     private bool _isBusyLocal;
     private bool _hasScanResults;
 
@@ -61,11 +60,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
     }
 
-    public bool IsOptionsExpanded
-    {
-        get => _isOptionsExpanded;
-        set { _isOptionsExpanded = value; OnPropertyChanged(); }
-    }
 
     public bool IsBusyLocal
     {
@@ -89,6 +83,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             _hasScanResults = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanCleanup));
+            OnPropertyChanged(nameof(EmptySummaryVisibility));
+            OnPropertyChanged(nameof(SummaryVisibility));
             RefreshCommands();
         }
     }
@@ -104,6 +100,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public bool CanAnalyze => !IsBusyLocal;
     public bool CanCleanup => !IsBusyLocal && HasScanResults;
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
+    public Visibility EmptySummaryVisibility => HasScanResults ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility SummaryVisibility => HasScanResults ? Visibility.Visible : Visibility.Collapsed;
     public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
 
     private async Task AnalyzeAsync()
@@ -114,7 +112,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         try
         {
             IsBusyLocal = true;
-            IsOptionsExpanded = false;
             HasScanResults = false;
             _cleanupCts = new CancellationTokenSource();
 

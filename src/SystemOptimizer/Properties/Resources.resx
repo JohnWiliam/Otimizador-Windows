@@ -212,6 +212,7 @@
   <data name="Cleanup_ActionClean" xml:space="preserve"><value>Limpar</value></data>
   <data name="Cleanup_ActionCancel" xml:space="preserve"><value>Cancelar</value></data>
   <data name="Cleanup_ScanSummaryTitle" xml:space="preserve"><value>Resumo da análise</value></data>
+  <data name="Cleanup_ScanEmptyState" xml:space="preserve"><value>Execute uma análise para exibir categorias encontradas para limpeza.</value></data>
   <data name="Cleanup_SummaryItemsLabel" xml:space="preserve"><value>Itens: {0}</value></data>
   <data name="Cleanup_ProgressProcessedItems" xml:space="preserve"><value>Itens processados: {0}</value></data>
   <data name="Cleanup_FeedbackAnalyzeCanceled" xml:space="preserve"><value>Análise cancelada.</value></data>
