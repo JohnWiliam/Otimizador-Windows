@@ -150,10 +150,10 @@
   <data name="Cleanup_CacheDesc" xml:space="preserve"><value>Libere espaço em disco removendo arquivos desnecessários.</value></data>
   <data name="Cleanup_LogTitle" xml:space="preserve"><value>Log de Execução</value></data>
   <data name="Log_Starting" xml:space="preserve"><value>Iniciando varredura e limpeza...</value></data>
-  <data name="Log_Finished" xml:space="preserve"><value>LIMPEZA CONCLUÍDA!&#10;Liberado: {0} MB</value></data>
+  <data name="Log_Finished" xml:space="preserve"><value>LIMPEZA CONCLUÍDA!&#10;Liberado: {0} MB&#10;Itens removidos: {1}/{2} ({3}%)</value></data>
   <data name="Log_DNS" xml:space="preserve"><value>Cache DNS: Limpo</value></data>
-  <data name="Log_Removed" xml:space="preserve"><value>{0} : {1} MB removidos</value></data>
-  <data name="Log_Clean" xml:space="preserve"><value>{0} : Limpo</value></data>
+  <data name="Log_Removed" xml:space="preserve"><value>{0} : {1} MB removidos ({2}/{3} itens, {4}% sucesso)</value></data>
+  <data name="Log_Clean" xml:space="preserve"><value>{0} : Limpo ({1} itens, {2}% sucesso)</value></data>
   <data name="Log_WUServicesStopped" xml:space="preserve"><value>Serviços WU: Parados.&#10;Tentando limpeza...</value></data>
   <data name="Log_WUServicesRestarted" xml:space="preserve"><value>Serviços WU: Reiniciados.</value></data>
   <data name="Log_WUError" xml:space="preserve"><value>Windows Update : Alguns arquivos estavam em uso.</value></data>
@@ -206,5 +206,6 @@
   
   <data name="Label_BrowserCache" xml:space="preserve"><value>Cache de Navegadores</value></data>
   <data name="Label_ShaderCache" xml:space="preserve"><value>Cache de Shaders</value></data>
-  <data name="Log_Ignored" xml:space="preserve"><value> ({0} ignorados)</value></data>
+  <data name="Log_Summary" xml:space="preserve"><value>Resumo: removidos={0}/{1} ({2}% sucesso), falhas={3}, estimado={4} MB</value></data>
+  <data name="Log_Ignored" xml:space="preserve"><value> ({0} erro(s): acesso negado={1}, em uso={2})</value></data>
 </root>

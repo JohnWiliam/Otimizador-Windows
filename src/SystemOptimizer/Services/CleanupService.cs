@@ -1,25 +1,75 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Threading.Tasks;
-using SystemOptimizer.Helpers;
 using SystemOptimizer.Models;
-using SystemOptimizer.Properties; 
+using SystemOptimizer.Properties;
 
 namespace SystemOptimizer.Services;
 
 public class CleanupService
 {
+    private readonly CleanupExecutionEngine _executionEngine = new();
+
     public event Action<CleanupLogItem>? OnLogItem;
 
-    [DllImport("shell32.dll")]
-    static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint dwFlags);
+    private sealed class CleanupResult
+    {
+        public long EstimatedBytes { get; private set; }
+        public long RemovedBytes { get; private set; }
+        public int FilesFound { get; private set; }
+        public int FilesRemoved { get; private set; }
+        public int AccessDeniedErrors { get; private set; }
+        public int FileInUseErrors { get; private set; }
+        public int OtherErrors { get; private set; }
 
-    const uint SHERB_NOCONFIRMATION = 0x00000001;
-    const uint SHERB_NOPROGRESSUI = 0x00000002;
-    const uint SHERB_NOSOUND = 0x00000004;
+        public int TotalErrors => AccessDeniedErrors + FileInUseErrors + OtherErrors;
+        public double SuccessRate => FilesFound == 0 ? 100 : Math.Round((double)FilesRemoved / FilesFound * 100, 1);
+
+        public void RegisterFileFound(long fileSize)
+        {
+            FilesFound++;
+            EstimatedBytes += fileSize;
+        }
+
+        public void RegisterFileRemoved(long fileSize)
+        {
+            FilesRemoved++;
+            RemovedBytes += fileSize;
+        }
+
+        public void RegisterAccessDeniedError() => AccessDeniedErrors++;
+        public void RegisterFileInUseError() => FileInUseErrors++;
+        public void RegisterOtherError() => OtherErrors++;
+
+        public void Merge(CleanupResult other)
+        {
+            EstimatedBytes += other.EstimatedBytes;
+            RemovedBytes += other.RemovedBytes;
+            FilesFound += other.FilesFound;
+            FilesRemoved += other.FilesRemoved;
+            AccessDeniedErrors += other.AccessDeniedErrors;
+            FileInUseErrors += other.FileInUseErrors;
+            OtherErrors += other.OtherErrors;
+        }
+
+        public static CleanupResult FailedOperation() => new() { OtherErrors = 1 };
+        public static CleanupResult SuccessfulOperation() => new();
+    }
+
+    private static void MergeTargetResult(Dictionary<string, CleanupResult> targetResults, string target, CleanupResult result)
+    {
+        if (!targetResults.TryGetValue(target, out var existing))
+        {
+            targetResults[target] = result;
+            return;
+        }
+
+        existing.Merge(result);
+    }
 
     private sealed record ServiceToggleResult(string ServiceName, ServiceControllerStatus? InitialStatus, string Operation, ServiceControllerStatus? FinalStatus, string? Error)
     {
@@ -28,15 +78,15 @@ public class CleanupService
 
     public async Task RunCleanupAsync()
     {
-        await RunCleanupAsync(new CleanupOptions 
-        { 
-            CleanUserTemp = true, 
+        await RunCleanupAsync(new CleanupOptions
+        {
+            CleanUserTemp = true,
             CleanSystemTemp = true,
             CleanPrefetch = true,
             CleanBrowserCache = true,
             CleanDns = true,
             CleanWindowsUpdate = true,
-            CleanRecycleBin = false 
+            CleanRecycleBin = false
         });
     }
 
@@ -45,15 +95,13 @@ public class CleanupService
         await Task.Run(async () =>
         {
             OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_Starting, Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
-            long totalBytes = 0;
-            int totalIgnored = 0;
-            int totalFailures = 0;
-            int successItems = 0;
+            var targetResults = new Dictionary<string, CleanupResult>(StringComparer.OrdinalIgnoreCase);
 
             // 1. Windows Update
             if (options.CleanWindowsUpdate)
             {
-                await CleanWindowsUpdateAsync();
+                var wuResult = await CleanWindowsUpdateAsync();
+                MergeTargetResult(targetResults, "Windows Update", wuResult);
             }
 
             // 2. Arquivos Temporários do Usuário (Temp + CrashDumps + WER)
@@ -73,19 +121,14 @@ public class CleanupService
                     {
                         // Log individual para pastas importantes do sistema
                         var res = CleanDirectory(kvp.Value, null, false);
-                        totalBytes += res.Bytes;
-                        totalIgnored += res.Skipped;
-                        totalFailures += res.Failures;
-                        successItems++;
-                        if (res.Bytes > 0) LogAggregateResult(kvp.Key, res.Bytes, res.Skipped);
-                        else if (res.Bytes == 0 && kvp.Key == (Resources.Label_TempFiles ?? "User Temp")) 
-                             LogAggregateResult(kvp.Key, 0, 0); // Mostra que Temp está limpo
+                        MergeTargetResult(targetResults, kvp.Key, res);
+                        if (res.RemovedBytes > 0 || kvp.Key == (Resources.Label_TempFiles ?? "User Temp"))
+                            LogAggregateResult(kvp.Key, res);
                     }
                 }
 
                 // --- Shader Cache Unificado (Nvidia, AMD, DX) ---
-                long shaderBytes = 0;
-                int shaderSkipped = 0;
+                var shaderResult = new CleanupResult();
                 var shaderPaths = new List<string>
                 {
                     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NVIDIA", "DXCache"),
@@ -98,17 +141,13 @@ public class CleanupService
                     if (Directory.Exists(path))
                     {
                         var res = CleanDirectory(path, null, false);
-                        shaderBytes += res.Bytes;
-                        shaderSkipped += res.Skipped;
-                        totalIgnored += res.Skipped;
-                        totalFailures += res.Failures;
-                        successItems++;
+                        shaderResult.Merge(res);
                     }
                 }
                 
                 // Emite UM log para todos os Shaders
-                LogAggregateResult(Resources.Label_ShaderCache ?? "Shader Cache", shaderBytes, shaderSkipped);
-                totalBytes += shaderBytes;
+                MergeTargetResult(targetResults, Resources.Label_ShaderCache ?? "Shader Cache", shaderResult);
+                LogAggregateResult(Resources.Label_ShaderCache ?? "Shader Cache", shaderResult);
             }
 
             // 3. Temp Sistema
@@ -125,11 +164,8 @@ public class CleanupService
                     if (Directory.Exists(kvp.Value))
                     {
                         var res = CleanDirectory(kvp.Value, kvp.Key, false);
-                        totalBytes += res.Bytes;
-                        totalIgnored += res.Skipped;
-                        totalFailures += res.Failures;
-                        successItems++;
-                        LogAggregateResult(kvp.Key, res.Bytes, res.Skipped);
+                        MergeTargetResult(targetResults, kvp.Key, res);
+                        LogAggregateResult(kvp.Key, res);
                     }
                 }
             }
@@ -141,11 +177,8 @@ public class CleanupService
                 if (Directory.Exists(path))
                 {
                     var res = CleanDirectory(path, "Prefetch", false);
-                    totalBytes += res.Bytes;
-                    totalIgnored += res.Skipped;
-                    totalFailures += res.Failures;
-                    successItems++;
-                    LogAggregateResult("Prefetch", res.Bytes, res.Skipped);
+                    MergeTargetResult(targetResults, "Prefetch", res);
+                    LogAggregateResult("Prefetch", res);
                 }
             }
 
@@ -153,10 +186,7 @@ public class CleanupService
             if (options.CleanBrowserCache)
             {
                 var browserRes = CleanBrowsersUnified();
-                totalBytes += browserRes.Bytes;
-                totalIgnored += browserRes.Skipped;
-                totalFailures += browserRes.Failures;
-                successItems++;
+                MergeTargetResult(targetResults, Resources.Label_BrowserCache ?? "Browser Cache", browserRes);
             }
 
             // 6. DNS
@@ -166,7 +196,7 @@ public class CleanupService
                 if (dnsResult.IsSuccess)
                 {
                     OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNSCleared, Icon = "Globe24", StatusColor = "Green" });
-                    successItems++;
+                    MergeTargetResult(targetResults, "DNS", CleanupResult.SuccessfulOperation());
                 }
                 else
                 {
@@ -187,20 +217,27 @@ public class CleanupService
                 {
                     SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
                     OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_RecycleBinEmptied, Icon = "Delete24", StatusColor = "Green" });
-                    successItems++;
+                    MergeTargetResult(targetResults, "Recycle Bin", CleanupResult.SuccessfulOperation());
                 }
                 catch (Exception ex)
                 {
-                    totalFailures++;
+                    MergeTargetResult(targetResults, "Recycle Bin", CleanupResult.FailedOperation());
                     Logger.Log($"Falha ao esvaziar lixeira: {ex.Message}", "ERROR");
                     OnLogItem?.Invoke(new CleanupLogItem { Message = $"Lixeira: falha ao esvaziar ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
                 }
             }
 
-            double totalMb = Math.Round(totalBytes / 1024.0 / 1024.0, 2);
+            long totalEstimatedBytes = targetResults.Values.Sum(r => r.EstimatedBytes);
+            long totalRemovedBytes = targetResults.Values.Sum(r => r.RemovedBytes);
+            int totalFilesFound = targetResults.Values.Sum(r => r.FilesFound);
+            int totalFilesRemoved = targetResults.Values.Sum(r => r.FilesRemoved);
+            int totalFailures = targetResults.Values.Sum(r => r.TotalErrors);
+            double totalSuccessRate = totalFilesFound == 0 ? 100 : Math.Round((double)totalFilesRemoved / totalFilesFound * 100, 1);
+            double totalMb = Math.Round(totalRemovedBytes / 1024.0 / 1024.0, 2);
+
             OnLogItem?.Invoke(new CleanupLogItem
             {
-                Message = string.Format(Resources.Log_Finished, totalMb),
+                Message = string.Format(Resources.Log_Finished, totalMb, totalFilesRemoved, totalFilesFound, totalSuccessRate),
                 Icon = "CheckmarkCircle24",
                 StatusColor = "#0078D4",
                 IsBold = true
@@ -208,39 +245,33 @@ public class CleanupService
 
             OnLogItem?.Invoke(new CleanupLogItem
             {
-                Message = $"Resumo: sucesso={successItems}, ignorados={totalIgnored}, falhas={totalFailures}",
+                Message = string.Format(Resources.Log_Summary, totalFilesRemoved, totalFilesFound, totalSuccessRate, totalFailures, Math.Round(totalEstimatedBytes / 1024.0 / 1024.0, 2)),
                 Icon = "Info24",
                 StatusColor = totalFailures > 0 ? "Orange" : "Green"
             });
         });
     }
 
-    private (long Bytes, int Skipped, int Failures) CleanBrowsersUnified()
+    private CleanupResult CleanBrowsersUnified()
     {
-        long totalBytes = 0;
-        int totalSkipped = 0;
-        int totalFailures = 0;
+        var totalResult = new CleanupResult();
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
         // -- Chrome --
         string chromePath = Path.Combine(localAppData, "Google", "Chrome", "User Data");
         var chromeRes = CleanChromiumBrowser(chromePath, false);
-        totalBytes += chromeRes.Bytes;
-        totalSkipped += chromeRes.Skipped;
-        totalFailures += chromeRes.Failures;
+        totalResult.Merge(chromeRes);
 
         // -- Edge --
         string edgePath = Path.Combine(localAppData, "Microsoft", "Edge", "User Data");
         var edgeRes = CleanChromiumBrowser(edgePath, false);
-        totalBytes += edgeRes.Bytes;
-        totalSkipped += edgeRes.Skipped;
-        totalFailures += edgeRes.Failures;
+        totalResult.Merge(edgeRes);
 
         // -- Firefox --
         string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
         if (Directory.Exists(firefoxPath))
         {
-            try
+            foreach (var target in provider.GetTargets())
             {
                 foreach (var dir in Directory.GetDirectories(firefoxPath))
                 {
@@ -248,36 +279,32 @@ public class CleanupService
                     if (Directory.Exists(cachePath))
                     {
                         var res = CleanDirectory(cachePath, null, false);
-                        totalBytes += res.Bytes;
-                        totalSkipped += res.Skipped;
-                        totalFailures += res.Failures;
+                        totalResult.Merge(res);
                     }
                 }
             }
             catch (Exception ex)
             {
-                totalFailures++;
+                totalResult.RegisterOtherError();
                 Logger.Log($"Falha ao limpar cache do Firefox: {ex.Message}", "ERROR");
                 OnLogItem?.Invoke(new CleanupLogItem { Message = $"Navegador (Firefox): erro ao limpar cache ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
             }
         }
 
         // Log Unificado para todos os navegadores
-        LogAggregateResult(Resources.Label_BrowserCache ?? "Browser Cache", totalBytes, totalSkipped);
+        LogAggregateResult(Resources.Label_BrowserCache ?? "Browser Cache", totalResult);
         
-        if (totalFailures > 0)
+        if (totalResult.TotalErrors > 0)
         {
-            OnLogItem?.Invoke(new CleanupLogItem { Message = $"Navegadores: {totalFailures} falha(s) durante a limpeza.", Icon = "Warning24", StatusColor = "Orange" });
+            OnLogItem?.Invoke(new CleanupLogItem { Message = $"Navegadores: {totalResult.TotalErrors} falha(s) durante a limpeza.", Icon = "Warning24", StatusColor = "Orange" });
         }
 
-        return (totalBytes, totalSkipped, totalFailures);
+        return totalResult;
     }
 
-    private (long Bytes, int Skipped, int Failures) CleanChromiumBrowser(string userDataPath, bool logOutput)
+    private CleanupResult CleanChromiumBrowser(string userDataPath, bool logOutput)
     {
-        long bytes = 0;
-        int skipped = 0;
-        int failures = 0;
+        var result = new CleanupResult();
 
         if (Directory.Exists(userDataPath))
         {
@@ -291,32 +318,30 @@ public class CleanupService
                         if (Directory.Exists(cachePath))
                         {
                             var res = CleanDirectory(cachePath, null, logOutput);
-                            bytes += res.Bytes;
-                            skipped += res.Skipped;
-                            failures += res.Failures;
+                            result.Merge(res);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                failures++;
+                result.RegisterOtherError();
                 Logger.Log($"Falha ao limpar cache Chromium em '{userDataPath}': {ex.Message}", "ERROR");
                 OnLogItem?.Invoke(new CleanupLogItem { Message = $"Navegador: erro ao acessar perfil ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
             }
         }
-        return (bytes, skipped, failures);
+        return result;
     }
 
-    private void LogAggregateResult(string label, long bytes, int skipped)
+    private void LogAggregateResult(string label, CleanupResult result)
     {
-        if (bytes > 0)
+        if (result.FilesFound > 0 || result.RemovedBytes > 0)
         {
-            double mb = Math.Round(bytes / 1024.0 / 1024.0, 2);
-            string msg = string.Format(Resources.Log_Removed, label, mb);
+            double removedMb = Math.Round(result.RemovedBytes / 1024.0 / 1024.0, 2);
+            string msg = string.Format(Resources.Log_Removed, label, removedMb, result.FilesRemoved, result.FilesFound, result.SuccessRate);
             
-            if (skipped > 0)
-                msg += string.Format(Resources.Log_Ignored, skipped);
+            if (result.TotalErrors > 0)
+                msg += string.Format(Resources.Log_Ignored, result.TotalErrors, result.AccessDeniedErrors, result.FileInUseErrors);
 
             OnLogItem?.Invoke(new CleanupLogItem
             {
@@ -327,73 +352,210 @@ public class CleanupService
         }
         else
         {
-            string msg = string.Format(Resources.Log_Clean ?? "{0} : Clean", label);
+            string msg = string.Format(Resources.Log_Clean ?? "{0} : Clean", label, 0, 100);
             OnLogItem?.Invoke(new CleanupLogItem { Message = msg, Icon = "Info24", StatusColor = "Gray" });
         }
     }
 
-    private (long Bytes, int Skipped, int Failures) CleanDirectory(string path, string? label, bool logOutput)
+    private CleanupResult CleanDirectory(string path, string? label, bool logOutput)
     {
         long categoryBytes = 0;
         int skippedCount = 0;
         int failures = 0;
-        var dirInfo = new DirectoryInfo(path);
+        const bool bestEffortByCategory = true;
+        var rootDirectory = new DirectoryInfo(path);
+        var visitedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var directoriesToDelete = new List<DirectoryInfo>();
+        var directoriesToTraverse = new Stack<DirectoryInfo>();
+        var categoryErrorCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        try {
-            foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+        directoriesToTraverse.Push(rootDirectory);
+
+        while (directoriesToTraverse.Count > 0)
+        {
+            var currentDirectory = directoriesToTraverse.Pop();
+
+            if (!visitedDirectories.Add(currentDirectory.FullName))
+            {
+                continue;
+            }
+
+            directoriesToDelete.Add(currentDirectory);
+
+            IEnumerable<FileInfo> files;
+            try
+            {
+                files = currentDirectory.EnumerateFiles();
+            }
+            catch (Exception ex)
+            {
+                RegisterException(
+                    categoryErrorCounts,
+                    bestEffortByCategory,
+                    operation: "EnumerateFiles",
+                    targetPath: currentDirectory.FullName,
+                    ex,
+                    ref skippedCount,
+                    ref failures);
+                continue;
+            }
+
+            foreach (var file in files)
             {
                 try
                 {
                     long size = file.Length;
+                    result.RegisterFileFound(size);
                     file.Delete();
-                    if (!file.Exists) categoryBytes += size;
+                    if (!file.Exists)
+                    {
+                        categoryBytes += size;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    skippedCount++;
-                    failures++;
-                    Logger.Log($"Falha ao remover arquivo '{file.FullName}': {ex.Message}", "WARNING");
+                    RegisterException(
+                        categoryErrorCounts,
+                        bestEffortByCategory,
+                        operation: "DeleteFile",
+                        targetPath: file.FullName,
+                        ex,
+                        ref skippedCount,
+                        ref failures);
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            failures++;
-            Logger.Log($"Erro ao enumerar arquivos em '{path}': {ex.Message}", "ERROR");
-            OnLogItem?.Invoke(new CleanupLogItem { Message = $"{(label ?? path)}: erro ao enumerar arquivos ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+
+            IEnumerable<DirectoryInfo> childDirectories;
+            try
+            {
+                childDirectories = currentDirectory.EnumerateDirectories();
+            }
+            catch (Exception ex)
+            {
+                RegisterException(
+                    categoryErrorCounts,
+                    bestEffortByCategory,
+                    operation: "EnumerateDirectories",
+                    targetPath: currentDirectory.FullName,
+                    ex,
+                    ref skippedCount,
+                    ref failures);
+                continue;
+            }
+
+            foreach (var childDirectory in childDirectories)
+            {
+                if ((childDirectory.Attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint)
+                {
+                    skippedCount++;
+                    Logger.Log($"Ignorando reparse point '{childDirectory.FullName}' durante limpeza.", "INFO");
+                    continue;
+                }
+
+                directoriesToTraverse.Push(childDirectory);
+            }
         }
 
-        try {
-            foreach (var dir in dirInfo.EnumerateDirectories("*", SearchOption.AllDirectories))
+        foreach (var dir in directoriesToDelete.OrderByDescending(GetDirectoryDepth))
+        {
+            if (string.Equals(dir.FullName, rootDirectory.FullName, StringComparison.OrdinalIgnoreCase))
             {
-                try { dir.Delete(true); }
-                catch (Exception ex)
-                {
-                    skippedCount++;
-                    failures++;
-                    Logger.Log($"Falha ao remover diretório '{dir.FullName}': {ex.Message}", "WARNING");
-                }
+                continue;
+            }
+
+            try
+            {
+                dir.Delete(false);
+            }
+            catch (Exception ex)
+            {
+                RegisterException(
+                    categoryErrorCounts,
+                    bestEffortByCategory,
+                    operation: "DeleteDirectory",
+                    targetPath: dir.FullName,
+                    ex,
+                    ref skippedCount,
+                    ref failures);
             }
         }
-        catch (Exception ex)
+
+        foreach (var kvp in categoryErrorCounts)
         {
-            failures++;
-            Logger.Log($"Erro ao enumerar diretórios em '{path}': {ex.Message}", "ERROR");
-            OnLogItem?.Invoke(new CleanupLogItem { Message = $"{(label ?? path)}: erro ao enumerar diretórios ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+            if (kvp.Value <= 1)
+            {
+                continue;
+            }
+
+            Logger.Log($"Categoria '{kvp.Key}' teve {kvp.Value} ocorrência(s); logs adicionais foram suprimidos por best effort.", "INFO");
         }
 
         if (logOutput && label != null)
         {
-            LogAggregateResult(label, categoryBytes, skippedCount);
+            LogAggregateResult(label, result);
         }
 
-        return (categoryBytes, skippedCount, failures);
+        return result;
+    }
+
+    private static int GetDirectoryDepth(DirectoryInfo directory)
+    {
+        int depth = 0;
+        var current = directory.Parent;
+        while (current != null)
+        {
+            depth++;
+            current = current.Parent;
+        }
+
+        return depth;
+    }
+
+    private static void RegisterException(
+        Dictionary<string, int> categoryErrorCounts,
+        bool bestEffortByCategory,
+        string operation,
+        string targetPath,
+        Exception ex,
+        ref int skippedCount,
+        ref int failures)
+    {
+        skippedCount++;
+        failures++;
+
+        string exceptionKind = ClassifyException(ex);
+        string category = $"{operation}:{exceptionKind}";
+
+        categoryErrorCounts.TryGetValue(category, out int currentCount);
+        currentCount++;
+        categoryErrorCounts[category] = currentCount;
+
+        if (bestEffortByCategory && currentCount > 1)
+        {
+            return;
+        }
+
+        Logger.Log($"[{category}] Falha em '{targetPath}': {ex.Message}", "WARNING");
+    }
+
+    private static string ClassifyException(Exception ex)
+    {
+        return ex switch
+        {
+            UnauthorizedAccessException => nameof(UnauthorizedAccessException),
+            IOException => nameof(IOException),
+            PathTooLongException => nameof(PathTooLongException),
+            DirectoryNotFoundException => nameof(DirectoryNotFoundException),
+            FileNotFoundException => nameof(FileNotFoundException),
+            _ => ex.GetType().Name
+        };
     }
 
     private async Task CleanWindowsUpdateAsync()
     {
+        var result = new CleanupResult();
         string wuPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "SoftwareDistribution", "Download");
-        if (!Directory.Exists(wuPath)) return;
+        if (!Directory.Exists(wuPath)) return result;
 
         string[] services = ["wuauserv", "bits", "cryptsvc"];
         List<ServiceToggleResult>? stopResults = null;
@@ -442,6 +604,7 @@ public class CleanupService
 
             if (!success)
             {
+                result.RegisterOtherError();
                 OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUError, Icon = "Warning24", StatusColor = "Orange" });
             }
         }
