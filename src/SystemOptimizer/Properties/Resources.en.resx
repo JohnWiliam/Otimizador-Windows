@@ -152,10 +152,10 @@
   <data name="Cleanup_CacheDesc" xml:space="preserve"><value>Free up disk space by removing unnecessary files.</value></data>
   <data name="Cleanup_LogTitle" xml:space="preserve"><value>Execution Log</value></data>
   <data name="Log_Starting" xml:space="preserve"><value>Starting scan and cleanup...</value></data>
-  <data name="Log_Finished" xml:space="preserve"><value>CLEANUP FINISHED!&#10;Freed: {0} MB</value></data>
+  <data name="Log_Finished" xml:space="preserve"><value>CLEANUP FINISHED!&#10;Freed: {0} MB&#10;Items removed: {1}/{2} ({3}% success)</value></data>
   <data name="Log_DNS" xml:space="preserve"><value>DNS Cache: Cleaned</value></data>
-  <data name="Log_Removed" xml:space="preserve"><value>{0} : {1} MB removed</value></data>
-  <data name="Log_Clean" xml:space="preserve"><value>{0} : Cleaned</value></data>
+  <data name="Log_Removed" xml:space="preserve"><value>{0} : {1} MB removed ({2}/{3} items, {4}% success)</value></data>
+  <data name="Log_Clean" xml:space="preserve"><value>{0} : Cleaned ({1} items, {2}% success)</value></data>
   <data name="Log_WUServicesStopped" xml:space="preserve"><value>WU Services: Stopped.&#10;Attempting cleanup...</value></data>
   <data name="Log_WUServicesRestarted" xml:space="preserve"><value>WU Services: Restarted.</value></data>
   <data name="Log_WUError" xml:space="preserve"><value>Windows Update : Some files were in use.</value></data>
@@ -207,5 +207,6 @@
 
   <data name="Label_BrowserCache" xml:space="preserve"><value>Browser Cache</value></data>
   <data name="Label_ShaderCache" xml:space="preserve"><value>Shader Cache</value></data>
-  <data name="Log_Ignored" xml:space="preserve"><value> ({0} ignored)</value></data>
+  <data name="Log_Summary" xml:space="preserve"><value>Summary: removed={0}/{1} ({2}% success), failures={3}, estimated={4} MB</value></data>
+  <data name="Log_Ignored" xml:space="preserve"><value> ({0} error(s): access denied={1}, in use={2})</value></data>
 </root>

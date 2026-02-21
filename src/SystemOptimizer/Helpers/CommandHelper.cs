@@ -16,15 +16,25 @@ public static class CommandHelper
     {
         var result = RunCommandDetailed(fileName, arguments, timeoutMs);
 
-        if (!result.Started || result.TimedOut)
+        if (!result.Started)
         {
             return string.Empty;
         }
 
-        if (!string.IsNullOrWhiteSpace(result.StdErr) && string.IsNullOrWhiteSpace(result.StdOut) && result.ExitCode != 0)
+        if (result.TimedOut)
         {
-            Logger.Log($"Command returned error: {result.StdErr}", "CMD_STDERR");
-            return $"[ERRO CMD] {result.StdErr}";
+            return "[TIMEOUT CMD]";
+        }
+
+        if (!result.IsSuccess)
+        {
+            if (!string.IsNullOrWhiteSpace(result.StdErr))
+            {
+                Logger.Log($"Command returned error: {result.StdErr}", "CMD_STDERR");
+                return $"[ERRO CMD] {result.StdErr}";
+            }
+
+            return string.Empty;
         }
 
         return result.StdOut;

@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
-using SystemOptimizer.Helpers;
 using SystemOptimizer.Models;
 using SystemOptimizer.Properties;
 
@@ -14,15 +14,70 @@ namespace SystemOptimizer.Services;
 
 public class CleanupService
 {
+    private readonly CleanupExecutionEngine _executionEngine = new();
+
     public event Action<CleanupLogItem>? OnLogItem;
     public event Action<CleanupProgressInfo>? OnProgress;
 
-    [DllImport("shell32.dll")]
-    static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint dwFlags);
+    private sealed class CleanupResult
+    {
+        public long EstimatedBytes { get; private set; }
+        public long RemovedBytes { get; private set; }
+        public int FilesFound { get; private set; }
+        public int FilesRemoved { get; private set; }
+        public int AccessDeniedErrors { get; private set; }
+        public int FileInUseErrors { get; private set; }
+        public int OtherErrors { get; private set; }
 
-    const uint SHERB_NOCONFIRMATION = 0x00000001;
-    const uint SHERB_NOPROGRESSUI = 0x00000002;
-    const uint SHERB_NOSOUND = 0x00000004;
+        public int TotalErrors => AccessDeniedErrors + FileInUseErrors + OtherErrors;
+        public double SuccessRate => FilesFound == 0 ? 100 : Math.Round((double)FilesRemoved / FilesFound * 100, 1);
+
+        public void RegisterFileFound(long fileSize)
+        {
+            FilesFound++;
+            EstimatedBytes += fileSize;
+        }
+
+        public void RegisterFileRemoved(long fileSize)
+        {
+            FilesRemoved++;
+            RemovedBytes += fileSize;
+        }
+
+        public void RegisterAccessDeniedError() => AccessDeniedErrors++;
+        public void RegisterFileInUseError() => FileInUseErrors++;
+        public void RegisterOtherError() => OtherErrors++;
+
+        public void Merge(CleanupResult other)
+        {
+            EstimatedBytes += other.EstimatedBytes;
+            RemovedBytes += other.RemovedBytes;
+            FilesFound += other.FilesFound;
+            FilesRemoved += other.FilesRemoved;
+            AccessDeniedErrors += other.AccessDeniedErrors;
+            FileInUseErrors += other.FileInUseErrors;
+            OtherErrors += other.OtherErrors;
+        }
+
+        public static CleanupResult FailedOperation() => new() { OtherErrors = 1 };
+        public static CleanupResult SuccessfulOperation() => new();
+    }
+
+    private static void MergeTargetResult(Dictionary<string, CleanupResult> targetResults, string target, CleanupResult result)
+    {
+        if (!targetResults.TryGetValue(target, out var existing))
+        {
+            targetResults[target] = result;
+            return;
+        }
+
+        existing.Merge(result);
+    }
+
+    private sealed record ServiceToggleResult(string ServiceName, ServiceControllerStatus? InitialStatus, string Operation, ServiceControllerStatus? FinalStatus, string? Error)
+    {
+        public bool IsSuccess => string.IsNullOrEmpty(Error);
+    }
 
     public Task RunCleanupAsync() => RunCleanupAsync(CleanupOptions.CreateDefault(), CancellationToken.None);
 
@@ -400,7 +455,8 @@ public class CleanupService
             OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNSCleared, Icon = "Globe24", StatusColor = "Green" });
             return Task.FromResult(new DirectoryOperationResult(0, 1, 0, 0));
         }
-        catch (Exception ex)
+
+        foreach (var dir in directoriesToDelete.OrderByDescending(GetDirectoryDepth))
         {
             Logger.Log($"Falha ao limpar cache DNS: {ex.Message}", "ERROR");
             OnLogItem?.Invoke(new CleanupLogItem { Message = $"DNS: falha ao limpar cache ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
@@ -523,6 +579,11 @@ public class CleanupService
                 Logger.Log($"Erro ao enumerar diretórios em '{path}': {ex.Message}", "ERROR");
                 OnLogItem?.Invoke(new CleanupLogItem { Message = $"{(label ?? path)}: erro ao enumerar diretórios ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
             }
+        }
+        finally
+        {
+            restoreResults = await ToggleServicesAsync(services, true);
+            bool allRestored = restoreResults.TrueForAll(r => r.IsSuccess);
 
             return new DirectoryOperationResult(categoryBytes, processedItems, skippedCount, failures);
         }, cancellationToken);
@@ -532,27 +593,39 @@ public class CleanupService
     {
         return await Task.Run(() =>
         {
-            try
+            var results = new List<ServiceToggleResult>();
+            string operation = start ? "start" : "stop";
+            ServiceControllerStatus targetStatus = start ? ServiceControllerStatus.Running : ServiceControllerStatus.Stopped;
+
+            foreach (var serviceName in services)
             {
-                foreach (var s in services)
+                ServiceControllerStatus? initialStatus = null;
+                ServiceControllerStatus? finalStatus = null;
+                string? error = null;
+
+                try
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     using var sc = new ServiceController(s);
                     if (start)
                     {
-                        if (sc.Status != ServiceControllerStatus.Running)
+                        if (start)
                         {
                             sc.Start();
-                            sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(10));
                         }
-                    }
-                    else
-                    {
-                        if (sc.Status != ServiceControllerStatus.Stopped)
+                        else
                         {
                             sc.Stop();
-                            sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(10));
                         }
+
+                        sc.WaitForStatus(targetStatus, TimeSpan.FromSeconds(10));
+                        sc.Refresh();
+                    }
+
+                    finalStatus = sc.Status;
+                    if (finalStatus != targetStatus)
+                    {
+                        error = $"estado final inesperado: {finalStatus}";
                     }
                 }
 
@@ -609,6 +682,7 @@ public class CleanupService
         public DirectoryOperationResult Combine(DirectoryOperationResult other) =>
             new(Bytes + other.Bytes, Items + other.Items, Skipped + other.Skipped, Failures + other.Failures);
     }
+
 }
 
 public sealed record CleanupCategoryResult(string Key, string DisplayName, long Bytes, int Items, bool IsSelected);
