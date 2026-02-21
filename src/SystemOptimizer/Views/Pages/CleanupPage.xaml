@@ -336,7 +336,6 @@
                     </ItemsControl>
 
                     <TextBlock Margin="0,8,0,4" Text="{Binding DataContext.CleanupProgressCategory, ElementName=RootPage}" />
-                    <ProgressBar Height="10" Minimum="0" Maximum="100" Value="{Binding DataContext.CleanupProgressPercentage, ElementName=RootPage}" />
                     <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                Text="{Binding CleanupProcessedItemsLabel, ElementName=RootPage}"/>
                 </StackPanel>
