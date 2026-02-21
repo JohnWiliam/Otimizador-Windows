@@ -71,6 +71,11 @@ public class CleanupService
         existing.Merge(result);
     }
 
+    private sealed record ServiceToggleResult(string ServiceName, ServiceControllerStatus? InitialStatus, string Operation, ServiceControllerStatus? FinalStatus, string? Error)
+    {
+        public bool IsSuccess => string.IsNullOrEmpty(Error);
+    }
+
     public async Task RunCleanupAsync()
     {
         await RunCleanupAsync(new CleanupOptions
@@ -187,17 +192,21 @@ public class CleanupService
             // 6. DNS
             if (options.CleanDns)
             {
-                try
+                var dnsResult = CommandHelper.RunCommandDetailed("powershell", "Clear-DnsClientCache");
+                if (dnsResult.IsSuccess)
                 {
-                    CommandHelper.RunCommand("powershell", "Clear-DnsClientCache");
                     OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_DNSCleared, Icon = "Globe24", StatusColor = "Green" });
                     MergeTargetResult(targetResults, "DNS", CleanupResult.SuccessfulOperation());
                 }
-                catch (Exception ex)
+                else
                 {
-                    MergeTargetResult(targetResults, "DNS", CleanupResult.FailedOperation());
-                    Logger.Log($"Falha ao limpar cache DNS: {ex.Message}", "ERROR");
-                    OnLogItem?.Invoke(new CleanupLogItem { Message = $"DNS: falha ao limpar cache ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+                    totalFailures++;
+                    string dnsError = dnsResult.TimedOut
+                        ? "timeout na execução"
+                        : (!string.IsNullOrWhiteSpace(dnsResult.StdErr) ? dnsResult.StdErr.Trim() : $"ExitCode={dnsResult.ExitCode?.ToString() ?? "N/A"}");
+
+                    Logger.Log($"Falha ao limpar cache DNS: {dnsError}", "ERROR");
+                    OnLogItem?.Invoke(new CleanupLogItem { Message = $"DNS: falha ao limpar cache ({dnsError})", Icon = "Warning24", StatusColor = "Orange" });
                 }
             }
 
@@ -549,29 +558,47 @@ public class CleanupService
         if (!Directory.Exists(wuPath)) return result;
 
         string[] services = ["wuauserv", "bits", "cryptsvc"];
-        bool stopped = await ToggleServicesAsync(services, false);
+        List<ServiceToggleResult>? stopResults = null;
+        List<ServiceToggleResult>? restoreResults = null;
 
-        if (stopped)
+        try
         {
+            stopResults = await ToggleServicesAsync(services, false);
+            bool allStopped = stopResults.TrueForAll(r => r.IsSuccess);
+
+            if (!allStopped)
+            {
+                OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUFailStop, Icon = "Warning24", StatusColor = "Orange" });
+                return;
+            }
+
             OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUServicesStopped, Icon = "Pause24", StatusColor = "#CA5010" });
 
             bool success = false;
             int attempts = 0;
             while (!success && attempts < 5)
             {
-                try
+                attempts++;
+                var res = CleanDirectory(wuPath, null, false);
+                if (res.Failures == 0)
                 {
-                    var res = CleanDirectory(wuPath, null, false);
-                    result.Merge(res);
                     success = true;
-                    // Log manual para WU
-                    LogAggregateResult("Windows Update", res);
+                    if (res.Bytes > 0)
+                    {
+                        LogAggregateResult("Windows Update", res.Bytes, res.Skipped);
+                    }
+                    else
+                    {
+                        OnLogItem?.Invoke(new CleanupLogItem { Message = string.Format(Resources.Log_Clean, "Windows Update"), Icon = "Checkmark24", StatusColor = "Green" });
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Logger.Log($"Tentativa {attempts + 1} de limpeza do Windows Update falhou: {ex.Message}", "WARNING");
-                    attempts++;
-                    await Task.Delay(500); 
+                    Logger.Log($"Tentativa {attempts} de limpeza do Windows Update teve {res.Failures} falha(s).", "WARNING");
+                    if (attempts < 5)
+                    {
+                        await Task.Delay(500);
+                    }
                 }
             }
 
@@ -580,24 +607,121 @@ public class CleanupService
                 result.RegisterOtherError();
                 OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUError, Icon = "Warning24", StatusColor = "Orange" });
             }
+        }
+        finally
+        {
+            restoreResults = await ToggleServicesAsync(services, true);
+            bool allRestored = restoreResults.TrueForAll(r => r.IsSuccess);
 
+            if (allRestored)
+            {
+                OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUServicesRestarted, Icon = "Play24", StatusColor = "Green" });
+            }
+            else
+            {
+                OnLogItem?.Invoke(new CleanupLogItem { Message = "Windows Update: falha ao restaurar um ou mais serviços.", Icon = "Warning24", StatusColor = "Orange" });
+            }
+
+            LogServiceStateAudit(stopResults, restoreResults);
+        }
+    }
+
+    private void LogServiceStateAudit(List<ServiceToggleResult>? stopResults, List<ServiceToggleResult>? restoreResults)
+    {
         OnLogItem?.Invoke(new CleanupLogItem
         {
-            result.RegisterOtherError();
-            OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_WUFailStop, Icon = "Warning24", StatusColor = "Orange" });
+            Message = "Estado de serviços:",
+            Icon = "Info24",
+            StatusColor = "Gray",
+            IsBold = true
+        });
+
+        void Emit(string etapa, List<ServiceToggleResult>? results)
+        {
+            if (results == null || results.Count == 0)
+            {
+                OnLogItem?.Invoke(new CleanupLogItem { Message = $" - {etapa}: sem dados.", Icon = "Info24", StatusColor = "Gray" });
+                return;
+            }
+
+            foreach (var result in results)
+            {
+                string detail = $" - [{etapa}] {result.ServiceName}: inicial={result.InitialStatus?.ToString() ?? "N/A"}, operacao={result.Operation}, final={result.FinalStatus?.ToString() ?? "N/A"}";
+                if (!string.IsNullOrWhiteSpace(result.Error))
+                {
+                    detail += $", erro={result.Error}";
+                }
+
+                OnLogItem?.Invoke(new CleanupLogItem
+                {
+                    Message = detail,
+                    Icon = result.IsSuccess ? "Checkmark24" : "Warning24",
+                    StatusColor = result.IsSuccess ? "Green" : "Orange"
+                });
+            }
         }
 
-        return result;
+        Emit("parada", stopResults);
+        Emit("restauracao", restoreResults);
     }
 
-    private static void UpdateTotals(CleanupResult totals, CleanupResult current)
+    private static async Task<List<ServiceToggleResult>> ToggleServicesAsync(string[] services, bool start)
     {
-        totals.BytesRemoved += current.BytesRemoved;
-        totals.ItemsRemoved += current.ItemsRemoved;
-        totals.ItemsIgnored += current.ItemsIgnored;
-        totals.Failures += current.Failures;
-        totals.Duration += current.Duration;
+        return await Task.Run(() =>
+        {
+            var results = new List<ServiceToggleResult>();
+            string operation = start ? "start" : "stop";
+            ServiceControllerStatus targetStatus = start ? ServiceControllerStatus.Running : ServiceControllerStatus.Stopped;
+
+            foreach (var serviceName in services)
+            {
+                ServiceControllerStatus? initialStatus = null;
+                ServiceControllerStatus? finalStatus = null;
+                string? error = null;
+
+                try
+                {
+                    using var sc = new ServiceController(serviceName);
+                    initialStatus = sc.Status;
+
+                    if (sc.Status != targetStatus)
+                    {
+                        if (start)
+                        {
+                            sc.Start();
+                        }
+                        else
+                        {
+                            sc.Stop();
+                        }
+
+                        sc.WaitForStatus(targetStatus, TimeSpan.FromSeconds(10));
+                        sc.Refresh();
+                    }
+
+                    finalStatus = sc.Status;
+                    if (finalStatus != targetStatus)
+                    {
+                        error = $"estado final inesperado: {finalStatus}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    error = ex.Message;
+                }
+
+                if (!string.IsNullOrWhiteSpace(error))
+                {
+                    Logger.Log($"Falha ao {operation} serviço '{serviceName}': {error}", "ERROR");
+                }
+
+                results.Add(new ServiceToggleResult(serviceName, initialStatus, operation, finalStatus, error));
+            }
+
+            return results;
+        });
     }
+
 }
 
 public class CleanupOptions
