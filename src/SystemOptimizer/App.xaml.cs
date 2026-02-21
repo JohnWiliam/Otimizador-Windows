@@ -220,11 +220,12 @@ public partial class App : Application
 
     private static void ShowUpdateToast(UpdateInfo updateInfo)
     {
-        new ToastContentBuilder()
+        var toastBuilder = new ToastContentBuilder()
             .AddText("Atualização disponível")
             .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
-            .AddArgument("action", "open-settings")
-            .Show();
+            .AddArgument("action", "open-settings");
+
+        Helpers.ToastCompatHelper.Show(toastBuilder);
     }
 
 }
