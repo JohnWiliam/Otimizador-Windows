@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
@@ -38,7 +39,12 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private bool _cleanDns = true;
     private bool _cleanRecycleBin;
 
+    private const int LogAnimationDelayMs = 180;
+
+    private readonly Queue<CleanupLogItem> _pendingLogs = new();
     private CancellationTokenSource? _cleanupCts;
+    private CancellationTokenSource? _logRenderCts;
+    private Task? _logRenderTask;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -187,6 +193,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 return;
             }
 
+            SmoothScrollToLogsCard();
+
             await _viewModel.RunSelectedCleanupAsync(options, _cleanupCts.Token);
             ScanResults.Clear();
             HasScanResults = false;
@@ -253,22 +261,56 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     {
         if (e.Action == NotifyCollectionChangedAction.Reset)
         {
+            _pendingLogs.Clear();
+            _logRenderCts?.Cancel();
             LogOutput.Document.Blocks.Clear();
         }
         else if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
         {
-            if (e.NewItems.Count > 0)
-            {
-                AnimateLogsCardPulse();
-            }
-
             foreach (CleanupLogItem item in e.NewItems)
             {
-                AppendLog(item);
+                _pendingLogs.Enqueue(item);
             }
+
+            StartLogRenderLoop();
         }
 
         OnPropertyChanged(nameof(HasLogs));
+    }
+
+    private void StartLogRenderLoop()
+    {
+        if (_logRenderTask is { IsCompleted: false })
+        {
+            return;
+        }
+
+        _logRenderCts?.Dispose();
+        _logRenderCts = new CancellationTokenSource();
+        _logRenderTask = RenderQueuedLogsAsync(_logRenderCts.Token);
+    }
+
+    private async Task RenderQueuedLogsAsync(CancellationToken token)
+    {
+        try
+        {
+            while (_pendingLogs.Count > 0)
+            {
+                token.ThrowIfCancellationRequested();
+                var item = _pendingLogs.Dequeue();
+
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    AnimateLogsCardPulse();
+                    AppendLog(item);
+                });
+
+                await Task.Delay(LogAnimationDelayMs, token);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 
     private void AppendLog(CleanupLogItem item)
@@ -339,6 +381,16 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
         LogOutput.Document.Blocks.Add(paragraph);
         LogOutput.ScrollToEnd();
+    }
+
+    private void SmoothScrollToLogsCard()
+    {
+        AnimateCardOnLoad(LogsCard, fromY: 22, durationMs: 420);
+
+        Dispatcher.BeginInvoke(() =>
+        {
+            LogsCard.BringIntoView();
+        }, System.Windows.Threading.DispatcherPriority.Background);
     }
 
     private static Brush GetHarmonicBrush(string statusColor, string message)
