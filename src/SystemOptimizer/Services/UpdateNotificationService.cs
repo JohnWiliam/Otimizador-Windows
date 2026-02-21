@@ -1,5 +1,5 @@
 using System;
-using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO
+using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
 using SystemOptimizer.Models;
 
 namespace SystemOptimizer.Services;
