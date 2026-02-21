@@ -53,14 +53,14 @@ public sealed class StartupTasksService
         Logger.Log("Registrando manipulador único de ativação por toast.");
 
         // Este evento dispara mesmo se o app foi aberto pelo Toast
-        ToastNotificationManagerCompat.OnActivated += toastArgs =>
+        ToastCompatHelper.RegisterActivationHandler(argument =>
         {
             // Precisamos despachar para a UI Thread pois isso vem de um thread background
-            Application.Current.Dispatcher.Invoke(() => 
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                HandleToastArguments(toastArgs.Argument);
+                HandleToastArguments(argument);
             });
-        };
+        });
 
         _toastActivationRegistered = true;
     }
@@ -144,10 +144,11 @@ public sealed class StartupTasksService
 
     private static void ShowUpdateToast(UpdateInfo updateInfo)
     {
-        new ToastContentBuilder()
+        var toastBuilder = new ToastContentBuilder()
             .AddText("Atualização disponível")
             .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
-            .AddArgument("action", "open-settings")
-            .Show();
+            .AddArgument("action", "open-settings");
+
+        ToastCompatHelper.Show(toastBuilder);
     }
 }
