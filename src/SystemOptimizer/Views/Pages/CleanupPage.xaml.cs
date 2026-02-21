@@ -1,92 +1,61 @@
+using CommunityToolkit.Mvvm.Input;
 using System;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
-using System.Windows.Media;
 using System.Windows.Input;
+using System.Windows.Media;
 using SystemOptimizer.Models;
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
 using Wpf.Ui.Controls;
-using CommunityToolkit.Mvvm.Input;
 
 namespace SystemOptimizer.Views.Pages;
 
 public partial class CleanupPage : Page, INotifyPropertyChanged
 {
     private readonly MainViewModel _viewModel;
-    private readonly CleanupService _cleanupService;
-    
+
     private bool _isOptionsExpanded = true;
-    private bool _isBusyLocal = false;
-    
+    private bool _isBusyLocal;
+    private bool _hasScanResults;
+
     private bool _cleanTemp = true;
     private bool _cleanSystemTemp = true;
     private bool _cleanPrefetch = true;
     private bool _cleanWindowsUpdate = true;
     private bool _cleanBrowser = true;
     private bool _cleanDns = true;
-    private bool _cleanRecycleBin = false;
+    private bool _cleanRecycleBin;
+
+    private CancellationTokenSource? _cleanupCts;
 
     public event PropertyChangedEventHandler? PropertyChanged;
-    public ICommand ExecuteSelectedCleanupCommand { get; }
+
+    public ICommand AnalyzeCommand { get; }
+    public ICommand CleanupSelectedCommand { get; }
+    public ICommand CancelCommand { get; }
+
+    public ObservableCollection<CleanupCategorySummaryItem> ScanResults { get; } = [];
 
     public CleanupPage(MainViewModel viewModel, CleanupService cleanupService)
     {
         InitializeComponent();
         _viewModel = viewModel;
-        _cleanupService = cleanupService;
         DataContext = viewModel;
-        
-        ExecuteSelectedCleanupCommand = new AsyncRelayCommand(ExecuteCleanupAsync);
+
+        AnalyzeCommand = new AsyncRelayCommand(AnalyzeAsync, () => !IsBusyLocal);
+        CleanupSelectedCommand = new AsyncRelayCommand(CleanupSelectedAsync, () => !IsBusyLocal && HasScanResults);
+        CancelCommand = new RelayCommand(CancelCurrentOperation, () => IsBusyLocal);
+
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
-    }
-
-    private async Task ExecuteCleanupAsync()
-    {
-        if (IsBusyLocal) return;
-
-        try
-        {
-            IsBusyLocal = true;
-            IsOptionsExpanded = false; 
-            
-            Application.Current.Dispatcher.Invoke(() => _viewModel.CleanupLogs.Clear());
-
-            var options = new CleanupOptions
-            {
-                CleanUserTemp = CleanTemp,
-                CleanSystemTemp = CleanSystemTemp,
-                CleanPrefetch = CleanPrefetch,
-                CleanWindowsUpdate = CleanWindowsUpdate,
-                CleanBrowserCache = CleanBrowser,
-                CleanDns = CleanDns,
-                CleanRecycleBin = CleanRecycleBin
-            };
-
-            await _cleanupService.RunCleanupAsync(options);
-        }
-        catch (Exception ex)
-        {
-            Application.Current.Dispatcher.Invoke(() => 
-            {
-                _viewModel.CleanupLogs.Add(new CleanupLogItem 
-                { 
-                    Message = $"Error: {ex.Message}", 
-                    Icon = "ErrorCircle24", 
-                    StatusColor = "#FF6B6B",
-                    IsBold = true 
-                });
-            });
-        }
-        finally
-        {
-            IsBusyLocal = false;
-        }
     }
 
     public bool IsOptionsExpanded
@@ -98,7 +67,23 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public bool IsBusyLocal
     {
         get => _isBusyLocal;
-        set { _isBusyLocal = value; OnPropertyChanged(); }
+        set
+        {
+            _isBusyLocal = value;
+            OnPropertyChanged();
+            RefreshCommands();
+        }
+    }
+
+    public bool HasScanResults
+    {
+        get => _hasScanResults;
+        set
+        {
+            _hasScanResults = value;
+            OnPropertyChanged();
+            RefreshCommands();
+        }
     }
 
     public bool CleanTemp { get => _cleanTemp; set { _cleanTemp = value; OnPropertyChanged(); } }
@@ -108,6 +93,122 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public bool CleanBrowser { get => _cleanBrowser; set { _cleanBrowser = value; OnPropertyChanged(); } }
     public bool CleanDns { get => _cleanDns; set { _cleanDns = value; OnPropertyChanged(); } }
     public bool CleanRecycleBin { get => _cleanRecycleBin; set { _cleanRecycleBin = value; OnPropertyChanged(); } }
+
+    private async Task AnalyzeAsync()
+    {
+        if (IsBusyLocal)
+            return;
+
+        try
+        {
+            IsBusyLocal = true;
+            IsOptionsExpanded = false;
+            HasScanResults = false;
+            _cleanupCts = new CancellationTokenSource();
+
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                _viewModel.CleanupLogs.Clear();
+                ScanResults.Clear();
+            });
+
+            var options = BuildCleanupOptions();
+            var results = await _viewModel.RunCleanupScanAsync(options, _cleanupCts.Token);
+
+            foreach (var result in results)
+            {
+                ScanResults.Add(new CleanupCategorySummaryItem
+                {
+                    Key = result.Key,
+                    DisplayName = result.DisplayName,
+                    Bytes = result.Bytes,
+                    Items = result.Items,
+                    IsSelected = result.IsSelected
+                });
+            }
+
+            HasScanResults = ScanResults.Any();
+        }
+        catch (OperationCanceledException)
+        {
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = "Operação cancelada pelo usuário.", Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
+        }
+        catch (Exception ex)
+        {
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = $"Erro na análise: {ex.Message}", Icon = "ErrorCircle24", StatusColor = "#FF6B6B", IsBold = true });
+        }
+        finally
+        {
+            _cleanupCts?.Dispose();
+            _cleanupCts = null;
+            IsBusyLocal = false;
+        }
+    }
+
+    private async Task CleanupSelectedAsync()
+    {
+        if (IsBusyLocal || !HasScanResults)
+            return;
+
+        try
+        {
+            IsBusyLocal = true;
+            _cleanupCts = new CancellationTokenSource();
+
+            var selected = ScanResults.Where(x => x.IsSelected).Select(x => x.Key).ToHashSet();
+            var options = BuildCleanupOptions(selected);
+
+            if (selected.Count == 0)
+            {
+                _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = "Selecione ao menos uma categoria para limpar.", Icon = "Info24", StatusColor = "Orange" });
+                return;
+            }
+
+            await _viewModel.RunSelectedCleanupAsync(options, _cleanupCts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = "Limpeza cancelada pelo usuário.", Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
+        }
+        catch (Exception ex)
+        {
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = $"Erro durante limpeza: {ex.Message}", Icon = "ErrorCircle24", StatusColor = "#FF6B6B", IsBold = true });
+        }
+        finally
+        {
+            _cleanupCts?.Dispose();
+            _cleanupCts = null;
+            IsBusyLocal = false;
+        }
+    }
+
+    private void CancelCurrentOperation()
+    {
+        _cleanupCts?.Cancel();
+    }
+
+    private CleanupOptions BuildCleanupOptions(ISet<string>? selectedCategories = null)
+    {
+        bool IsEnabled(string key, bool fallback) => selectedCategories == null ? fallback : selectedCategories.Contains(key);
+
+        return new CleanupOptions
+        {
+            CleanUserTemp = IsEnabled("user-temp", CleanTemp),
+            CleanSystemTemp = IsEnabled("system-temp", CleanSystemTemp),
+            CleanPrefetch = IsEnabled("prefetch", CleanPrefetch),
+            CleanWindowsUpdate = IsEnabled("windows-update", CleanWindowsUpdate),
+            CleanBrowserCache = IsEnabled("browser-cache", CleanBrowser),
+            CleanDns = IsEnabled("dns", CleanDns),
+            CleanRecycleBin = IsEnabled("recycle-bin", CleanRecycleBin)
+        };
+    }
+
+    private void RefreshCommands()
+    {
+        (AnalyzeCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
+        (CleanupSelectedCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
+        (CancelCommand as RelayCommand)?.NotifyCanExecuteChanged();
+    }
 
     protected void OnPropertyChanged([CallerMemberName] string? name = null)
     {
@@ -131,30 +232,30 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     private void AppendLog(CleanupLogItem item)
     {
-        var paragraph = new Paragraph();
+        var paragraph = new Paragraph
+        {
+            FontFamily = new FontFamily("Segoe UI"),
+            TextAlignment = TextAlignment.Left,
+            Margin = new Thickness(0, 0, 0, 4),
+            LineHeight = 20
+        };
 
-        paragraph.FontFamily = new FontFamily("Segoe UI");
-        paragraph.TextAlignment = TextAlignment.Left;
-        paragraph.Margin = new Thickness(0, 0, 0, 4);
-        paragraph.LineHeight = 20;
-
-        // Recupera o Brush da cor
         Brush statusBrush = GetHarmonicBrush(item.StatusColor, item.Message);
 
         SymbolRegular symbol = SymbolRegular.Info24;
         if (!Enum.TryParse(item.Icon, out SymbolRegular parsedSymbol))
         {
             string msgLower = item.Message.ToLower();
-            
-            if (msgLower.Contains("concluída") || msgLower.Contains("finished") || msgLower.Contains("sucesso") || msgLower.Contains("success") || msgLower.Contains("removidos") || msgLower.Contains("removed")) 
+
+            if (msgLower.Contains("concluída") || msgLower.Contains("finished") || msgLower.Contains("sucesso") || msgLower.Contains("success") || msgLower.Contains("removidos") || msgLower.Contains("removed"))
                 symbol = SymbolRegular.Checkmark24;
-            else if (msgLower.Contains("erro") || msgLower.Contains("error") || msgLower.Contains("fail")) 
+            else if (msgLower.Contains("erro") || msgLower.Contains("error") || msgLower.Contains("fail"))
                 symbol = SymbolRegular.DismissCircle24;
-            else if (msgLower.Contains("lixeira") || msgLower.Contains("bin") || msgLower.Contains("trash") || msgLower.Contains("delete")) 
+            else if (msgLower.Contains("lixeira") || msgLower.Contains("bin") || msgLower.Contains("trash") || msgLower.Contains("delete"))
                 symbol = SymbolRegular.Delete24;
             else if (msgLower.Contains("update"))
                 symbol = SymbolRegular.ArrowSync24;
-            else 
+            else
                 symbol = SymbolRegular.Info24;
         }
         else
@@ -167,8 +268,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             Symbol = symbol,
             FontSize = 16,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = statusBrush, // Aplica explicitamente a cor
-            Margin = new Thickness(0, 0, 0, -2) 
+            Foreground = statusBrush,
+            Margin = new Thickness(0, 0, 0, -2)
         };
 
         var iconContainer = new InlineUIContainer(icon)
@@ -178,8 +279,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         paragraph.Inlines.Add(iconContainer);
         paragraph.Inlines.Add(new Run("  "));
 
-        // CORREÇÃO CRÍTICA: Substitui o literal '\n' por quebra de linha real
-        string processedMessage = item.Message?.Replace("\\n", Environment.NewLine) ?? "";
+        string processedMessage = item.Message?.Replace("\\n", Environment.NewLine) ?? string.Empty;
 
         var run = new Run(processedMessage)
         {
@@ -203,46 +303,59 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private static Brush GetHarmonicBrush(string statusColor, string message)
     {
         string msg = message?.ToLower() ?? "";
-        
+
         if (!string.IsNullOrEmpty(statusColor) && statusColor.StartsWith("#"))
         {
             try { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(statusColor)); } catch { }
         }
 
-        // Palette Flat/Pastel
-        
-        // Update / Services -> Blue
         if (msg.Contains("update") || msg.Contains("serviço") || msg.Contains("service"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64B5F6")); 
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64B5F6"));
 
-        // Success / Cleaned -> Green
         if (msg.Contains("temp") || msg.Contains("lixeira") || msg.Contains("bin") || msg.Contains("cache") || msg.Contains("prefetch") || msg.Contains("removed") || msg.Contains("removidos"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#81C784")); 
-        
-        // Neutral / Empty -> Gray Blue
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#81C784"));
+
         if (msg.Contains("vazio") || msg.Contains("limpo") || msg.Contains("clean") || msg.Contains("empty"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B0BEC5")); 
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B0BEC5"));
 
-        // Browsers / Shaders -> Amber/Yellow
         if (msg.Contains("chrome") || msg.Contains("edge") || msg.Contains("firefox") || msg.Contains("browser") || msg.Contains("navegadores") || msg.Contains("shader"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD54F")); 
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD54F"));
 
-        // DNS / Network -> Purple
         if (msg.Contains("dns") || msg.Contains("rede") || msg.Contains("network"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9575CD")); 
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9575CD"));
 
-        // General Success -> Teal
         if (msg.Contains("concluída") || msg.Contains("finished") || msg.Contains("sucesso") || msg.Contains("success") || statusColor == "Green")
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4DB6AC")); 
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4DB6AC"));
 
-        // Error -> Red
         if (msg.Contains("erro") || msg.Contains("error") || msg.Contains("fail") || msg.Contains("negado") || msg.Contains("denied"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E57373")); 
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E57373"));
 
-        // Info / Starting -> Light Blue
         if (msg.Contains("iniciando") || msg.Contains("starting") || msg.Contains("parados") || msg.Contains("stopped"))
-             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4FC3F7")); 
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4FC3F7"));
 
-        return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0")); 
+        return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
     }
+}
+
+public class CleanupCategorySummaryItem : INotifyPropertyChanged
+{
+    private bool _isSelected = true;
+
+    public string Key { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public long Bytes { get; set; }
+    public int Items { get; set; }
+    public string HumanSize => $"{Math.Round(Bytes / 1024.0 / 1024.0, 2)} MB";
+
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set
+        {
+            _isSelected = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }
