@@ -77,6 +77,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             OnPropertyChanged(nameof(CanAnalyze));
             OnPropertyChanged(nameof(CanCleanup));
             OnPropertyChanged(nameof(CancelVisibility));
+            OnPropertyChanged(nameof(ShouldShowSummaryCard));
             RefreshCommands();
         }
     }
@@ -89,6 +90,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             _hasScanResults = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanCleanup));
+            OnPropertyChanged(nameof(ShouldShowSummaryCard));
             RefreshCommands();
         }
     }
@@ -105,6 +107,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public bool CanCleanup => !IsBusyLocal && HasScanResults;
     public bool HasLogs => _viewModel.CleanupLogs.Count > 0;
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
+    public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
     public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
 
     private async Task AnalyzeAsync()
@@ -178,6 +181,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             }
 
             await _viewModel.RunSelectedCleanupAsync(options, _cleanupCts.Token);
+            ScanResults.Clear();
+            HasScanResults = false;
         }
         catch (OperationCanceledException)
         {
