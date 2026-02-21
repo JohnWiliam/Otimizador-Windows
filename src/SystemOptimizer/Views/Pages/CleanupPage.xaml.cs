@@ -13,6 +13,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using SystemOptimizer.Models;
+using SystemOptimizer.Properties;
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
 using Wpf.Ui.Controls;
@@ -56,6 +57,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         CancelCommand = new RelayCommand(CancelCurrentOperation, () => IsBusyLocal);
 
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
+        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
     }
 
     public bool IsOptionsExpanded
@@ -71,6 +73,9 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         {
             _isBusyLocal = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CanAnalyze));
+            OnPropertyChanged(nameof(CanCleanup));
+            OnPropertyChanged(nameof(CancelVisibility));
             RefreshCommands();
         }
     }
@@ -82,6 +87,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         {
             _hasScanResults = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CanCleanup));
             RefreshCommands();
         }
     }
@@ -93,6 +99,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public bool CleanBrowser { get => _cleanBrowser; set { _cleanBrowser = value; OnPropertyChanged(); } }
     public bool CleanDns { get => _cleanDns; set { _cleanDns = value; OnPropertyChanged(); } }
     public bool CleanRecycleBin { get => _cleanRecycleBin; set { _cleanRecycleBin = value; OnPropertyChanged(); } }
+
+    public bool CanAnalyze => !IsBusyLocal;
+    public bool CanCleanup => !IsBusyLocal && HasScanResults;
+    public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
+    public string CleanupProcessedItemsLabel => string.Format(Resources.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
 
     private async Task AnalyzeAsync()
     {
@@ -127,15 +138,15 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 });
             }
 
-            HasScanResults = ScanResults.Any();
+            HasScanResults = ScanResults.Any(result => result.Items > 0);
         }
         catch (OperationCanceledException)
         {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = "Operação cancelada pelo usuário.", Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Resources.Cleanup_FeedbackAnalyzeCanceled, Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
         }
         catch (Exception ex)
         {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = $"Erro na análise: {ex.Message}", Icon = "ErrorCircle24", StatusColor = "#FF6B6B", IsBold = true });
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = string.Format(Resources.Cleanup_FeedbackAnalyzeError, ex.Message), Icon = "ErrorCircle24", StatusColor = "#E57373", IsBold = true });
         }
         finally
         {
@@ -160,7 +171,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
             if (selected.Count == 0)
             {
-                _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = "Selecione ao menos uma categoria para limpar.", Icon = "Info24", StatusColor = "Orange" });
+                _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Resources.Cleanup_FeedbackSelectCategory, Icon = "Info24", StatusColor = "Orange" });
                 return;
             }
 
@@ -168,11 +179,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         catch (OperationCanceledException)
         {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = "Limpeza cancelada pelo usuário.", Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Resources.Cleanup_FeedbackCleanupCanceled, Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
         }
         catch (Exception ex)
         {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = $"Erro durante limpeza: {ex.Message}", Icon = "ErrorCircle24", StatusColor = "#FF6B6B", IsBold = true });
+            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = string.Format(Resources.Cleanup_FeedbackCleanupError, ex.Message), Icon = "ErrorCircle24", StatusColor = "#E57373", IsBold = true });
         }
         finally
         {
@@ -213,6 +224,15 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     protected void OnPropertyChanged([CallerMemberName] string? name = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
+
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.CleanupProcessedItems))
+        {
+            OnPropertyChanged(nameof(CleanupProcessedItemsLabel));
+        }
     }
 
     private void CleanupLogs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -346,6 +366,7 @@ public class CleanupCategorySummaryItem : INotifyPropertyChanged
     public long Bytes { get; set; }
     public int Items { get; set; }
     public string HumanSize => $"{Math.Round(Bytes / 1024.0 / 1024.0, 2)} MB";
+    public string ItemsLabel => string.Format(Resources.Cleanup_SummaryItemsLabel, Items);
 
     public bool IsSelected
     {

@@ -208,4 +208,15 @@
   <data name="Label_ShaderCache" xml:space="preserve"><value>Cache de Shaders</value></data>
   <data name="Log_Summary" xml:space="preserve"><value>Resumo: removidos={0}/{1} ({2}% sucesso), falhas={3}, estimado={4} MB</value></data>
   <data name="Log_Ignored" xml:space="preserve"><value> ({0} erro(s): acesso negado={1}, em uso={2})</value></data>
+  <data name="Cleanup_ActionAnalyze" xml:space="preserve"><value>Analisar</value></data>
+  <data name="Cleanup_ActionClean" xml:space="preserve"><value>Limpar</value></data>
+  <data name="Cleanup_ActionCancel" xml:space="preserve"><value>Cancelar</value></data>
+  <data name="Cleanup_ScanSummaryTitle" xml:space="preserve"><value>Resumo da análise</value></data>
+  <data name="Cleanup_SummaryItemsLabel" xml:space="preserve"><value>Itens: {0}</value></data>
+  <data name="Cleanup_ProgressProcessedItems" xml:space="preserve"><value>Itens processados: {0}</value></data>
+  <data name="Cleanup_FeedbackAnalyzeCanceled" xml:space="preserve"><value>Análise cancelada.</value></data>
+  <data name="Cleanup_FeedbackAnalyzeError" xml:space="preserve"><value>Erro na análise: {0}</value></data>
+  <data name="Cleanup_FeedbackSelectCategory" xml:space="preserve"><value>Selecione ao menos uma categoria para limpar.</value></data>
+  <data name="Cleanup_FeedbackCleanupCanceled" xml:space="preserve"><value>Limpeza cancelada.</value></data>
+  <data name="Cleanup_FeedbackCleanupError" xml:space="preserve"><value>Erro durante a limpeza: {0}</value></data>
 </root>

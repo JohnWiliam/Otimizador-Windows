@@ -209,4 +209,15 @@
   <data name="Label_ShaderCache" xml:space="preserve"><value>Shader Cache</value></data>
   <data name="Log_Summary" xml:space="preserve"><value>Summary: removed={0}/{1} ({2}% success), failures={3}, estimated={4} MB</value></data>
   <data name="Log_Ignored" xml:space="preserve"><value> ({0} error(s): access denied={1}, in use={2})</value></data>
+  <data name="Cleanup_ActionAnalyze" xml:space="preserve"><value>Analyze</value></data>
+  <data name="Cleanup_ActionClean" xml:space="preserve"><value>Clean</value></data>
+  <data name="Cleanup_ActionCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Cleanup_ScanSummaryTitle" xml:space="preserve"><value>Scan summary</value></data>
+  <data name="Cleanup_SummaryItemsLabel" xml:space="preserve"><value>Items: {0}</value></data>
+  <data name="Cleanup_ProgressProcessedItems" xml:space="preserve"><value>Processed items: {0}</value></data>
+  <data name="Cleanup_FeedbackAnalyzeCanceled" xml:space="preserve"><value>Analysis canceled.</value></data>
+  <data name="Cleanup_FeedbackAnalyzeError" xml:space="preserve"><value>Analysis error: {0}</value></data>
+  <data name="Cleanup_FeedbackSelectCategory" xml:space="preserve"><value>Select at least one category to clean.</value></data>
+  <data name="Cleanup_FeedbackCleanupCanceled" xml:space="preserve"><value>Cleanup canceled.</value></data>
+  <data name="Cleanup_FeedbackCleanupError" xml:space="preserve"><value>Cleanup error: {0}</value></data>
 </root>
