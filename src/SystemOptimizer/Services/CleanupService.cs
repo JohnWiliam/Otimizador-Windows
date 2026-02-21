@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
@@ -328,49 +329,131 @@ public class CleanupService
         long categoryBytes = 0;
         int skippedCount = 0;
         int failures = 0;
-        var dirInfo = new DirectoryInfo(path);
+        const bool bestEffortByCategory = true;
+        var rootDirectory = new DirectoryInfo(path);
+        var visitedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var directoriesToDelete = new List<DirectoryInfo>();
+        var directoriesToTraverse = new Stack<DirectoryInfo>();
+        var categoryErrorCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
-        try {
-            foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+        directoriesToTraverse.Push(rootDirectory);
+
+        while (directoriesToTraverse.Count > 0)
+        {
+            var currentDirectory = directoriesToTraverse.Pop();
+
+            if (!visitedDirectories.Add(currentDirectory.FullName))
+            {
+                continue;
+            }
+
+            directoriesToDelete.Add(currentDirectory);
+
+            IEnumerable<FileInfo> files;
+            try
+            {
+                files = currentDirectory.EnumerateFiles();
+            }
+            catch (Exception ex)
+            {
+                RegisterException(
+                    categoryErrorCounts,
+                    bestEffortByCategory,
+                    operation: "EnumerateFiles",
+                    targetPath: currentDirectory.FullName,
+                    ex,
+                    ref skippedCount,
+                    ref failures);
+                continue;
+            }
+
+            foreach (var file in files)
             {
                 try
                 {
                     long size = file.Length;
                     file.Delete();
-                    if (!file.Exists) categoryBytes += size;
+                    if (!file.Exists)
+                    {
+                        categoryBytes += size;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    skippedCount++;
-                    failures++;
-                    Logger.Log($"Falha ao remover arquivo '{file.FullName}': {ex.Message}", "WARNING");
+                    RegisterException(
+                        categoryErrorCounts,
+                        bestEffortByCategory,
+                        operation: "DeleteFile",
+                        targetPath: file.FullName,
+                        ex,
+                        ref skippedCount,
+                        ref failures);
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            failures++;
-            Logger.Log($"Erro ao enumerar arquivos em '{path}': {ex.Message}", "ERROR");
-            OnLogItem?.Invoke(new CleanupLogItem { Message = $"{(label ?? path)}: erro ao enumerar arquivos ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+
+            IEnumerable<DirectoryInfo> childDirectories;
+            try
+            {
+                childDirectories = currentDirectory.EnumerateDirectories();
+            }
+            catch (Exception ex)
+            {
+                RegisterException(
+                    categoryErrorCounts,
+                    bestEffortByCategory,
+                    operation: "EnumerateDirectories",
+                    targetPath: currentDirectory.FullName,
+                    ex,
+                    ref skippedCount,
+                    ref failures);
+                continue;
+            }
+
+            foreach (var childDirectory in childDirectories)
+            {
+                if ((childDirectory.Attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint)
+                {
+                    skippedCount++;
+                    Logger.Log($"Ignorando reparse point '{childDirectory.FullName}' durante limpeza.", "INFO");
+                    continue;
+                }
+
+                directoriesToTraverse.Push(childDirectory);
+            }
         }
 
-        try {
-            foreach (var dir in dirInfo.EnumerateDirectories("*", SearchOption.AllDirectories))
+        foreach (var dir in directoriesToDelete.OrderByDescending(GetDirectoryDepth))
+        {
+            if (string.Equals(dir.FullName, rootDirectory.FullName, StringComparison.OrdinalIgnoreCase))
             {
-                try { dir.Delete(true); }
-                catch (Exception ex)
-                {
-                    skippedCount++;
-                    failures++;
-                    Logger.Log($"Falha ao remover diretório '{dir.FullName}': {ex.Message}", "WARNING");
-                }
+                continue;
+            }
+
+            try
+            {
+                dir.Delete(false);
+            }
+            catch (Exception ex)
+            {
+                RegisterException(
+                    categoryErrorCounts,
+                    bestEffortByCategory,
+                    operation: "DeleteDirectory",
+                    targetPath: dir.FullName,
+                    ex,
+                    ref skippedCount,
+                    ref failures);
             }
         }
-        catch (Exception ex)
+
+        foreach (var kvp in categoryErrorCounts)
         {
-            failures++;
-            Logger.Log($"Erro ao enumerar diretórios em '{path}': {ex.Message}", "ERROR");
-            OnLogItem?.Invoke(new CleanupLogItem { Message = $"{(label ?? path)}: erro ao enumerar diretórios ({ex.Message})", Icon = "Warning24", StatusColor = "Orange" });
+            if (kvp.Value <= 1)
+            {
+                continue;
+            }
+
+            Logger.Log($"Categoria '{kvp.Key}' teve {kvp.Value} ocorrência(s); logs adicionais foram suprimidos por best effort.", "INFO");
         }
 
         if (logOutput && label != null)
@@ -379,6 +462,59 @@ public class CleanupService
         }
 
         return (categoryBytes, skippedCount, failures);
+    }
+
+    private static int GetDirectoryDepth(DirectoryInfo directory)
+    {
+        int depth = 0;
+        var current = directory.Parent;
+        while (current != null)
+        {
+            depth++;
+            current = current.Parent;
+        }
+
+        return depth;
+    }
+
+    private static void RegisterException(
+        Dictionary<string, int> categoryErrorCounts,
+        bool bestEffortByCategory,
+        string operation,
+        string targetPath,
+        Exception ex,
+        ref int skippedCount,
+        ref int failures)
+    {
+        skippedCount++;
+        failures++;
+
+        string exceptionKind = ClassifyException(ex);
+        string category = $"{operation}:{exceptionKind}";
+
+        categoryErrorCounts.TryGetValue(category, out int currentCount);
+        currentCount++;
+        categoryErrorCounts[category] = currentCount;
+
+        if (bestEffortByCategory && currentCount > 1)
+        {
+            return;
+        }
+
+        Logger.Log($"[{category}] Falha em '{targetPath}': {ex.Message}", "WARNING");
+    }
+
+    private static string ClassifyException(Exception ex)
+    {
+        return ex switch
+        {
+            UnauthorizedAccessException => nameof(UnauthorizedAccessException),
+            IOException => nameof(IOException),
+            PathTooLongException => nameof(PathTooLongException),
+            DirectoryNotFoundException => nameof(DirectoryNotFoundException),
+            FileNotFoundException => nameof(FileNotFoundException),
+            _ => ex.GetType().Name
+        };
     }
 
     private async Task CleanWindowsUpdateAsync()
