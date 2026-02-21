@@ -329,7 +329,7 @@
                                     <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="2" Text="{Binding ItemsLabel}" Margin="0,0,12,0"/>
-                                    <TextBlock Grid.Column="3" Text="{Binding HumanSize}" FontWeight="SemiBold"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding SizeLabel}" FontWeight="SemiBold"/>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
