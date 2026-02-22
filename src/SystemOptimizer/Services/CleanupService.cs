@@ -205,7 +205,18 @@ public class CleanupService
         var chromiumRoots = new[]
         {
             Path.Combine(localAppData, "Google", "Chrome", "User Data"),
-            Path.Combine(localAppData, "Microsoft", "Edge", "User Data")
+            Path.Combine(localAppData, "Microsoft", "Edge", "User Data"),
+            Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data"),
+            Path.Combine(localAppData, "Opera Software", "Opera Stable")
+        };
+
+        var chromiumCacheFolders = new[]
+        {
+            Path.Combine("Cache", "Cache_Data"),
+            "Code Cache",
+            "GPUCache",
+            "Service Worker",
+            "ShaderCache"
         };
 
         foreach (var root in chromiumRoots)
@@ -219,9 +230,12 @@ public class CleanupService
                 if (!IsChromiumProfileDirectory(profileDir))
                     continue;
 
-                var cacheScan = await ScanDirectoryAsync(Path.Combine(profileDir, "Cache", "Cache_Data"), cancellationToken);
-                bytes += cacheScan.Bytes;
-                items += cacheScan.Items;
+                foreach (var relativePath in chromiumCacheFolders)
+                {
+                    var cacheScan = await ScanDirectoryAsync(Path.Combine(profileDir, relativePath), cancellationToken);
+                    bytes += cacheScan.Bytes;
+                    items += cacheScan.Items;
+                }
             }
         }
 
@@ -258,18 +272,54 @@ public class CleanupService
             int items = 0;
             try
             {
-                foreach (var file in Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories))
+                var pendingDirectories = new Stack<string>();
+                pendingDirectories.Push(path);
+
+                while (pendingDirectories.Count > 0)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+                    var current = pendingDirectories.Pop();
+
+                    IEnumerable<string> files;
                     try
                     {
-                        var info = new FileInfo(file);
-                        bytes += info.Length;
-                        items++;
+                        files = Directory.EnumerateFiles(current);
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // ignora arquivo inacessível durante análise
+                        Logger.Log($"Erro ao enumerar arquivos em '{current}': {ex.Message}", "WARNING");
+                        continue;
+                    }
+
+                    foreach (var file in files)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        try
+                        {
+                            var info = new FileInfo(file);
+                            bytes += info.Length;
+                            items++;
+                        }
+                        catch
+                        {
+                            // ignora arquivo inacessível durante análise
+                        }
+                    }
+
+                    IEnumerable<string> subDirectories;
+                    try
+                    {
+                        subDirectories = Directory.EnumerateDirectories(current);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"Erro ao enumerar subdiretórios em '{current}': {ex.Message}", "WARNING");
+                        continue;
+                    }
+
+                    foreach (var subDirectory in subDirectories)
+                    {
+                        pendingDirectories.Push(subDirectory);
                     }
                 }
             }
