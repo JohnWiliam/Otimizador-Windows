@@ -210,6 +210,84 @@ namespace SystemOptimizer.Properties {
             }
         }
         
+        public static string Cleanup_ActionAnalyze {
+            get {
+                return ResourceManager.GetString("Cleanup_ActionAnalyze", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_ActionCancel {
+            get {
+                return ResourceManager.GetString("Cleanup_ActionCancel", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_ActionClean {
+            get {
+                return ResourceManager.GetString("Cleanup_ActionClean", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_FeedbackAnalyzeCanceled {
+            get {
+                return ResourceManager.GetString("Cleanup_FeedbackAnalyzeCanceled", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_FeedbackAnalyzeError {
+            get {
+                return ResourceManager.GetString("Cleanup_FeedbackAnalyzeError", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_FeedbackCleanupCanceled {
+            get {
+                return ResourceManager.GetString("Cleanup_FeedbackCleanupCanceled", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_FeedbackCleanupError {
+            get {
+                return ResourceManager.GetString("Cleanup_FeedbackCleanupError", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_FeedbackSelectCategory {
+            get {
+                return ResourceManager.GetString("Cleanup_FeedbackSelectCategory", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_LogEmpty {
+            get {
+                return ResourceManager.GetString("Cleanup_LogEmpty", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_ProgressProcessedItems {
+            get {
+                return ResourceManager.GetString("Cleanup_ProgressProcessedItems", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_ScanSummaryEmpty {
+            get {
+                return ResourceManager.GetString("Cleanup_ScanSummaryEmpty", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_ScanSummaryTitle {
+            get {
+                return ResourceManager.GetString("Cleanup_ScanSummaryTitle", resourceCulture);
+            }
+        }
+        
+        public static string Cleanup_SummaryItemsLabel {
+            get {
+                return ResourceManager.GetString("Cleanup_SummaryItemsLabel", resourceCulture);
+            }
+        }
+        
         public static string Label_TempFiles {
             get {
                 return ResourceManager.GetString("Label_TempFiles", resourceCulture);

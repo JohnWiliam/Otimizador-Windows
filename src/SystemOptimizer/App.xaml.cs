@@ -14,7 +14,7 @@ using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
 using System.Net.Http;
-using Microsoft.Toolkit.Uwp.Notifications;
+using CommunityToolkit.WinUI.Notifications;
 using SystemOptimizer.Models;
 
 namespace SystemOptimizer;
@@ -36,6 +36,14 @@ public partial class App : Application
 
                 // 2. Core Services
                 services.AddSingleton<TweakService>();
+                services.AddSingleton<CleanupExecutionEngine>();
+                services.AddSingleton<ICleanupTargetProvider, UserTempCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, SystemTempCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, PrefetchCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, BrowserCacheCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, DnsCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, WindowsUpdateCleanupTargetProvider>();
+                services.AddSingleton<ICleanupTargetProvider, RecycleBinCleanupTargetProvider>();
                 services.AddSingleton<CleanupService>();
                 services.AddSingleton<IUpdateService, UpdateService>();
                 services.AddSingleton<StartupActivationState>();
@@ -212,11 +220,12 @@ public partial class App : Application
 
     private static void ShowUpdateToast(UpdateInfo updateInfo)
     {
-        new ToastContentBuilder()
+        var toastBuilder = new ToastContentBuilder()
             .AddText("Atualização disponível")
             .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
-            .AddArgument("action", "open-settings")
-            .Show();
+            .AddArgument("action", "open-settings");
+
+        Helpers.ToastCompatHelper.Show(toastBuilder);
     }
 
 }

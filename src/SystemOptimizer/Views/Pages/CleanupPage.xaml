@@ -4,11 +4,9 @@
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
       xmlns:p="clr-namespace:SystemOptimizer.Properties"
-      xmlns:helpers="clr-namespace:SystemOptimizer.Helpers"
       mc:Ignorable="d" 
-      d:DesignHeight="600" d:DesignWidth="800"
+      d:DesignHeight="700" d:DesignWidth="900"
       x:Name="RootPage"
       Title="CleanupPage"
       FontFamily="Segoe UI">
@@ -17,129 +15,383 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" 
-                   Text="{x:Static p:Resources.Cleanup_Title}" 
+        <TextBlock Grid.Row="0"
+                   Text="{x:Static p:Resources.Cleanup_Title}"
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                   FontSize="26" 
-                   FontWeight="SemiBold" 
+                   FontSize="26"
+                   FontWeight="SemiBold"
                    Margin="0,0,0,16" />
 
-        <ui:CardExpander Grid.Row="1" Margin="0,0,0,16" 
+        <ui:CardExpander x:Name="OptionsCard"
+                         Grid.Row="1" Margin="0,0,0,16"
                          IsExpanded="{Binding IsOptionsExpanded, ElementName=RootPage, Mode=TwoWay}">
             <ui:CardExpander.Header>
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" /> </Grid.ColumnDefinitions>
-                    
+                    </Grid.ColumnDefinitions>
+
                     <ui:SymbolIcon Symbol="Broom24" FontSize="24" Margin="0,0,12,0" />
-                    
+
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="{x:Static p:Resources.Cleanup_CacheTitle}" 
+                        <TextBlock Text="{x:Static p:Resources.Cleanup_CacheTitle}"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                   FontSize="15" 
-                                   FontWeight="Medium" />
+                                   FontSize="15"
+                                   FontWeight="Medium"
+                                   TextWrapping="Wrap" />
                         <TextBlock Text="{x:Static p:Resources.Cleanup_CacheDesc}"
-                                   FontSize="13" 
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                   Margin="0,4,0,0" 
+                                   FontSize="13"
+                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Margin="0,4,0,0"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
-
-                    <Grid Grid.Column="2" VerticalAlignment="Center" Margin="16,0,8,0">
-                        
-                        <ui:Button Command="{Binding ExecuteSelectedCleanupCommand, RelativeSource={RelativeSource AncestorType=Page}}"
-                                   Appearance="Primary"
-                                   Height="36"
-                                   Padding="16,0"
-                                   Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                            <StackPanel Orientation="Horizontal">
-                                <ui:SymbolIcon Symbol="Play24" Margin="0,0,8,0"/>
-                                <TextBlock Text="{x:Static p:Resources.Btn_RunCleanup}"/>
-                            </StackPanel>
-                        </ui:Button>
-
-                        <ui:Button Appearance="Primary"
-                                   Height="36"
-                                   Padding="16,0"
-                                   Cursor="Wait"
-                                   Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <StackPanel Orientation="Horizontal">
-                                <ui:ProgressRing IsIndeterminate="True" Width="16" Height="16" Margin="0,0,8,0" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
-                                <TextBlock Text="{x:Static p:Resources.Status_Applying}" Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
-                            </StackPanel>
-                        </ui:Button>
-                    </Grid>
                 </Grid>
             </ui:CardExpander.Header>
 
             <StackPanel Margin="0,8,0,0">
-                <TextBlock Text="{x:Static p:Resources.Cleanup_SelectOptions}" 
-                           FontWeight="SemiBold" Margin="0,0,0,12" 
+                <WrapPanel Orientation="Horizontal"
+                           VerticalAlignment="Center"
+                           Margin="0,0,0,12">
+                    <ui:Button Command="{Binding AnalyzeCommand, ElementName=RootPage}"
+                               IsEnabled="{Binding CanAnalyze, ElementName=RootPage}"
+                               Appearance="Primary"
+                               RenderTransformOrigin="0.5,0.5"
+                               Height="36"
+                               Padding="16,0"
+                               Margin="0,0,8,8">
+                        <ui:Button.RenderTransform>
+                            <ScaleTransform ScaleX="1" ScaleY="1"/>
+                        </ui:Button.RenderTransform>
+                        <ui:Button.Triggers>
+                            <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.97" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.97" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                            <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                            <EventTrigger RoutedEvent="MouseLeave">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.08" />
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.08" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </ui:Button.Triggers>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Search24" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static p:Resources.Cleanup_ActionAnalyze}"/>
+                        </StackPanel>
+                    </ui:Button>
+
+                    <ui:Button Command="{Binding CancelCommand, ElementName=RootPage}"
+                               Visibility="{Binding CancelVisibility, ElementName=RootPage}"
+                               Appearance="Secondary"
+                               RenderTransformOrigin="0.5,0.5"
+                               Height="36"
+                               Padding="16,0"
+                               Margin="0,0,0,8">
+                        <ui:Button.RenderTransform>
+                            <ScaleTransform ScaleX="1" ScaleY="1"/>
+                        </ui:Button.RenderTransform>
+                        <ui:Button.Triggers>
+                            <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.97" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.97" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                            <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.12" />
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.12" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                            <EventTrigger RoutedEvent="MouseLeave">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.08" />
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.08" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </ui:Button.Triggers>
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Dismiss24" Margin="0,0,8,0"/>
+                            <TextBlock Text="{x:Static p:Resources.Cleanup_ActionCancel}"/>
+                        </StackPanel>
+                    </ui:Button>
+                </WrapPanel>
+
+                <TextBlock Text="{x:Static p:Resources.Cleanup_SelectOptions}"
+                           FontWeight="SemiBold" Margin="0,0,0,12"
                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                
+
                 <UniformGrid Columns="2" Rows="4">
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionTemp}" 
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionTemp}"
                               IsChecked="{Binding CleanTemp, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionSystemTemp}" 
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionSystemTemp}"
                               IsChecked="{Binding CleanSystemTemp, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionPrefetch}" 
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionPrefetch}"
                               IsChecked="{Binding CleanPrefetch, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionWindowsUpdate}" 
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionWindowsUpdate}"
                               IsChecked="{Binding CleanWindowsUpdate, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionBrowser}" 
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionBrowser}"
                               IsChecked="{Binding CleanBrowser, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionDNS}" 
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionDNS}"
                               IsChecked="{Binding CleanDns, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionRecycleBin}" 
-                              IsChecked="{Binding CleanRecycleBin, ElementName=RootPage}" Margin="0,0,8,12"
-                              Foreground="{DynamicResource PaletteRedBrush}"/>
+                    <CheckBox IsChecked="{Binding CleanRecycleBin, ElementName=RootPage}" Margin="0,0,8,12">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Delete20"
+                                           Margin="0,0,6,0"
+                                           Foreground="#D46A6A" />
+                            <TextBlock Text="{x:Static p:Resources.Cleanup_OptionRecycleBin}"/>
+                        </StackPanel>
+                    </CheckBox>
                 </UniformGrid>
             </StackPanel>
         </ui:CardExpander>
 
-        <ui:Card Grid.Row="2" 
-                 Padding="0" 
-                 VerticalAlignment="Stretch" 
-                 VerticalContentAlignment="Stretch">
+        <ui:Card x:Name="SummaryCard"
+                 Grid.Row="2"
+                 Padding="0"
+                 Margin="0,0,0,16"
+                 RenderTransformOrigin="0.5,0.5"
+                 Visibility="{Binding ShouldShowSummaryCard, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <ui:Card.RenderTransform>
+                <TranslateTransform Y="0"/>
+            </ui:Card.RenderTransform>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                
-                <Border Grid.Row="0" 
-                        Padding="16,10" 
+
+                <Border Grid.Row="0"
+                        Padding="16,10"
                         Background="{DynamicResource ControlFillColorSecondaryBrush}"
-                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" 
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="0,0,0,1"
+                        CornerRadius="4,4,0,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="DataHistogram20" Margin="0,0,10,0" FontSize="16"/>
+                        <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryTitle}" FontWeight="Medium" FontSize="13" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Grid.Row="1" Margin="16,12,16,16">
+                    <WrapPanel Orientation="Horizontal"
+                               VerticalAlignment="Center"
+                               Margin="0,0,0,12">
+                        <ui:Button Command="{Binding CleanupSelectedCommand, ElementName=RootPage}"
+                                   IsEnabled="{Binding CanCleanup, ElementName=RootPage}"
+                                   Appearance="Primary"
+                                   RenderTransformOrigin="0.5,0.5"
+                                   Height="36"
+                                   Padding="16,0"
+                                   Margin="0,0,8,0">
+                            <ui:Button.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </ui:Button.RenderTransform>
+                            <ui:Button.Triggers>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.97" Duration="0:0:0.12" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.97" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.12" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.08" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.08" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </ui:Button.Triggers>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Delete24" Margin="0,0,8,0"/>
+                                <TextBlock Text="{x:Static p:Resources.Cleanup_ActionClean}"/>
+                            </StackPanel>
+                        </ui:Button>
+
+                        <ui:Button Command="{Binding CancelCommand, ElementName=RootPage}"
+                                   Visibility="{Binding CancelVisibility, ElementName=RootPage}"
+                                   Appearance="Secondary"
+                                   RenderTransformOrigin="0.5,0.5"
+                                   Height="36"
+                                   Padding="16,0">
+                            <ui:Button.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </ui:Button.RenderTransform>
+                            <ui:Button.Triggers>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.97" Duration="0:0:0.12" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.97" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.12" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.12" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                                <EventTrigger RoutedEvent="MouseLeave">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.08" />
+                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.08" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </ui:Button.Triggers>
+                            <StackPanel Orientation="Horizontal">
+                                <ui:SymbolIcon Symbol="Dismiss24" Margin="0,0,8,0"/>
+                                <TextBlock Text="{x:Static p:Resources.Cleanup_ActionCancel}"/>
+                            </StackPanel>
+                        </ui:Button>
+                    </WrapPanel>
+
+                    <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryEmpty}"
+                               Margin="0,0,0,8"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+
+                    <ItemsControl ItemsSource="{Binding ScanResults, ElementName=RootPage}"
+                                  Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="Opacity" Value="0"/>
+                                <Setter Property="RenderTransform">
+                                    <Setter.Value>
+                                        <TranslateTransform Y="8"/>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                 To="1"
+                                                                 Duration="0:0:0.20"/>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                                                                 To="0"
+                                                                 Duration="0:0:0.20"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding ItemsLabel}" Margin="0,0,12,0"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding SizeLabel}" FontWeight="SemiBold"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Margin="0,8,0,4" Text="{Binding DataContext.CleanupProgressCategory, ElementName=RootPage}" />
+                    <TextBlock Margin="0,4,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Text="{Binding CleanupProcessedItemsLabel, ElementName=RootPage}"/>
+                </StackPanel>
+            </Grid>
+        </ui:Card>
+
+        <ui:Card x:Name="LogsCard"
+                 Grid.Row="3"
+                 Padding="0"
+                 RenderTransformOrigin="0.5,0.5"
+                 VerticalAlignment="Stretch"
+                 VerticalContentAlignment="Stretch">
+            <ui:Card.RenderTransform>
+                <TranslateTransform Y="0"/>
+            </ui:Card.RenderTransform>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0"
+                        Padding="16,10"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                         BorderThickness="0,0,0,1"
                         CornerRadius="4,4,0,0">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <ui:SymbolIcon Symbol="CodeText20" Margin="0,0,10,0" FontSize="16"/>
-                        <TextBlock Text="{x:Static p:Resources.Cleanup_LogTitle}" 
+                        <TextBlock Text="{x:Static p:Resources.Cleanup_LogTitle}"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                   FontWeight="Medium" 
+                                   FontWeight="Medium"
                                    FontSize="13" />
                     </StackPanel>
                 </Border>
 
-                <RichTextBox Grid.Row="1" x:Name="LogOutput" 
-                             IsReadOnly="True" 
+                <RichTextBox Grid.Row="1" x:Name="LogOutput"
+                             IsReadOnly="True"
                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                             Background="Transparent" 
-                             BorderThickness="0" 
+                             Background="Transparent"
+                             BorderThickness="0"
                              Padding="16"
                              VerticalScrollBarVisibility="Auto"
                              VerticalContentAlignment="Top"
-                             FontFamily="Segoe UI" 
+                             FontFamily="Segoe UI"
                              FontSize="12">
-                    <FlowDocument PagePadding="0" TextAlignment="Left" FontFamily="Segoe UI">
-                    </FlowDocument>
+                    <FlowDocument PagePadding="0" TextAlignment="Left" FontFamily="Segoe UI"/>
                 </RichTextBox>
+
+                <TextBlock Grid.Row="1"
+                           IsHitTestVisible="False"
+                           Text="{x:Static p:Resources.Cleanup_LogEmpty}"
+                           Margin="16"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Top"
+                           Visibility="{Binding HasLogs, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
             </Grid>
         </ui:Card>
     </Grid>

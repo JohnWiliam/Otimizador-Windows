@@ -1,5 +1,6 @@
 using System;
-using Microsoft.Toolkit.Uwp.Notifications; // CORRIGIDO
+using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
+using SystemOptimizer.Helpers;
 using SystemOptimizer.Models;
 
 namespace SystemOptimizer.Services;
@@ -10,11 +11,12 @@ public class UpdateNotificationService
     {
         if (!updateInfo.IsAvailable) return;
 
-        new ToastContentBuilder()
+        var toastBuilder = new ToastContentBuilder()
             .AddText("Atualização Disponível")
             .AddText($"A versão {updateInfo.Version} está pronta para instalar.")
             .AddArgument("action", "update")
-            .AddArgument("downloadUrl", updateInfo.DownloadUrl)
-            .Show();
+            .AddArgument("downloadUrl", updateInfo.DownloadUrl);
+
+        ToastCompatHelper.Show(toastBuilder);
     }
 }

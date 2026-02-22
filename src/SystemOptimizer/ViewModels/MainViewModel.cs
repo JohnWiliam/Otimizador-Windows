@@ -42,6 +42,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isInitializing = true;
 
+    [ObservableProperty]
+    private int _cleanupProgressPercentage;
+
+    [ObservableProperty]
+    private string _cleanupProgressCategory = string.Empty;
+
+    [ObservableProperty]
+    private int _cleanupProcessedItems;
+
     public MainViewModel(TweakService tweakService, CleanupService cleanupService, IDialogService dialogService)
     {
         _tweakService = tweakService;
@@ -52,7 +61,23 @@ public partial class MainViewModel : ObservableObject
         {
             Application.Current.Dispatcher.Invoke(() => CleanupLogs.Add(item));
         };
+
+        _cleanupService.OnProgress += (progress) =>
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                CleanupProgressPercentage = progress.Percentage;
+                CleanupProgressCategory = progress.CurrentCategory;
+                CleanupProcessedItems = progress.ProcessedItems;
+            });
+        };
     }
+
+    public Task<IReadOnlyList<CleanupCategoryResult>> RunCleanupScanAsync(CleanupOptions options, CancellationToken cancellationToken)
+        => _cleanupService.RunScanAsync(options, cancellationToken);
+
+    public Task RunSelectedCleanupAsync(CleanupOptions options, CancellationToken cancellationToken)
+        => _cleanupService.RunCleanupAsync(options, cancellationToken);
 
     public async Task InitializeAsync()
     {
