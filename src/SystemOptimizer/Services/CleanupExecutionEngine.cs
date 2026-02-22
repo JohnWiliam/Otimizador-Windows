@@ -156,6 +156,8 @@ public class CleanupExecutionEngine
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         CleanupChromiumBrowser(Path.Combine(localAppData, "Google", "Chrome", "User Data"), result);
         CleanupChromiumBrowser(Path.Combine(localAppData, "Microsoft", "Edge", "User Data"), result);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data"), result);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Opera Software", "Opera Stable"), result);
 
         string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
         if (!Directory.Exists(firefoxPath))
@@ -185,14 +187,26 @@ public class CleanupExecutionEngine
             return;
         }
 
+        string[] cacheRelativePaths =
+        [
+            Path.Combine("Cache", "Cache_Data"),
+            "Code Cache",
+            "GPUCache",
+            "Service Worker",
+            "ShaderCache"
+        ];
+
         try
         {
             foreach (var dir in Directory.GetDirectories(userDataPath))
             {
                 if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
                 {
-                    string cachePath = Path.Combine(dir, "Cache", "Cache_Data");
-                    CleanupDirectory(cachePath, result);
+                    foreach (var relativePath in cacheRelativePaths)
+                    {
+                        string cachePath = Path.Combine(dir, relativePath);
+                        CleanupDirectory(cachePath, result);
+                    }
                 }
             }
         }

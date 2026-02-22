@@ -153,6 +153,15 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             {
                 AnimateSummaryCardEntrance();
             }
+            else
+            {
+                _viewModel.CleanupLogs.Add(new CleanupLogItem
+                {
+                    Message = Res.Cleanup_ScanSummaryEmpty,
+                    Icon = "Info24",
+                    StatusColor = "Gray"
+                });
+            }
         }
         catch (OperationCanceledException)
         {
