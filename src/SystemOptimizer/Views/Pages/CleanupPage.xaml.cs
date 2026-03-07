@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -15,7 +16,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using SystemOptimizer.Models;
-using SystemOptimizer.Properties;
 using Res = SystemOptimizer.Properties.Resources;
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
@@ -56,14 +56,20 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public ICommand AnalyzeCommand { get; }
     public ICommand CleanupSelectedCommand { get; }
     public ICommand CancelCommand { get; }
+    public ICommand SelectAllCommand { get; }
+    public ICommand DeselectAllCommand { get; }
+    public ICommand SelectRecommendedCommand { get; }
 
     public ObservableCollection<CleanupCategorySummaryItem> ScanResults { get; } = [];
 
     public CleanupPage(MainViewModel viewModel)
     {
         AnalyzeCommand = new AsyncRelayCommand(AnalyzeAsync, () => !IsBusyLocal);
-        CleanupSelectedCommand = new AsyncRelayCommand(CleanupSelectedAsync, () => !IsBusyLocal && HasScanResults);
+        CleanupSelectedCommand = new AsyncRelayCommand(CleanupSelectedAsync, () => !IsBusyLocal && HasScanResults && SelectedCategoriesCount > 0);
         CancelCommand = new RelayCommand(CancelCurrentOperation, () => IsBusyLocal);
+        SelectAllCommand = new RelayCommand(SelectAllCategories, () => HasScanResults);
+        DeselectAllCommand = new RelayCommand(DeselectAllCategories, () => HasScanResults);
+        SelectRecommendedCommand = new RelayCommand(SelectRecommendedCategories, () => HasScanResults);
 
         InitializeComponent();
         _viewModel = viewModel;
@@ -71,7 +77,9 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        ScanResults.CollectionChanged += ScanResults_CollectionChanged;
         Loaded += CleanupPage_Loaded;
+        Unloaded += CleanupPage_Unloaded;
     }
 
     public bool IsOptionsExpanded
@@ -104,6 +112,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanCleanup));
             OnPropertyChanged(nameof(ShouldShowSummaryCard));
+            OnPropertyChanged(nameof(SelectedSummaryLabel));
             RefreshCommands();
         }
     }
@@ -117,11 +126,17 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public bool CleanRecycleBin { get => _cleanRecycleBin; set { _cleanRecycleBin = value; OnPropertyChanged(); } }
 
     public bool CanAnalyze => !IsBusyLocal;
-    public bool CanCleanup => !IsBusyLocal && HasScanResults;
+    public bool CanCleanup => !IsBusyLocal && HasScanResults && SelectedCategoriesCount > 0;
     public bool HasLogs => _viewModel.CleanupLogs.Count > 0;
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
     public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
     public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
+    public int SelectedCategoriesCount => ScanResults.Count(x => x.IsSelected);
+    public string TotalScanSizeLabel => FormatBytes(ScanResults.Where(x => x.ShouldDisplaySize).Sum(x => x.Bytes));
+    public string TotalScanItemsLabel => ScanResults.Sum(x => x.Items).ToString("N0", CultureInfo.CurrentCulture);
+    public string SelectedSummaryLabel => HasScanResults
+        ? $"{SelectedCategoriesCount} de {ScanResults.Count} selecionadas"
+        : "Nenhuma categoria selecionada";
 
     private async Task AnalyzeAsync()
     {
@@ -148,9 +163,9 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 ScanResults.Add(CreateSummaryItem(result));
 
             HasScanResults = ScanResults.Any(result => result.Items > 0);
-
             if (HasScanResults)
             {
+                SelectRecommendedCategories();
                 AnimateSummaryCardEntrance();
             }
             else
@@ -176,6 +191,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             _cleanupCts?.Dispose();
             _cleanupCts = null;
             IsBusyLocal = false;
+            OnSelectionMetricsChanged();
         }
     }
 
@@ -217,13 +233,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             _cleanupCts?.Dispose();
             _cleanupCts = null;
             IsBusyLocal = false;
+            OnSelectionMetricsChanged();
         }
     }
 
-    private void CancelCurrentOperation()
-    {
-        _cleanupCts?.Cancel();
-    }
+    private void CancelCurrentOperation() => _cleanupCts?.Cancel();
 
     private CleanupOptions BuildCleanupOptions(ISet<string>? selectedCategories = null)
     {
@@ -256,18 +270,103 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         };
     }
 
+    private void SelectAllCategories()
+    {
+        foreach (var category in ScanResults)
+            category.IsSelected = true;
+
+        OnSelectionMetricsChanged();
+    }
+
+    private void DeselectAllCategories()
+    {
+        foreach (var category in ScanResults)
+            category.IsSelected = false;
+
+        OnSelectionMetricsChanged();
+    }
+
+    private void SelectRecommendedCategories()
+    {
+        foreach (var category in ScanResults)
+            category.IsSelected = category.Items > 0 && category.Key != "windows-update";
+
+        OnSelectionMetricsChanged();
+    }
+
+    private void ScanResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.NewItems != null)
+        {
+            foreach (CleanupCategorySummaryItem item in e.NewItems)
+            {
+                item.PropertyChanged += SummaryItem_PropertyChanged;
+            }
+        }
+
+        if (e.OldItems != null)
+        {
+            foreach (CleanupCategorySummaryItem item in e.OldItems)
+            {
+                item.PropertyChanged -= SummaryItem_PropertyChanged;
+            }
+        }
+
+        OnSelectionMetricsChanged();
+    }
+
+    private void SummaryItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(CleanupCategorySummaryItem.IsSelected)
+            or nameof(CleanupCategorySummaryItem.Items)
+            or nameof(CleanupCategorySummaryItem.Bytes))
+        {
+            OnSelectionMetricsChanged();
+        }
+    }
+
+    private void OnSelectionMetricsChanged()
+    {
+        OnPropertyChanged(nameof(SelectedCategoriesCount));
+        OnPropertyChanged(nameof(TotalScanSizeLabel));
+        OnPropertyChanged(nameof(TotalScanItemsLabel));
+        OnPropertyChanged(nameof(SelectedSummaryLabel));
+        OnPropertyChanged(nameof(CanCleanup));
+        RefreshCommands();
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes <= 0)
+            return "0 MB";
+
+        string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
+        double value = bytes;
+        int order = 0;
+
+        while (value >= 1024 && order < suffixes.Length - 1)
+        {
+            order++;
+            value /= 1024;
+        }
+
+        return $"{value:N1} {suffixes[order]}";
+    }
+
     private void RefreshCommands()
     {
         (AnalyzeCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
         (CleanupSelectedCommand as AsyncRelayCommand)?.NotifyCanExecuteChanged();
         (CancelCommand as RelayCommand)?.NotifyCanExecuteChanged();
+        (SelectAllCommand as RelayCommand)?.NotifyCanExecuteChanged();
+        (DeselectAllCommand as RelayCommand)?.NotifyCanExecuteChanged();
+        (SelectRecommendedCommand as RelayCommand)?.NotifyCanExecuteChanged();
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? name = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
-
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -285,6 +384,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             {
                 _pendingLogs.Clear();
             }
+
             _logRenderCts?.Cancel();
             LogOutput.Document.Blocks.Clear();
         }
@@ -307,9 +407,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private void StartLogRenderLoop()
     {
         if (_logRenderTask is { IsCompleted: false })
-        {
             return;
-        }
 
         _logRenderCts?.Dispose();
         _logRenderCts = new CancellationTokenSource();
@@ -333,9 +431,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 }
 
                 if (item is null)
-                {
                     break;
-                }
 
                 await Dispatcher.InvokeAsync(() =>
                 {
@@ -348,6 +444,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         catch (OperationCanceledException)
         {
+            // Ignore cancellations from quick re-renders.
         }
         finally
         {
@@ -380,7 +477,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         SymbolRegular symbol = SymbolRegular.Info24;
         if (!Enum.TryParse(item.Icon, out SymbolRegular parsedSymbol))
         {
-            string msgLower = item.Message.ToLower();
+            string msgLower = item.Message.ToLowerInvariant();
 
             if (msgLower.Contains("concluída") || msgLower.Contains("finished") || msgLower.Contains("sucesso") || msgLower.Contains("success") || msgLower.Contains("removidos") || msgLower.Contains("removed"))
                 symbol = SymbolRegular.Checkmark24;
@@ -390,8 +487,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 symbol = SymbolRegular.Delete24;
             else if (msgLower.Contains("update"))
                 symbol = SymbolRegular.ArrowSync24;
-            else
-                symbol = SymbolRegular.Info24;
         }
         else
         {
@@ -407,11 +502,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             Margin = new Thickness(0, 0, 0, -2)
         };
 
-        var iconContainer = new InlineUIContainer(icon)
-        {
-            BaselineAlignment = BaselineAlignment.Center
-        };
-        paragraph.Inlines.Add(iconContainer);
+        paragraph.Inlines.Add(new InlineUIContainer(icon) { BaselineAlignment = BaselineAlignment.Center });
         paragraph.Inlines.Add(new Run("  "));
 
         string processedMessage = item.Message?.Replace("\\n", Environment.NewLine) ?? string.Empty;
@@ -421,13 +512,9 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             BaselineAlignment = BaselineAlignment.Center,
             FontFamily = new FontFamily("Segoe UI"),
             FontSize = 13,
-            Foreground = statusBrush
+            Foreground = statusBrush,
+            FontWeight = item.IsBold ? FontWeights.SemiBold : FontWeights.Normal
         };
-
-        if (item.IsBold)
-        {
-            run.FontWeight = FontWeights.SemiBold;
-        }
 
         paragraph.Inlines.Add(run);
 
@@ -438,16 +525,12 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private void SmoothScrollToLogsCard()
     {
         AnimateCardOnLoad(LogsCard, fromY: 22, durationMs: 420);
-
-        Dispatcher.BeginInvoke(() =>
-        {
-            LogsCard.BringIntoView();
-        }, System.Windows.Threading.DispatcherPriority.Background);
+        Dispatcher.BeginInvoke(() => LogsCard.BringIntoView(), System.Windows.Threading.DispatcherPriority.Background);
     }
 
     private static Brush GetHarmonicBrush(string statusColor, string message)
     {
-        string msg = message?.ToLower() ?? "";
+        string msg = message?.ToLowerInvariant() ?? string.Empty;
 
         if (!string.IsNullOrEmpty(statusColor) && statusColor.StartsWith("#"))
         {
@@ -475,9 +558,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         if (msg.Contains("erro") || msg.Contains("error") || msg.Contains("fail") || msg.Contains("negado") || msg.Contains("denied"))
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E57373"));
 
-        if (msg.Contains("iniciando") || msg.Contains("starting") || msg.Contains("parados") || msg.Contains("stopped"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4FC3F7"));
-
         return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
     }
 
@@ -488,6 +568,12 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         AnimateCardOnLoad(LogsCard, fromY: 14, durationMs: 300);
     }
 
+    private void CleanupPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _cleanupCts?.Cancel();
+        _logRenderCts?.Cancel();
+    }
+
     private static void AnimateCardOnLoad(UIElement target, double fromY, int durationMs)
     {
         target.Opacity = 0;
@@ -496,17 +582,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         var storyboard = new Storyboard();
         var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(durationMs))
-        {
-            EasingFunction = ease
-        };
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(durationMs)) { EasingFunction = ease };
         Storyboard.SetTarget(fade, target);
         Storyboard.SetTargetProperty(fade, new PropertyPath("Opacity"));
 
-        var slide = new DoubleAnimation(fromY, 0, TimeSpan.FromMilliseconds(durationMs))
-        {
-            EasingFunction = ease
-        };
+        var slide = new DoubleAnimation(fromY, 0, TimeSpan.FromMilliseconds(durationMs)) { EasingFunction = ease };
         Storyboard.SetTarget(slide, target);
         Storyboard.SetTargetProperty(slide, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.Y)"));
 
@@ -521,10 +601,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         SummaryCard.RenderTransform = transform;
 
         var ease = new QuinticEase { EasingMode = EasingMode.EaseOut };
-        var animation = new DoubleAnimation(10, 0, TimeSpan.FromMilliseconds(220))
-        {
-            EasingFunction = ease
-        };
+        var animation = new DoubleAnimation(10, 0, TimeSpan.FromMilliseconds(220)) { EasingFunction = ease };
 
         transform.BeginAnimation(TranslateTransform.YProperty, animation);
         SummaryCard.BeginAnimation(OpacityProperty, new DoubleAnimation(0.6, 1, TimeSpan.FromMilliseconds(220)));
@@ -544,24 +621,49 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
 public class CleanupCategorySummaryItem : INotifyPropertyChanged
 {
-    private bool _isSelected = true;
+    private bool _isSelected;
     private bool _shouldDisplaySize = true;
+    private long _bytes;
+    private int _items;
 
     public string Key { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
-    public long Bytes { get; set; }
-    public int Items { get; set; }
+
+    public long Bytes
+    {
+        get => _bytes;
+        set
+        {
+            _bytes = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HumanSize));
+            OnPropertyChanged(nameof(SizeLabel));
+        }
+    }
+
+    public int Items
+    {
+        get => _items;
+        set
+        {
+            _items = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ItemsLabel));
+        }
+    }
+
     public string HumanSize => $"{Math.Round(Bytes / 1024.0 / 1024.0, 2)} MB";
     public string ItemsLabel => string.Format(Res.Cleanup_SummaryItemsLabel, Items);
     public string SizeLabel => ShouldDisplaySize ? HumanSize : "—";
+
     public bool ShouldDisplaySize
     {
         get => _shouldDisplaySize;
         set
         {
             _shouldDisplaySize = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShouldDisplaySize)));
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SizeLabel)));
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SizeLabel));
         }
     }
 
@@ -571,9 +673,14 @@ public class CleanupCategorySummaryItem : INotifyPropertyChanged
         set
         {
             _isSelected = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+            OnPropertyChanged();
         }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
 }

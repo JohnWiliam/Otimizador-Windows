@@ -13,11 +13,11 @@ namespace SystemOptimizer.Services;
 public class CleanupExecutionEngine
 {
     [DllImport("shell32.dll")]
-    static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint dwFlags);
+    private static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint dwFlags);
 
-    const uint SHERB_NOCONFIRMATION = 0x00000001;
-    const uint SHERB_NOPROGRESSUI = 0x00000002;
-    const uint SHERB_NOSOUND = 0x00000004;
+    private const uint SHERB_NOCONFIRMATION = 0x00000001;
+    private const uint SHERB_NOPROGRESSUI = 0x00000002;
+    private const uint SHERB_NOSOUND = 0x00000004;
 
     public async Task<CleanupResult> ExecuteAsync(CleanupTarget target)
     {
@@ -88,66 +88,151 @@ public class CleanupExecutionEngine
     private static void CleanupDirectory(string path, CleanupResult result)
     {
         if (!Directory.Exists(path))
-        {
             return;
-        }
 
-        var dirInfo = new DirectoryInfo(path);
+        var directories = new List<string>();
+        var pendingDirectories = new Stack<string>();
+        pendingDirectories.Push(path);
 
-        try
+        while (pendingDirectories.Count > 0)
         {
-            foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+            string current = pendingDirectories.Pop();
+            directories.Add(current);
+
+            IEnumerable<string> files;
+            try
             {
-                try
-                {
-                    long size = file.Length;
-                    file.Delete();
-                    if (!file.Exists)
-                    {
-                        result.BytesRemoved += size;
-                        result.ItemsRemoved++;
-                    }
-                }
-                catch (Exception ex)
+                files = Directory.EnumerateFiles(current);
+            }
+            catch (Exception ex)
+            {
+                result.ItemsIgnored++;
+                result.Failures++;
+                Logger.Log($"Erro ao enumerar arquivos em '{current}': {ex.Message}", "WARNING");
+                continue;
+            }
+
+            foreach (var filePath in files)
+            {
+                DeleteFileWithRetry(filePath, result);
+            }
+
+            IEnumerable<string> subDirectories;
+            try
+            {
+                subDirectories = Directory.EnumerateDirectories(current);
+            }
+            catch (Exception ex)
+            {
+                result.ItemsIgnored++;
+                result.Failures++;
+                Logger.Log($"Erro ao enumerar diretórios em '{current}': {ex.Message}", "WARNING");
+                continue;
+            }
+
+            foreach (var subDirectory in subDirectories)
+            {
+                if (IsReparsePointDirectory(subDirectory))
                 {
                     result.ItemsIgnored++;
-                    result.Failures++;
-                    Logger.Log($"Falha ao remover arquivo '{file.FullName}': {ex.Message}", "WARNING");
+                    continue;
                 }
+
+                pendingDirectories.Push(subDirectory);
             }
+        }
+
+        foreach (var directory in directories.OrderByDescending(d => d.Length))
+        {
+            if (string.Equals(directory, path, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            TryDeleteDirectory(directory, result);
+        }
+    }
+
+    private static void DeleteFileWithRetry(string filePath, CleanupResult result)
+    {
+        try
+        {
+            var info = new FileInfo(filePath);
+            long size = info.Exists ? info.Length : 0;
+
+            if (info.Exists && info.IsReadOnly)
+            {
+                info.IsReadOnly = false;
+            }
+
+            info.Delete();
+            if (!info.Exists)
+            {
+                result.BytesRemoved += size;
+                result.ItemsRemoved++;
+            }
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            result.ItemsIgnored++;
+            result.Failures++;
+            Logger.Log($"Sem permissão para remover arquivo '{filePath}': {ex.Message}", "WARNING");
+        }
+        catch (IOException ex)
+        {
+            result.ItemsIgnored++;
+            result.Failures++;
+            Logger.Log($"Arquivo em uso ou indisponível '{filePath}': {ex.Message}", "WARNING");
         }
         catch (Exception ex)
         {
+            result.ItemsIgnored++;
             result.Failures++;
-            Logger.Log($"Erro ao enumerar arquivos em '{path}': {ex.Message}", "ERROR");
+            Logger.Log($"Falha ao remover arquivo '{filePath}': {ex.Message}", "WARNING");
         }
+    }
 
+    private static bool IsReparsePointDirectory(string path)
+    {
         try
         {
-            var directories = dirInfo
-                .EnumerateDirectories("*", SearchOption.AllDirectories)
-                .OrderByDescending(d => d.FullName.Length)
-                .ToList();
+            var attributes = File.GetAttributes(path);
+            return attributes.HasFlag(FileAttributes.ReparsePoint);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
-            foreach (var dir in directories)
+    private static void TryDeleteDirectory(string directoryPath, CleanupResult result)
+    {
+        try
+        {
+            var dirInfo = new DirectoryInfo(directoryPath);
+            if (!dirInfo.Exists)
+                return;
+
+            if (dirInfo.Attributes.HasFlag(FileAttributes.ReadOnly))
             {
-                try
-                {
-                    dir.Delete(true);
-                    result.ItemsRemoved++;
-                }
-                catch (Exception ex)
-                {
-                    result.ItemsIgnored++;
-                    result.Failures++;
-                    Logger.Log($"Falha ao remover diretório '{dir.FullName}': {ex.Message}", "WARNING");
-                }
+                dirInfo.Attributes &= ~FileAttributes.ReadOnly;
             }
+
+            dirInfo.Delete(false);
+            result.ItemsRemoved++;
+        }
+        catch (IOException)
+        {
+            // diretório ainda contém arquivos bloqueados; não contabilizar como falha crítica
+            result.ItemsIgnored++;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            result.ItemsIgnored++;
         }
         catch (Exception ex)
         {
+            result.ItemsIgnored++;
             result.Failures++;
-            Logger.Log($"Erro ao enumerar diretórios em '{path}': {ex.Message}", "ERROR");
+            Logger.Log($"Falha ao remover diretório '{directoryPath}': {ex.Message}", "WARNING");
         }
     }
 
@@ -161,9 +246,7 @@ public class CleanupExecutionEngine
 
         string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
         if (!Directory.Exists(firefoxPath))
-        {
             return;
-        }
 
         try
         {
@@ -183,9 +266,7 @@ public class CleanupExecutionEngine
     private static void CleanupChromiumBrowser(string userDataPath, CleanupResult result)
     {
         if (!Directory.Exists(userDataPath))
-        {
             return;
-        }
 
         string[] cacheRelativePaths =
         [
@@ -200,7 +281,7 @@ public class CleanupExecutionEngine
         {
             foreach (var dir in Directory.GetDirectories(userDataPath))
             {
-                if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
+                if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default", StringComparison.OrdinalIgnoreCase) || dir.Contains("Profile", StringComparison.OrdinalIgnoreCase))
                 {
                     foreach (var relativePath in cacheRelativePaths)
                     {
@@ -220,9 +301,7 @@ public class CleanupExecutionEngine
     private static async Task CleanupWindowsUpdateAsync(string wuPath, CleanupResult result)
     {
         if (!Directory.Exists(wuPath))
-        {
             return;
-        }
 
         string[] services = ["wuauserv", "bits", "cryptsvc"];
         bool stopped = await ToggleServicesAsync(services, false);
@@ -240,9 +319,7 @@ public class CleanupExecutionEngine
         {
             bool started = await ToggleServicesAsync(services, true);
             if (!started)
-            {
                 result.Failures++;
-            }
         }
     }
 
@@ -272,6 +349,7 @@ public class CleanupExecutionEngine
                         }
                     }
                 }
+
                 return true;
             }
             catch (Exception ex)
