@@ -214,8 +214,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 return;
             }
 
-            SmoothScrollToLogsCard();
-
             await _viewModel.RunSelectedCleanupAsync(options, _cleanupCts.Token);
             ScanResults.Clear();
             HasScanResults = false;
@@ -520,12 +518,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
         LogOutput.Document.Blocks.Add(paragraph);
         LogOutput.ScrollToEnd();
-    }
-
-    private void SmoothScrollToLogsCard()
-    {
-        AnimateCardOnLoad(LogsCard, fromY: 22, durationMs: 420);
-        Dispatcher.BeginInvoke(() => LogsCard.BringIntoView(), System.Windows.Threading.DispatcherPriority.Background);
     }
 
     private static Brush GetHarmonicBrush(string statusColor, string message)
