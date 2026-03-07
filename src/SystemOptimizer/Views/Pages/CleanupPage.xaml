@@ -12,42 +12,10 @@
       FontFamily="Segoe UI">
 
     <Page.Resources>
-        <Style x:Key="ActionButtonStyle" TargetType="ui:Button">
+        <Style x:Key="ActionButtonStyle" TargetType="ui:Button" BasedOn="{StaticResource {x:Type ui:Button}}">
             <Setter Property="Height" Value="36" />
             <Setter Property="Padding" Value="16,0" />
             <Setter Property="Margin" Value="0,0,8,8" />
-            <Setter Property="RenderTransformOrigin" Value="0.5,0.5" />
-            <Setter Property="RenderTransform">
-                <Setter.Value>
-                    <ScaleTransform ScaleX="1" ScaleY="1" />
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <EventTrigger RoutedEvent="PreviewMouseLeftButtonDown">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.97" Duration="0:0:0.12" />
-                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.97" Duration="0:0:0.12" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-                <EventTrigger RoutedEvent="PreviewMouseLeftButtonUp">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.12" />
-                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.12" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-                <EventTrigger RoutedEvent="MouseLeave">
-                    <BeginStoryboard>
-                        <Storyboard>
-                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.08" />
-                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.08" />
-                        </Storyboard>
-                    </BeginStoryboard>
-                </EventTrigger>
-            </Style.Triggers>
         </Style>
 
         <Style x:Key="SummaryMetricCardStyle" TargetType="Border">
@@ -284,17 +252,6 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <ProgressBar Height="8"
-                                 Margin="0,4,0,4"
-                                 Minimum="0"
-                                 Maximum="100"
-                                 Value="{Binding DataContext.CleanupProgressPercentage, ElementName=RootPage}"
-                                 Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}" />
-
-                    <TextBlock Margin="0,8,0,4" Text="{Binding DataContext.CleanupProgressCategory, ElementName=RootPage}" />
-                    <TextBlock Margin="0,4,0,0"
-                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               Text="{Binding CleanupProcessedItemsLabel, ElementName=RootPage}" />
                 </StackPanel>
             </Grid>
         </ui:Card>
@@ -310,6 +267,7 @@
             </ui:Card.RenderTransform>
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
@@ -329,7 +287,33 @@
                     </StackPanel>
                 </Border>
 
-                <RichTextBox Grid.Row="1"
+                <Border Grid.Row="1"
+                        Margin="16,12,16,0"
+                        Padding="12"
+                        Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Visibility="{Binding IsBusyLocal, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="Limpeza em andamento"
+                                   FontWeight="SemiBold"
+                                   Margin="0,0,0,8" />
+
+                        <ProgressBar Height="8"
+                                     Minimum="0"
+                                     Maximum="100"
+                                     Value="{Binding DataContext.CleanupProgressPercentage, ElementName=RootPage}" />
+
+                        <TextBlock Margin="0,8,0,4"
+                                   Text="{Binding DataContext.CleanupProgressCategory, ElementName=RootPage}" />
+
+                        <TextBlock Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                   Text="{Binding CleanupProcessedItemsLabel, ElementName=RootPage}" />
+                    </StackPanel>
+                </Border>
+
+                <RichTextBox Grid.Row="2"
                              x:Name="LogOutput"
                              IsReadOnly="True"
                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
@@ -343,7 +327,7 @@
                     <FlowDocument PagePadding="0" TextAlignment="Left" FontFamily="Segoe UI" />
                 </RichTextBox>
 
-                <TextBlock Grid.Row="1"
+                <TextBlock Grid.Row="2"
                            IsHitTestVisible="False"
                            Text="{x:Static p:Resources.Cleanup_LogEmpty}"
                            Margin="16"
