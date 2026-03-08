@@ -287,6 +287,198 @@ namespace SystemOptimizer.Properties {
                 return ResourceManager.GetString("Cleanup_SummaryItemsLabel", resourceCulture);
             }
         }
+
+        public static string Cleanup_SummaryActionSelectAll {
+            get {
+                return ResourceManager.GetString("Cleanup_SummaryActionSelectAll", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_SummaryActionSelectRecommended {
+            get {
+                return ResourceManager.GetString("Cleanup_SummaryActionSelectRecommended", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_SummaryActionClearSelection {
+            get {
+                return ResourceManager.GetString("Cleanup_SummaryActionClearSelection", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_SummarySelectedCategories {
+            get {
+                return ResourceManager.GetString("Cleanup_SummarySelectedCategories", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_SummaryPotentialTotal {
+            get {
+                return ResourceManager.GetString("Cleanup_SummaryPotentialTotal", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_SummaryFoundItems {
+            get {
+                return ResourceManager.GetString("Cleanup_SummaryFoundItems", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_SummarySelectionStatus {
+            get {
+                return ResourceManager.GetString("Cleanup_SummarySelectionStatus", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_SummarySelectionEmpty {
+            get {
+                return ResourceManager.GetString("Cleanup_SummarySelectionEmpty", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ProgressCardTitle {
+            get {
+                return ResourceManager.GetString("Cleanup_ProgressCardTitle", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ProgressAnalyzing {
+            get {
+                return ResourceManager.GetString("Cleanup_ProgressAnalyzing", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ProgressCleaning {
+            get {
+                return ResourceManager.GetString("Cleanup_ProgressCleaning", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ResultTitle {
+            get {
+                return ResourceManager.GetString("Cleanup_ResultTitle", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ResultCategories {
+            get {
+                return ResourceManager.GetString("Cleanup_ResultCategories", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ResultRemovedSize {
+            get {
+                return ResourceManager.GetString("Cleanup_ResultRemovedSize", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ResultRemovedItems {
+            get {
+                return ResourceManager.GetString("Cleanup_ResultRemovedItems", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ResultIgnoredItems {
+            get {
+                return ResourceManager.GetString("Cleanup_ResultIgnoredItems", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ResultFailedItems {
+            get {
+                return ResourceManager.GetString("Cleanup_ResultFailedItems", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ResultDuration {
+            get {
+                return ResourceManager.GetString("Cleanup_ResultDuration", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_SizeNotApplicable {
+            get {
+                return ResourceManager.GetString("Cleanup_SizeNotApplicable", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_SizeZero {
+            get {
+                return ResourceManager.GetString("Cleanup_SizeZero", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ScanStatusStarting {
+            get {
+                return ResourceManager.GetString("Cleanup_ScanStatusStarting", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ScanStatusRunning {
+            get {
+                return ResourceManager.GetString("Cleanup_ScanStatusRunning", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ScanStatusFinished {
+            get {
+                return ResourceManager.GetString("Cleanup_ScanStatusFinished", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_CleanupStatusStarting {
+            get {
+                return ResourceManager.GetString("Cleanup_CleanupStatusStarting", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_CleanupStatusRunning {
+            get {
+                return ResourceManager.GetString("Cleanup_CleanupStatusRunning", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_CleanupStatusFinished {
+            get {
+                return ResourceManager.GetString("Cleanup_CleanupStatusFinished", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_LabelPrefetch {
+            get {
+                return ResourceManager.GetString("Cleanup_LabelPrefetch", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_LabelDns {
+            get {
+                return ResourceManager.GetString("Cleanup_LabelDns", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_LabelWindowsUpdate {
+            get {
+                return ResourceManager.GetString("Cleanup_LabelWindowsUpdate", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_LabelRecycleBin {
+            get {
+                return ResourceManager.GetString("Cleanup_LabelRecycleBin", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_LogScanFinished {
+            get {
+                return ResourceManager.GetString("Cleanup_LogScanFinished", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_LogCleanupSummary {
+            get {
+                return ResourceManager.GetString("Cleanup_LogCleanupSummary", resourceCulture);
+            }
+        }
         
         public static string Label_TempFiles {
             get {
