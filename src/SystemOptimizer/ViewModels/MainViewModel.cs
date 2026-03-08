@@ -76,7 +76,7 @@ public partial class MainViewModel : ObservableObject
     public Task<IReadOnlyList<CleanupCategoryResult>> RunCleanupScanAsync(CleanupOptions options, CancellationToken cancellationToken)
         => _cleanupService.RunScanAsync(options, cancellationToken);
 
-    public Task RunSelectedCleanupAsync(CleanupOptions options, CancellationToken cancellationToken)
+    public Task<CleanupRunSummary> RunSelectedCleanupAsync(CleanupOptions options, CancellationToken cancellationToken)
         => _cleanupService.RunCleanupAsync(options, cancellationToken);
 
     public async Task InitializeAsync()
@@ -282,7 +282,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             CleanupLogs.Clear();
-            await _cleanupService.RunCleanupAsync();
+            _ = await _cleanupService.RunCleanupAsync();
         }
         finally
         {

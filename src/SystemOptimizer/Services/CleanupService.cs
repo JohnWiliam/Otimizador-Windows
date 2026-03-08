@@ -35,17 +35,17 @@ public class CleanupService
         {
             [UserTempKey] = new(UserTempKey, Resources.Label_TempFiles ?? "User Temp", targetProviders.OfType<UserTempCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
             [SystemTempKey] = new(SystemTempKey, Resources.Label_SystemTemp ?? "System Temp", targetProviders.OfType<SystemTempCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [PrefetchKey] = new(PrefetchKey, "Prefetch", targetProviders.OfType<PrefetchCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
+            [PrefetchKey] = new(PrefetchKey, Resources.Cleanup_LabelPrefetch, targetProviders.OfType<PrefetchCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
             [BrowserCacheKey] = new(BrowserCacheKey, Resources.Label_BrowserCache ?? "Browser Cache", targetProviders.OfType<BrowserCacheCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [DnsKey] = new(DnsKey, "DNS Cache", targetProviders.OfType<DnsCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [WindowsUpdateKey] = new(WindowsUpdateKey, "Windows Update", targetProviders.OfType<WindowsUpdateCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [RecycleBinKey] = new(RecycleBinKey, "Lixeira", targetProviders.OfType<RecycleBinCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList())
+            [DnsKey] = new(DnsKey, Resources.Cleanup_LabelDns, targetProviders.OfType<DnsCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
+            [WindowsUpdateKey] = new(WindowsUpdateKey, Resources.Cleanup_LabelWindowsUpdate, targetProviders.OfType<WindowsUpdateCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
+            [RecycleBinKey] = new(RecycleBinKey, Resources.Cleanup_LabelRecycleBin, targetProviders.OfType<RecycleBinCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList())
         };
     }
 
-    public Task RunCleanupAsync() => RunCleanupAsync(CleanupOptions.CreateDefault(), CancellationToken.None);
+    public Task<CleanupRunSummary> RunCleanupAsync() => RunCleanupAsync(CleanupOptions.CreateDefault(), CancellationToken.None);
 
-    public Task RunCleanupAsync(CleanupOptions options) => RunCleanupAsync(options, CancellationToken.None);
+    public Task<CleanupRunSummary> RunCleanupAsync(CleanupOptions options) => RunCleanupAsync(options, CancellationToken.None);
 
     public async Task<IReadOnlyList<CleanupCategoryResult>> RunScanAsync(CleanupOptions options, CancellationToken cancellationToken = default)
     {
@@ -54,14 +54,14 @@ public class CleanupService
         int totalItems = 0;
         long totalBytes = 0;
 
-        ReportProgress(0, "Iniciando análise", 0, plan.Count);
+        ReportProgress(0, Resources.Cleanup_ScanStatusStarting, 0, plan.Count);
 
         for (var index = 0; index < plan.Count; index++)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             var category = plan[index];
-            ReportProgress(ToPercent(index, plan.Count), $"Analisando: {category.DisplayName}", 0, plan.Count);
+            ReportProgress(ToPercent(index, plan.Count), FormatSafe(Resources.Cleanup_ScanStatusRunning, category.DisplayName), 0, plan.Count);
 
             long bytes = 0;
             int items = 0;
@@ -76,14 +76,14 @@ public class CleanupService
             totalItems += items;
 
             results.Add(new CleanupCategoryResult(category.Key, category.DisplayName, bytes, items, true));
-            ReportProgress(ToPercent(index + 1, plan.Count), $"Análise concluída: {category.DisplayName}", items, plan.Count);
+            ReportProgress(ToPercent(index + 1, plan.Count), FormatSafe(Resources.Cleanup_ScanStatusFinished, category.DisplayName), items, plan.Count);
         }
 
         double totalMb = Math.Round(totalBytes / 1024d / 1024d, 2);
 
         OnLogItem?.Invoke(new CleanupLogItem
         {
-            Message = $"Análise concluída. Categorias avaliadas: {results.Count}. Potencial: {totalMb} MB em {totalItems} item(ns).",
+            Message = FormatSafe(Resources.Cleanup_LogScanFinished, results.Count, totalMb, totalItems),
             Icon = "CheckmarkCircle24",
             StatusColor = "#0078D4",
             IsBold = true
@@ -92,10 +92,10 @@ public class CleanupService
         return results;
     }
 
-    public async Task RunCleanupAsync(CleanupOptions options, CancellationToken cancellationToken = default)
+    public async Task<CleanupRunSummary> RunCleanupAsync(CleanupOptions options, CancellationToken cancellationToken = default)
     {
         var plan = BuildPlan(options);
-        ReportProgress(0, "Iniciando limpeza", 0, plan.Count);
+        ReportProgress(0, Resources.Cleanup_CleanupStatusStarting, 0, plan.Count);
         OnLogItem?.Invoke(new CleanupLogItem { Message = Resources.Log_Starting, Icon = "Play24", StatusColor = "#0078D4", IsBold = true });
 
         long totalBytes = 0;
@@ -107,7 +107,7 @@ public class CleanupService
         {
             cancellationToken.ThrowIfCancellationRequested();
             var category = plan[index];
-            ReportProgress(ToPercent(index, plan.Count), $"Limpando: {category.DisplayName}", 0, plan.Count);
+            ReportProgress(ToPercent(index, plan.Count), FormatSafe(Resources.Cleanup_CleanupStatusRunning, category.DisplayName), 0, plan.Count);
 
             var aggregate = new CleanupResult { CategoryName = category.DisplayName };
             foreach (var target in category.Targets)
@@ -125,7 +125,7 @@ public class CleanupService
             totalFailures += aggregate.Failures;
 
             LogAggregateResult(category.DisplayName, aggregate.BytesRemoved, aggregate.ItemsRemoved, aggregate.ItemsIgnored, aggregate.Failures);
-            ReportProgress(ToPercent(index + 1, plan.Count), $"Concluído: {category.DisplayName}", aggregate.ItemsRemoved, plan.Count);
+            ReportProgress(ToPercent(index + 1, plan.Count), FormatSafe(Resources.Cleanup_CleanupStatusFinished, category.DisplayName), aggregate.ItemsRemoved, plan.Count);
         }
 
         double totalMb = Math.Round(totalBytes / 1024d / 1024d, 2);
@@ -139,10 +139,17 @@ public class CleanupService
 
         OnLogItem?.Invoke(new CleanupLogItem
         {
-            Message = $"Resumo: ignorados={totalIgnored}, falhas={totalFailures}",
+            Message = FormatSafe(Resources.Cleanup_LogCleanupSummary, totalIgnored, totalFailures),
             Icon = "Info24",
             StatusColor = totalFailures > 0 ? "Orange" : "Green"
         });
+
+        return new CleanupRunSummary(
+            plan.Count,
+            totalBytes,
+            totalItemsRemoved,
+            totalIgnored,
+            totalFailures);
     }
 
     private List<CleanupCategoryDefinition> BuildPlan(CleanupOptions options)
@@ -417,6 +424,8 @@ public class CleanupService
 public sealed record CleanupCategoryResult(string Key, string DisplayName, long Bytes, int Items, bool IsSelected);
 
 public sealed record CleanupProgressInfo(int Percentage, string CurrentCategory, int ProcessedItems, int TotalSteps);
+
+public sealed record CleanupRunSummary(int ProcessedCategories, long BytesRemoved, int ItemsRemoved, int ItemsIgnored, int Failures);
 
 public class CleanupOptions
 {

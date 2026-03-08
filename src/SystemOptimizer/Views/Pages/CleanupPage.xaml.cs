@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,15 +12,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using SystemOptimizer.Models;
 using Res = SystemOptimizer.Properties.Resources;
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
-using Wpf.Ui.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
@@ -30,6 +28,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private bool _isOptionsExpanded = true;
     private bool _isBusyLocal;
     private bool _hasScanResults;
+    private bool _isCleanupOperation;
 
     private bool _cleanTemp = true;
     private bool _cleanSystemTemp = true;
@@ -39,17 +38,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private bool _cleanDns = true;
     private bool _cleanRecycleBin;
 
-    private const int LogAnimationDelayMs = 180;
-    private static readonly HashSet<string> CategoriesWithoutSize = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "dns"
-    };
-
-    private readonly Queue<CleanupLogItem> _pendingLogs = new();
-    private readonly object _pendingLogsLock = new();
+    private CleanupRunSummary? _lastCleanupSummary;
+    private TimeSpan _lastCleanupDuration;
     private CancellationTokenSource? _cleanupCts;
-    private CancellationTokenSource? _logRenderCts;
-    private Task? _logRenderTask;
+
+    private static readonly HashSet<string> CategoriesWithoutSize = new(StringComparer.OrdinalIgnoreCase) { "dns" };
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -75,18 +68,13 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         _viewModel = viewModel;
         DataContext = viewModel;
 
-        _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         ScanResults.CollectionChanged += ScanResults_CollectionChanged;
         Loaded += CleanupPage_Loaded;
         Unloaded += CleanupPage_Unloaded;
     }
 
-    public bool IsOptionsExpanded
-    {
-        get => _isOptionsExpanded;
-        set { _isOptionsExpanded = value; OnPropertyChanged(); }
-    }
+    public bool IsOptionsExpanded { get => _isOptionsExpanded; set { _isOptionsExpanded = value; OnPropertyChanged(); } }
 
     public bool IsBusyLocal
     {
@@ -99,6 +87,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             OnPropertyChanged(nameof(CanCleanup));
             OnPropertyChanged(nameof(CancelVisibility));
             OnPropertyChanged(nameof(ShouldShowSummaryCard));
+            OnPropertyChanged(nameof(BusyStatusLabel));
+            OnPropertyChanged(nameof(SummaryTitle));
             RefreshCommands();
         }
     }
@@ -113,6 +103,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             OnPropertyChanged(nameof(CanCleanup));
             OnPropertyChanged(nameof(ShouldShowSummaryCard));
             OnPropertyChanged(nameof(SelectedSummaryLabel));
+            OnPropertyChanged(nameof(SummaryTitle));
             RefreshCommands();
         }
     }
@@ -127,16 +118,27 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     public bool CanAnalyze => !IsBusyLocal;
     public bool CanCleanup => !IsBusyLocal && HasScanResults && SelectedCategoriesCount > 0;
-    public bool HasLogs => _viewModel.CleanupLogs.Count > 0;
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
-    public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
+    public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults || HasLastCleanupResult;
+    public bool HasLastCleanupResult => _lastCleanupSummary is not null;
+    public string BusyStatusLabel => _isCleanupOperation ? Res.Cleanup_ProgressCleaning : Res.Cleanup_ProgressAnalyzing;
+    public string SummaryTitle => HasLastCleanupResult ? Res.Cleanup_ResultTitle : Res.Cleanup_ScanSummaryTitle;
     public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
     public int SelectedCategoriesCount => ScanResults.Count(x => x.IsSelected);
     public string TotalScanSizeLabel => FormatBytes(ScanResults.Where(x => x.ShouldDisplaySize).Sum(x => x.Bytes));
     public string TotalScanItemsLabel => ScanResults.Sum(x => x.Items).ToString("N0", CultureInfo.CurrentCulture);
     public string SelectedSummaryLabel => HasScanResults
-        ? $"{SelectedCategoriesCount} de {ScanResults.Count} selecionadas"
-        : "Nenhuma categoria selecionada";
+        ? string.Format(Res.Cleanup_SummarySelectionStatus, SelectedCategoriesCount, ScanResults.Count)
+        : Res.Cleanup_SummarySelectionEmpty;
+
+    public string LastCleanupCategoriesLabel => (_lastCleanupSummary?.ProcessedCategories ?? 0).ToString("N0", CultureInfo.CurrentCulture);
+    public string LastCleanupRemovedSizeLabel => FormatBytes(_lastCleanupSummary?.BytesRemoved ?? 0);
+    public string LastCleanupRemovedItemsLabel => (_lastCleanupSummary?.ItemsRemoved ?? 0).ToString("N0", CultureInfo.CurrentCulture);
+    public string LastCleanupIgnoredItemsLabel => (_lastCleanupSummary?.ItemsIgnored ?? 0).ToString("N0", CultureInfo.CurrentCulture);
+    public string LastCleanupFailuresLabel => (_lastCleanupSummary?.Failures ?? 0).ToString("N0", CultureInfo.CurrentCulture);
+    public string LastCleanupDurationLabel => _lastCleanupDuration.TotalSeconds < 1
+        ? _lastCleanupDuration.TotalMilliseconds.ToString("N0", CultureInfo.CurrentCulture) + " ms"
+        : _lastCleanupDuration.TotalSeconds.ToString("N1", CultureInfo.CurrentCulture) + " s";
 
     private async Task AnalyzeAsync()
     {
@@ -146,15 +148,12 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         try
         {
             IsBusyLocal = true;
+            _isCleanupOperation = false;
             IsOptionsExpanded = false;
             HasScanResults = false;
             _cleanupCts = new CancellationTokenSource();
 
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                _viewModel.CleanupLogs.Clear();
-                ScanResults.Clear();
-            });
+            ScanResults.Clear();
 
             var options = BuildCleanupOptions();
             var results = await _viewModel.RunCleanupScanAsync(options, _cleanupCts.Token);
@@ -168,23 +167,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 SelectRecommendedCategories();
                 AnimateSummaryCardEntrance();
             }
-            else
-            {
-                _viewModel.CleanupLogs.Add(new CleanupLogItem
-                {
-                    Message = Res.Cleanup_ScanSummaryEmpty,
-                    Icon = "Info24",
-                    StatusColor = "Gray"
-                });
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Res.Cleanup_FeedbackAnalyzeCanceled, Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
-        }
-        catch (Exception ex)
-        {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = string.Format(Res.Cleanup_FeedbackAnalyzeError, ex.Message), Icon = "ErrorCircle24", StatusColor = "#E57373", IsBold = true });
         }
         finally
         {
@@ -203,34 +185,30 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         try
         {
             IsBusyLocal = true;
+            _isCleanupOperation = true;
             _cleanupCts = new CancellationTokenSource();
 
             var selected = ScanResults.Where(x => x.IsSelected).Select(x => x.Key).ToHashSet();
-            var options = BuildCleanupOptions(selected);
-
             if (selected.Count == 0)
-            {
-                _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Res.Cleanup_FeedbackSelectCategory, Icon = "Info24", StatusColor = "Orange" });
                 return;
-            }
 
-            await _viewModel.RunSelectedCleanupAsync(options, _cleanupCts.Token);
+            var options = BuildCleanupOptions(selected);
+            var timer = Stopwatch.StartNew();
+            _lastCleanupSummary = await _viewModel.RunSelectedCleanupAsync(options, _cleanupCts.Token);
+            timer.Stop();
+            _lastCleanupDuration = timer.Elapsed;
+
             ScanResults.Clear();
             HasScanResults = false;
-        }
-        catch (OperationCanceledException)
-        {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = Res.Cleanup_FeedbackCleanupCanceled, Icon = "Dismiss24", StatusColor = "Orange", IsBold = true });
-        }
-        catch (Exception ex)
-        {
-            _viewModel.CleanupLogs.Add(new CleanupLogItem { Message = string.Format(Res.Cleanup_FeedbackCleanupError, ex.Message), Icon = "ErrorCircle24", StatusColor = "#E57373", IsBold = true });
+            OnCleanupResultChanged();
         }
         finally
         {
             _cleanupCts?.Dispose();
             _cleanupCts = null;
             IsBusyLocal = false;
+            _isCleanupOperation = false;
+            OnPropertyChanged(nameof(BusyStatusLabel));
             OnSelectionMetricsChanged();
         }
     }
@@ -295,32 +273,20 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private void ScanResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.NewItems != null)
-        {
             foreach (CleanupCategorySummaryItem item in e.NewItems)
-            {
                 item.PropertyChanged += SummaryItem_PropertyChanged;
-            }
-        }
 
         if (e.OldItems != null)
-        {
             foreach (CleanupCategorySummaryItem item in e.OldItems)
-            {
                 item.PropertyChanged -= SummaryItem_PropertyChanged;
-            }
-        }
 
         OnSelectionMetricsChanged();
     }
 
     private void SummaryItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(CleanupCategorySummaryItem.IsSelected)
-            or nameof(CleanupCategorySummaryItem.Items)
-            or nameof(CleanupCategorySummaryItem.Bytes))
-        {
+        if (e.PropertyName is nameof(CleanupCategorySummaryItem.IsSelected) or nameof(CleanupCategorySummaryItem.Items) or nameof(CleanupCategorySummaryItem.Bytes))
             OnSelectionMetricsChanged();
-        }
     }
 
     private void OnSelectionMetricsChanged()
@@ -333,10 +299,23 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         RefreshCommands();
     }
 
+    private void OnCleanupResultChanged()
+    {
+        OnPropertyChanged(nameof(HasLastCleanupResult));
+        OnPropertyChanged(nameof(LastCleanupCategoriesLabel));
+        OnPropertyChanged(nameof(LastCleanupRemovedSizeLabel));
+        OnPropertyChanged(nameof(LastCleanupRemovedItemsLabel));
+        OnPropertyChanged(nameof(LastCleanupIgnoredItemsLabel));
+        OnPropertyChanged(nameof(LastCleanupFailuresLabel));
+        OnPropertyChanged(nameof(LastCleanupDurationLabel));
+        OnPropertyChanged(nameof(ShouldShowSummaryCard));
+        OnPropertyChanged(nameof(SummaryTitle));
+    }
+
     private static string FormatBytes(long bytes)
     {
         if (bytes <= 0)
-            return "0 MB";
+            return Res.Cleanup_SizeZero;
 
         string[] suffixes = ["B", "KB", "MB", "GB", "TB"];
         double value = bytes;
@@ -362,208 +341,30 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? name = null)
-    {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-    }
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(MainViewModel.CleanupProcessedItems))
-        {
             OnPropertyChanged(nameof(CleanupProcessedItemsLabel));
-        }
-    }
-
-    private void CleanupLogs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-    {
-        if (e.Action == NotifyCollectionChangedAction.Reset)
-        {
-            lock (_pendingLogsLock)
-            {
-                _pendingLogs.Clear();
-            }
-
-            _logRenderCts?.Cancel();
-            LogOutput.Document.Blocks.Clear();
-        }
-        else if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
-        {
-            lock (_pendingLogsLock)
-            {
-                foreach (CleanupLogItem item in e.NewItems)
-                {
-                    _pendingLogs.Enqueue(item);
-                }
-            }
-
-            StartLogRenderLoop();
-        }
-
-        OnPropertyChanged(nameof(HasLogs));
-    }
-
-    private void StartLogRenderLoop()
-    {
-        if (_logRenderTask is { IsCompleted: false })
-            return;
-
-        _logRenderCts?.Dispose();
-        _logRenderCts = new CancellationTokenSource();
-        _logRenderTask = RenderQueuedLogsAsync(_logRenderCts.Token);
-    }
-
-    private async Task RenderQueuedLogsAsync(CancellationToken token)
-    {
-        try
-        {
-            while (true)
-            {
-                token.ThrowIfCancellationRequested();
-                CleanupLogItem? item = null;
-                lock (_pendingLogsLock)
-                {
-                    if (_pendingLogs.Count > 0)
-                    {
-                        item = _pendingLogs.Dequeue();
-                    }
-                }
-
-                if (item is null)
-                    break;
-
-                await Dispatcher.InvokeAsync(() =>
-                {
-                    AnimateLogsCardPulse();
-                    AppendLog(item);
-                });
-
-                await Task.Delay(LogAnimationDelayMs, token);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Ignore cancellations from quick re-renders.
-        }
-        finally
-        {
-            _logRenderTask = null;
-            bool hasPending;
-            lock (_pendingLogsLock)
-            {
-                hasPending = _pendingLogs.Count > 0;
-            }
-
-            if (hasPending && !token.IsCancellationRequested)
-            {
-                StartLogRenderLoop();
-            }
-        }
-    }
-
-    private void AppendLog(CleanupLogItem item)
-    {
-        var paragraph = new Paragraph
-        {
-            FontFamily = new FontFamily("Segoe UI"),
-            TextAlignment = TextAlignment.Left,
-            Margin = new Thickness(0, 0, 0, 4),
-            LineHeight = 20
-        };
-
-        Brush statusBrush = GetHarmonicBrush(item.StatusColor, item.Message);
-
-        SymbolRegular symbol = SymbolRegular.Info24;
-        if (!Enum.TryParse(item.Icon, out SymbolRegular parsedSymbol))
-        {
-            string msgLower = item.Message.ToLowerInvariant();
-
-            if (msgLower.Contains("concluída") || msgLower.Contains("finished") || msgLower.Contains("sucesso") || msgLower.Contains("success") || msgLower.Contains("removidos") || msgLower.Contains("removed"))
-                symbol = SymbolRegular.Checkmark24;
-            else if (msgLower.Contains("erro") || msgLower.Contains("error") || msgLower.Contains("fail"))
-                symbol = SymbolRegular.DismissCircle24;
-            else if (msgLower.Contains("lixeira") || msgLower.Contains("bin") || msgLower.Contains("trash") || msgLower.Contains("delete"))
-                symbol = SymbolRegular.Delete24;
-            else if (msgLower.Contains("update"))
-                symbol = SymbolRegular.ArrowSync24;
-        }
-        else
-        {
-            symbol = parsedSymbol;
-        }
-
-        var icon = new SymbolIcon
-        {
-            Symbol = symbol,
-            FontSize = 16,
-            VerticalAlignment = VerticalAlignment.Center,
-            Foreground = statusBrush,
-            Margin = new Thickness(0, 0, 0, -2)
-        };
-
-        paragraph.Inlines.Add(new InlineUIContainer(icon) { BaselineAlignment = BaselineAlignment.Center });
-        paragraph.Inlines.Add(new Run("  "));
-
-        string processedMessage = item.Message?.Replace("\\n", Environment.NewLine) ?? string.Empty;
-
-        var run = new Run(processedMessage)
-        {
-            BaselineAlignment = BaselineAlignment.Center,
-            FontFamily = new FontFamily("Segoe UI"),
-            FontSize = 13,
-            Foreground = statusBrush,
-            FontWeight = item.IsBold ? FontWeights.SemiBold : FontWeights.Normal
-        };
-
-        paragraph.Inlines.Add(run);
-
-        LogOutput.Document.Blocks.Add(paragraph);
-        LogOutput.ScrollToEnd();
-    }
-
-    private static Brush GetHarmonicBrush(string statusColor, string message)
-    {
-        string msg = message?.ToLowerInvariant() ?? string.Empty;
-
-        if (!string.IsNullOrEmpty(statusColor) && statusColor.StartsWith("#"))
-        {
-            try { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(statusColor)); } catch { }
-        }
-
-        if (msg.Contains("update") || msg.Contains("serviço") || msg.Contains("service"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#64B5F6"));
-
-        if (msg.Contains("temp") || msg.Contains("lixeira") || msg.Contains("bin") || msg.Contains("cache") || msg.Contains("prefetch") || msg.Contains("removed") || msg.Contains("removidos"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#81C784"));
-
-        if (msg.Contains("vazio") || msg.Contains("limpo") || msg.Contains("clean") || msg.Contains("empty"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#B0BEC5"));
-
-        if (msg.Contains("chrome") || msg.Contains("edge") || msg.Contains("firefox") || msg.Contains("browser") || msg.Contains("navegadores") || msg.Contains("shader"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFD54F"));
-
-        if (msg.Contains("dns") || msg.Contains("rede") || msg.Contains("network"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9575CD"));
-
-        if (msg.Contains("concluída") || msg.Contains("finished") || msg.Contains("sucesso") || msg.Contains("success") || statusColor == "Green")
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4DB6AC"));
-
-        if (msg.Contains("erro") || msg.Contains("error") || msg.Contains("fail") || msg.Contains("negado") || msg.Contains("denied"))
-            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E57373"));
-
-        return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
     }
 
     private void CleanupPage_Loaded(object sender, RoutedEventArgs e)
     {
-        AnimateCardOnLoad(OptionsCard, fromY: -10, durationMs: 220);
-        AnimateCardOnLoad(SummaryCard, fromY: 10, durationMs: 260);
-        AnimateCardOnLoad(LogsCard, fromY: 14, durationMs: 300);
+        AnimateCardOnLoad(OptionsCard, -10, 220);
+        AnimateCardOnLoad(SummaryCard, 10, 260);
     }
 
     private void CleanupPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _cleanupCts?.Cancel();
-        _logRenderCts?.Cancel();
+        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        ScanResults.CollectionChanged -= ScanResults_CollectionChanged;
+        Loaded -= CleanupPage_Loaded;
+        Unloaded -= CleanupPage_Unloaded;
+
+        foreach (var item in ScanResults)
+            item.PropertyChanged -= SummaryItem_PropertyChanged;
     }
 
     private static void AnimateCardOnLoad(UIElement target, double fromY, int durationMs)
@@ -597,17 +398,6 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
         transform.BeginAnimation(TranslateTransform.YProperty, animation);
         SummaryCard.BeginAnimation(OpacityProperty, new DoubleAnimation(0.6, 1, TimeSpan.FromMilliseconds(220)));
-    }
-
-    private void AnimateLogsCardPulse()
-    {
-        var animation = new DoubleAnimation(1, 0.93, TimeSpan.FromMilliseconds(120))
-        {
-            AutoReverse = true,
-            EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-        };
-
-        LogsCard.BeginAnimation(OpacityProperty, animation);
     }
 }
 
@@ -644,9 +434,9 @@ public class CleanupCategorySummaryItem : INotifyPropertyChanged
         }
     }
 
-    public string HumanSize => $"{Math.Round(Bytes / 1024.0 / 1024.0, 2)} MB";
+    public string HumanSize => BytesToMb(Bytes);
     public string ItemsLabel => string.Format(Res.Cleanup_SummaryItemsLabel, Items);
-    public string SizeLabel => ShouldDisplaySize ? HumanSize : "—";
+    public string SizeLabel => ShouldDisplaySize ? HumanSize : Res.Cleanup_SizeNotApplicable;
 
     public bool ShouldDisplaySize
     {
@@ -672,7 +462,13 @@ public class CleanupCategorySummaryItem : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+    private static string BytesToMb(long bytes)
     {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        if (bytes <= 0)
+            return Res.Cleanup_SizeZero;
+
+        return $"{Math.Round(bytes / 1024.0 / 1024.0, 2):N2} MB";
     }
 }

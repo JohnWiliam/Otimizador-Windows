@@ -212,6 +212,38 @@
   <data name="Cleanup_ActionClean" xml:space="preserve"><value>Limpar</value></data>
   <data name="Cleanup_ActionCancel" xml:space="preserve"><value>Cancelar</value></data>
   <data name="Cleanup_ScanSummaryTitle" xml:space="preserve"><value>Resumo da análise</value></data>
+  <data name="Cleanup_SummaryActionSelectAll" xml:space="preserve"><value>Selecionar tudo</value></data>
+  <data name="Cleanup_SummaryActionSelectRecommended" xml:space="preserve"><value>Seleção recomendada</value></data>
+  <data name="Cleanup_SummaryActionClearSelection" xml:space="preserve"><value>Limpar seleção</value></data>
+  <data name="Cleanup_SummarySelectedCategories" xml:space="preserve"><value>Categorias selecionadas</value></data>
+  <data name="Cleanup_SummaryPotentialTotal" xml:space="preserve"><value>Potencial total</value></data>
+  <data name="Cleanup_SummaryFoundItems" xml:space="preserve"><value>Itens encontrados</value></data>
+  <data name="Cleanup_SummarySelectionStatus" xml:space="preserve"><value>{0} de {1} selecionadas</value></data>
+  <data name="Cleanup_SummarySelectionEmpty" xml:space="preserve"><value>Nenhuma categoria selecionada</value></data>
+  <data name="Cleanup_ProgressCardTitle" xml:space="preserve"><value>Operação em andamento</value></data>
+  <data name="Cleanup_ProgressAnalyzing" xml:space="preserve"><value>Análise em andamento</value></data>
+  <data name="Cleanup_ProgressCleaning" xml:space="preserve"><value>Limpeza em andamento</value></data>
+  <data name="Cleanup_ResultTitle" xml:space="preserve"><value>Resultado da limpeza</value></data>
+  <data name="Cleanup_ResultCategories" xml:space="preserve"><value>Categorias processadas</value></data>
+  <data name="Cleanup_ResultRemovedSize" xml:space="preserve"><value>Total removido</value></data>
+  <data name="Cleanup_ResultRemovedItems" xml:space="preserve"><value>Itens removidos</value></data>
+  <data name="Cleanup_ResultIgnoredItems" xml:space="preserve"><value>Itens ignorados</value></data>
+  <data name="Cleanup_ResultFailedItems" xml:space="preserve"><value>Falhas</value></data>
+  <data name="Cleanup_ResultDuration" xml:space="preserve"><value>Duração</value></data>
+  <data name="Cleanup_SizeNotApplicable" xml:space="preserve"><value>—</value></data>
+  <data name="Cleanup_SizeZero" xml:space="preserve"><value>0 B</value></data>
+  <data name="Cleanup_ScanStatusStarting" xml:space="preserve"><value>Iniciando análise</value></data>
+  <data name="Cleanup_ScanStatusRunning" xml:space="preserve"><value>Analisando: {0}</value></data>
+  <data name="Cleanup_ScanStatusFinished" xml:space="preserve"><value>Análise concluída: {0}</value></data>
+  <data name="Cleanup_CleanupStatusStarting" xml:space="preserve"><value>Iniciando limpeza</value></data>
+  <data name="Cleanup_CleanupStatusRunning" xml:space="preserve"><value>Limpando: {0}</value></data>
+  <data name="Cleanup_CleanupStatusFinished" xml:space="preserve"><value>Concluído: {0}</value></data>
+  <data name="Cleanup_LabelPrefetch" xml:space="preserve"><value>Prefetch</value></data>
+  <data name="Cleanup_LabelDns" xml:space="preserve"><value>Cache DNS</value></data>
+  <data name="Cleanup_LabelWindowsUpdate" xml:space="preserve"><value>Windows Update</value></data>
+  <data name="Cleanup_LabelRecycleBin" xml:space="preserve"><value>Lixeira</value></data>
+  <data name="Cleanup_LogScanFinished" xml:space="preserve"><value>Análise concluída. Categorias avaliadas: {0}. Potencial: {1} MB em {2} item(ns).</value></data>
+  <data name="Cleanup_LogCleanupSummary" xml:space="preserve"><value>Resumo: ignorados={0}, falhas={1}</value></data>
   <data name="Cleanup_SummaryItemsLabel" xml:space="preserve"><value>Itens: {0}</value></data>
   <data name="Cleanup_ProgressProcessedItems" xml:space="preserve"><value>Itens processados: {0}</value></data>
   <data name="Cleanup_FeedbackAnalyzeCanceled" xml:space="preserve"><value>Análise cancelada.</value></data>
