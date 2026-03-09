@@ -163,10 +163,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
             HasScanResults = ScanResults.Any(result => result.Items > 0);
             if (HasScanResults)
-            {
-                SelectRecommendedCategories();
                 AnimateSummaryCardEntrance();
-            }
         }
         finally
         {

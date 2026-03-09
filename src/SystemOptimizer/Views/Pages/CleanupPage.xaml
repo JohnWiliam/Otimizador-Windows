@@ -80,15 +80,15 @@
 
                 <TextBlock Text="{x:Static p:Resources.Cleanup_SelectOptions}" FontWeight="SemiBold" Margin="0,0,0,12" />
 
-                <UniformGrid Columns="2" Rows="4">
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionTemp}" IsChecked="{Binding CleanTemp, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionSystemTemp}" IsChecked="{Binding CleanSystemTemp, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionPrefetch}" IsChecked="{Binding CleanPrefetch, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionWindowsUpdate}" IsChecked="{Binding CleanWindowsUpdate, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionBrowser}" IsChecked="{Binding CleanBrowser, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionDNS}" IsChecked="{Binding CleanDns, ElementName=RootPage}" Margin="0,0,8,12" />
-                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionRecycleBin}" IsChecked="{Binding CleanRecycleBin, ElementName=RootPage}" Margin="0,0,8,12" />
-                </UniformGrid>
+                <WrapPanel Orientation="Horizontal" ItemWidth="300" Margin="0,0,0,4">
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionTemp}" IsChecked="{Binding CleanTemp, ElementName=RootPage}" Margin="0,0,16,12" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionSystemTemp}" IsChecked="{Binding CleanSystemTemp, ElementName=RootPage}" Margin="0,0,16,12" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionPrefetch}" IsChecked="{Binding CleanPrefetch, ElementName=RootPage}" Margin="0,0,16,12" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionWindowsUpdate}" IsChecked="{Binding CleanWindowsUpdate, ElementName=RootPage}" Margin="0,0,16,12" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionBrowser}" IsChecked="{Binding CleanBrowser, ElementName=RootPage}" Margin="0,0,16,12" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionDNS}" IsChecked="{Binding CleanDns, ElementName=RootPage}" Margin="0,0,16,12" />
+                    <CheckBox Content="{x:Static p:Resources.Cleanup_OptionRecycleBin}" IsChecked="{Binding CleanRecycleBin, ElementName=RootPage}" Margin="0,0,16,12" />
+                </WrapPanel>
             </StackPanel>
         </ui:CardExpander>
 
@@ -168,26 +168,45 @@
 
                     <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryEmpty}" Margin="0,0,0,8" Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
 
-                    <ItemsControl ItemsSource="{Binding ScanResults, ElementName=RootPage}" Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Margin="0,0,0,6" Padding="10,8" Background="{DynamicResource ControlFillColorSecondaryBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center" FontWeight="SemiBold" />
-                                        <TextBlock Grid.Column="2" Text="{Binding ItemsLabel}" Margin="0,0,12,0" VerticalAlignment="Center" />
-                                        <TextBlock Grid.Column="3" Text="{Binding SizeLabel}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <Grid Margin="0,0,0,8" Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+
+                        <Grid Grid.Row="0" Margin="8,0,8,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="130" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="1" Text="Categoria" FontSize="12" Opacity="0.8" />
+                            <TextBlock Grid.Column="2" Text="Itens" FontSize="12" Opacity="0.8" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="3" Text="Tamanho" FontSize="12" Opacity="0.8" HorizontalAlignment="Right" />
+                        </Grid>
+
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding ScanResults, ElementName=RootPage}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Margin="0,0,0,8" Padding="12,10" Background="{DynamicResource ControlFillColorSecondaryBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="130" />
+                                                <ColumnDefinition Width="120" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected}" Margin="0,0,10,0" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,12,0" />
+                                            <TextBlock Grid.Column="2" Text="{Binding ItemsLabel}" Margin="0,0,12,0" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                            <TextBlock Grid.Column="3" Text="{Binding SizeLabel}" FontWeight="SemiBold" VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
 
                     <Border Style="{StaticResource SummaryMetricCardStyle}" Visibility="{Binding HasLastCleanupResult, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <StackPanel>
