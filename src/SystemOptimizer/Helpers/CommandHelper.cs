@@ -106,7 +106,7 @@ public static class CommandHelper
         }
     }
 
-    public static void RunCommandNoWait(string fileName, string arguments)
+    public static bool RunCommandNoWait(string fileName, string arguments)
     {
         Logger.Log($"Executing (NoWait): {fileName} {arguments}", "CMD_ASYNC");
         try
@@ -119,11 +119,20 @@ public static class CommandHelper
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true
             };
-            Process.Start(psi);
+
+            using var process = Process.Start(psi);
+            bool started = process != null;
+            if (!started)
+            {
+                Logger.Log($"Failed to start async process: {fileName}", "CMD_ASYNC_ERROR");
+            }
+
+            return started;
         }
         catch (Exception ex)
         {
             Logger.Log($"Exception in RunCommandNoWait: {ex.Message}", "CMD_ASYNC_ERROR");
+            return false;
         }
     }
 }

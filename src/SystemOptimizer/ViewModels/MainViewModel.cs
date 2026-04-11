@@ -107,13 +107,13 @@ public partial class MainViewModel : ObservableObject
 
     private void PopulateCategories()
     {
-        PrivacyTweaks.Clear();
-        PerformanceTweaks.Clear();
-        NetworkTweaks.Clear();
-        SecurityTweaks.Clear();
-        AppearanceTweaks.Clear();
-        SearchTweaks.Clear();
-        TweaksPageItems.Clear();
+        DisposeAndClear(PrivacyTweaks);
+        DisposeAndClear(PerformanceTweaks);
+        DisposeAndClear(NetworkTweaks);
+        DisposeAndClear(SecurityTweaks);
+        DisposeAndClear(AppearanceTweaks);
+        DisposeAndClear(SearchTweaks);
+        DisposeAndClear(TweaksPageItems);
 
         foreach (var tweak in _tweakService.Tweaks)
         {
@@ -131,6 +131,16 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+
+    private static void DisposeAndClear(ObservableCollection<TweakViewModel> collection)
+    {
+        foreach (var item in collection)
+        {
+            item.Dispose();
+        }
+
+        collection.Clear();
+    }
     private bool IsRebootRequired(string tweakId)
     {
         // CORRIGIDO: Apenas tweaks que REALMENTE requerem reinício do sistema

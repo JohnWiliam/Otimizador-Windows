@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using SystemOptimizer.Models;
 using SystemOptimizer.Helpers;
 using Microsoft.Win32;
-using System.Diagnostics;
-using System.IO;
 using SystemOptimizer.Properties;
 
 namespace SystemOptimizer.Services;
@@ -42,6 +40,20 @@ public class TweakService
         });
     }
 
+    private static bool RunCommandChecked(string fileName, string arguments, int timeoutMs = 5000)
+    {
+        var result = CommandHelper.RunCommandDetailed(fileName, arguments, timeoutMs);
+        if (!result.IsSuccess)
+        {
+            Logger.Log($"Command failed: {fileName} {arguments}. Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdErr='{result.StdErr}'", "CMD_FAIL");
+        }
+
+        return result.IsSuccess;
+    }
+
+    private static string RunPowerShell(string script)
+        => CommandHelper.RunCommand("powershell", $"-NoProfile -NonInteractive -Command \"{script}\"").Trim();
+
     private void AddPrivacyTweaks()
     {
          Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, Resources.P1_Title, Resources.P1_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, "DELETE"));
@@ -57,22 +69,40 @@ public class TweakService
     {
          Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, Resources.PF1_Title, Resources.PF1_Desc,
             () => {
+                const string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
                 var list = CommandHelper.RunCommand("powercfg", "/list");
-                string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
-                if (!list.Contains(ultimateGuid)) CommandHelper.RunCommand("powercfg", $"-duplicatescheme {ultimateGuid}");
-                var activateResult = CommandHelper.RunCommandDetailed("powercfg", $"/setactive {ultimateGuid}");
-                Logger.Log($"Resultado powercfg/setactive(ultimate) -> Started={activateResult.Started}, TimedOut={activateResult.TimedOut}, ExitCode={activateResult.ExitCode}, StdOut='{activateResult.StdOut}', StdErr='{activateResult.StdErr}'", "CMD_POWERCFG");
 
-                var check = CommandHelper.RunCommand("powercfg", "/getactivescheme");
-                if (!activateResult.IsSuccess || !check.Contains(ultimateGuid))
+                if (!list.Contains(ultimateGuid, StringComparison.OrdinalIgnoreCase)
+                    && !RunCommandChecked("powercfg", $"-duplicatescheme {ultimateGuid}"))
                 {
-                    var fallbackResult = CommandHelper.RunCommandDetailed("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
-                    Logger.Log($"Resultado powercfg/setactive(fallback) -> Started={fallbackResult.Started}, TimedOut={fallbackResult.TimedOut}, ExitCode={fallbackResult.ExitCode}, StdOut='{fallbackResult.StdOut}', StdErr='{fallbackResult.StdErr}'", "CMD_POWERCFG");
+                    return false;
                 }
-                return true;
+
+                if (!RunCommandChecked("powercfg", $"/setactive {ultimateGuid}"))
+                {
+                    return false;
+                }
+
+                var activeScheme = CommandHelper.RunCommand("powercfg", "/getactivescheme");
+                return activeScheme.Contains(ultimateGuid, StringComparison.OrdinalIgnoreCase);
             },
-            () => { CommandHelper.RunCommand("powercfg", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e"); return true; },
-            () => { var res = CommandHelper.RunCommand("powercfg", "/getactivescheme"); return res.Contains("e9a42b02") || res.Contains("8c5e7fda"); }
+            () =>
+            {
+                const string balancedGuid = "381b4222-f694-41f0-9685-ff5bb260df2e";
+                if (!RunCommandChecked("powercfg", $"/setactive {balancedGuid}"))
+                {
+                    return false;
+                }
+
+                var activeScheme = CommandHelper.RunCommand("powercfg", "/getactivescheme");
+                return activeScheme.Contains(balancedGuid, StringComparison.OrdinalIgnoreCase);
+            },
+            () =>
+            {
+                const string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
+                var res = CommandHelper.RunCommand("powercfg", "/getactivescheme");
+                return res.Contains(ultimateGuid, StringComparison.OrdinalIgnoreCase);
+            }
         ));
 
         Tweaks.Add(new CustomTweak("PF2", TweakCategory.Performance, Resources.PF2_Title, Resources.PF2_Desc,
@@ -83,7 +113,8 @@ public class TweakService
             },
             () => {
                 Registry.SetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", 1, RegistryValueKind.DWord);
-                try { using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", true); key?.DeleteValue("AllowGameDVR", false); } catch {}
+                using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\GameDVR", true);
+                key?.DeleteValue("AllowGameDVR", false);
                 return true;
             },
             () => {
@@ -183,8 +214,26 @@ public class TweakService
         ));
 
         Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, Resources.PF9_Title, Resources.PF9_Desc,
-            () => { CommandHelper.RunCommand("powercfg", "/hibernate off"); return true; },
-            () => { CommandHelper.RunCommand("powercfg", "/hibernate on"); return true; },
+            () =>
+            {
+                if (!RunCommandChecked("powercfg", "/hibernate off"))
+                {
+                    return false;
+                }
+
+                var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled", -1);
+                return val is int i && i == 0;
+            },
+            () =>
+            {
+                if (!RunCommandChecked("powercfg", "/hibernate on"))
+                {
+                    return false;
+                }
+
+                var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled", -1);
+                return val is int i && i == 1;
+            },
             () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled", -1); return val is int i && i == 0; }
         ));
     }
@@ -192,50 +241,43 @@ public class TweakService
     private void AddNetworkTweaks()
     {
         Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, Resources.N1_Title, Resources.N1_Desc,
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
-            () =>
-            {
-                var res = CommandHelper.RunCommand("netsh", "int tcp show global");
-                return res.Contains("normal") || res.Contains("Normal");
-            }
+            () => RunCommandChecked("netsh", "int tcp set global autotuninglevel=normal"),
+            () => RunCommandChecked("netsh", "int tcp set global autotuninglevel=disabled"),
+            () => RunPowerShell("(Get-NetTCPSetting -SettingName Internet).AutoTuningLevelLocal")
+                .Equals("Normal", StringComparison.OrdinalIgnoreCase)
         ));
 
         Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, Resources.N2_Title, Resources.N2_Desc,
-            () => {
-                var cubicResult = CommandHelper.RunCommandDetailed("netsh", "int tcp set supplementary template=internet congestionprovider=cubic");
-                Logger.Log($"Resultado netsh/cubic -> Started={cubicResult.Started}, TimedOut={cubicResult.TimedOut}, ExitCode={cubicResult.ExitCode}, StdOut='{cubicResult.StdOut}', StdErr='{cubicResult.StdErr}'", "CMD_NETSH");
-
-                if (!cubicResult.IsSuccess)
-                {
-                    var fallbackResult = CommandHelper.RunCommandDetailed("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
-                    Logger.Log($"Resultado netsh/ctcp(fallback) -> Started={fallbackResult.Started}, TimedOut={fallbackResult.TimedOut}, ExitCode={fallbackResult.ExitCode}, StdOut='{fallbackResult.StdOut}', StdErr='{fallbackResult.StdErr}'", "CMD_NETSH");
-                }
-                return true;
-            },
-            () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("powershell",
-                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).CongestionProvider\"").Trim().ToUpper();
-                return res == "CUBIC" || res == "CTCP";
+                if (RunCommandChecked("netsh", "int tcp set supplementary template=internet congestionprovider=cubic"))
+                {
+                    return true;
+                }
+
+                // Fallback para ambientes onde CUBIC não está disponível.
+                return RunCommandChecked("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
+            },
+            () => RunCommandChecked("netsh", "int tcp set supplementary template=internet congestionprovider=default"),
+            () =>
+            {
+                var provider = RunPowerShell("(Get-NetTCPSetting -SettingName Internet).CongestionProvider").ToUpperInvariant();
+                return provider is "CUBIC" or "CTCP";
             }
         ));
 
         Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, Resources.N3_Title, Resources.N3_Desc,
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
-            () =>
-            {
-                var res = CommandHelper.RunCommand("netsh", "int tcp show global");
-                return res.Contains("enabled") || res.Contains("habilitado");
-            }
+            () => RunCommandChecked("netsh", "int tcp set global ecncapability=enabled"),
+            () => RunCommandChecked("netsh", "int tcp set global ecncapability=disabled"),
+            () => RunPowerShell("(Get-NetTCPSetting -SettingName Internet).EcnCapability")
+                .Equals("Enabled", StringComparison.OrdinalIgnoreCase)
         ));
 
         Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, Resources.N4_Title, Resources.N4_Desc,
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled"); return true; },
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
-            () => { var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower(); return res.Contains("rss") && (res.Contains("disabled") || res.Contains("desabilitado")); }
+            () => RunCommandChecked("netsh", "int tcp set global rss=disabled"),
+            () => RunCommandChecked("netsh", "int tcp set global rss=enabled"),
+            () => RunPowerShell("(Get-NetOffloadGlobalSetting).ReceiveSideScaling")
+                .Equals("Disabled", StringComparison.OrdinalIgnoreCase)
         ));
 
         Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, Resources.N5_Title, Resources.N5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, "DELETE"));
@@ -256,37 +298,66 @@ public class TweakService
 
     private void AddSearchTweaks()
     {
-        // SCH1: DisableSearchBoxSuggestions - Alterado para HKCU\Software\Microsoft\Windows\CurrentVersion\Search para eficácia imediata
-        Tweaks.Add(new RegistryTweak("SCH1", TweakCategory.Search, Resources.S_1_Title, Resources.S_1_Desc,
-            @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 0, 1));
+        Tweaks.Add(new CustomTweak("SCH1", TweakCategory.Search, Resources.S_1_Title, Resources.S_1_Desc,
+            () =>
+            {
+                // Windows 11 moderno: política explícita para remover sugestões/web no Search.
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions", 1, RegistryValueKind.DWord);
+                // Mantém compatibilidade com comportamento antigo de ocultar caixa de pesquisa da barra.
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 0, RegistryValueKind.DWord);
+                return true;
+            },
+            () =>
+            {
+                using var policyKey = Registry.CurrentUser.OpenSubKey(@"Software\Policies\Microsoft\Windows\Explorer", true);
+                policyKey?.DeleteValue("DisableSearchBoxSuggestions", false);
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", 1, RegistryValueKind.DWord);
+                return true;
+            },
+            () =>
+            {
+                var policyValue = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Policies\Microsoft\Windows\Explorer", "DisableSearchBoxSuggestions", 0);
+                var taskbarMode = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search", "SearchboxTaskbarMode", null);
+                return (policyValue is int i && i == 1) || (taskbarMode is int mode && mode == 0);
+            }
+        ));
 
-        // SCH2: DisableCloudSearch
         Tweaks.Add(new RegistryTweak("SCH2", TweakCategory.Search, Resources.S_2_Title, Resources.S_2_Desc,
             @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "DisableCloudSearch", 1, 0));
 
-        // SCH3: BingSearchEnabled - Refatorado conforme RegistryService de referência
         Tweaks.Add(new RegistryTweak("SCH3", TweakCategory.Search, Resources.S_3_Title, Resources.S_3_Desc,
             @"HKCU\Software\Microsoft\Windows\CurrentVersion\Search", "BingSearchEnabled", 0, 1));
     }
 
     private void AddCustomTweaks()
     {
-        // SE1: SysMain
         Tweaks.Add(new CustomTweak("SE1", TweakCategory.Tweaks, Resources.SE1_Title, Resources.SE1_Desc,
-            () => {
-                CommandHelper.RunCommand("sc", "config SysMain start= disabled");
-                CommandHelper.RunCommandNoWait("sc", "stop SysMain");
-                return true;
+            () =>
+            {
+                var configured = RunCommandChecked("sc", "config SysMain start= disabled");
+                var stopped = RunCommandChecked("sc", "stop SysMain");
+                return configured && stopped;
             },
-            () => {
-                CommandHelper.RunCommand("sc", "config SysMain start= auto");
-                CommandHelper.RunCommandNoWait("sc", "start SysMain");
-                return true;
+            () =>
+            {
+                var configured = RunCommandChecked("sc", "config SysMain start= auto");
+                var started = RunCommandChecked("sc", "start SysMain");
+                return configured && started;
             },
-            () => { try { using var sc = new ServiceController("SysMain"); return sc.StartType == ServiceStartMode.Disabled; } catch { return false; } }
+            () =>
+            {
+                try
+                {
+                    using var sc = new ServiceController("SysMain");
+                    return sc.StartType == ServiceStartMode.Disabled;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
         ));
 
-        // SE2: Prefetch
         Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, Resources.SE2_Title, Resources.SE2_Desc,
             @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
     }
