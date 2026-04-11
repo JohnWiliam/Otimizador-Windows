@@ -335,13 +335,13 @@ public class TweakService
             () =>
             {
                 var configured = RunCommandChecked("sc", "config SysMain start= disabled");
-                CommandHelper.RunCommand("sc", "stop SysMain");
+                try { using var sc = new ServiceController("SysMain"); if (sc.Status != ServiceControllerStatus.Stopped) sc.Stop(); } catch { }
                 return configured;
             },
             () =>
             {
                 var configured = RunCommandChecked("sc", "config SysMain start= auto");
-                CommandHelper.RunCommand("sc", "start SysMain");
+                try { using var sc = new ServiceController("SysMain"); if (sc.Status != ServiceControllerStatus.Running) sc.Start(); } catch { }
                 return configured;
             },
             () =>
