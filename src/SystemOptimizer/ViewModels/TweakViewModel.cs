@@ -10,7 +10,7 @@ using Wpf.Ui.Controls;
 
 namespace SystemOptimizer.ViewModels;
 
-public partial class TweakViewModel : ObservableObject
+public partial class TweakViewModel : ObservableObject, IDisposable
 {
     private readonly ITweak _tweak;
 
@@ -117,6 +117,14 @@ public partial class TweakViewModel : ObservableObject
         }
     }
 
+
+    public void Dispose()
+    {
+        if (_tweak is INotifyPropertyChanged notifyTweak)
+        {
+            notifyTweak.PropertyChanged -= Tweak_PropertyChanged;
+        }
+    }
     /// <summary>
     /// Refreshes the status of the tweak asynchronously.
     /// </summary>
