@@ -1,27 +1,21 @@
 using System;
-using System.Windows;
-using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
+using System.Threading;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 
-namespace SystemOptimizer
+namespace SystemOptimizer;
+
+public static class Program
 {
-    public static class Program
+    [STAThread]
+    public static void Main(string[] args)
     {
-        [STAThread]
-        public static void Main(string[] args)
+        WinRT.ComWrappersSupport.InitializeComWrappers();
+        Application.Start(_ =>
         {
-            // O Toolkit gerencia a ativação automaticamente se configurado corretamente no App.xaml.cs/StartupService
-            
-            try 
-            {
-                var app = new App();
-                app.InitializeComponent();
-                app.Run();
-            }
-            catch (Exception ex)
-            {
-                // Fallback simples de log caso o app falhe na inicialização
-                MessageBox.Show($"Fatal Error: {ex.Message}", "SystemOptimizer Critical Error");
-            }
-        }
+            var context = new DispatcherQueueSynchronizationContext(DispatcherQueue.GetForCurrentThread());
+            SynchronizationContext.SetSynchronizationContext(context);
+            _ = new App();
+        });
     }
 }

@@ -1,84 +1,116 @@
 using System;
-using System.Windows;
-using Wpf.Ui;
-using Wpf.Ui.Abstractions;
-using Wpf.Ui.Appearance;
-using Wpf.Ui.Controls;
+using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using SystemOptimizer.Helpers;
-using SystemOptimizer.ViewModels;
 using SystemOptimizer.Services;
+using SystemOptimizer.ViewModels;
+using SystemOptimizer.Views.Pages;
 
 namespace SystemOptimizer;
 
-public partial class MainWindow : FluentWindow, INavigationWindow
+public sealed partial class MainWindow : Window
 {
-    public MainViewModel ViewModel { get; }
+    private readonly NavigationService _navigationService;
     private readonly StartupActivationState _activationState;
 
-    // Acesso público para serviços externos
-    public INavigationView NavigationView => RootNavigation;
+    public MainViewModel ViewModel { get; }
 
-    public MainWindow(
-        MainViewModel viewModel,
-        INavigationService navigationService,
-        IServiceProvider serviceProvider,
-        ISnackbarService snackbarService,
-        IContentDialogService contentDialogService,
-        StartupActivationState activationState)
+    public MainWindow(MainViewModel viewModel, NavigationService navigationService, StartupActivationState activationState)
     {
         ViewModel = viewModel;
-        DataContext = ViewModel;
+        _navigationService = navigationService;
         _activationState = activationState;
 
         InitializeComponent();
 
-        SystemThemeWatcher.Watch(this);
-
-        // --- Configuração dos serviços de UI ---
-        navigationService.SetNavigationControl(RootNavigation);
-        snackbarService.SetSnackbarPresenter(SnackbarPresenter);
-
-        // CORREÇÃO: SetContentPresenter (obsoleto) -> SetDialogHost (novo)
-        contentDialogService.SetDialogHost(RootContentDialogPresenter);
-
-        // Injeção do ServiceProvider
-        RootNavigation.SetServiceProvider(serviceProvider);
-
-        Loaded += MainWindow_Loaded;
+        ExtendsContentIntoTitleBar = true;
+        SystemBackdrop = MicaController.IsSupported() ? new MicaBackdrop { Kind = MicaKind.BaseAlt } : null;
+        RootNavigation.Header = ViewModel.ApplicationTitle;
+        _navigationService.Initialize(ContentFrame);
+        Activated += MainWindow_Activated;
+        Closed += MainWindow_Closed;
     }
 
-    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    private async void MainWindow_Activated(object sender, WindowActivatedEventArgs args)
     {
-        Logger.Log("MainWindow_Loaded started.");
+        Activated -= MainWindow_Activated;
+        LoadingOverlay.Visibility = Visibility.Visible;
+        Logger.Log("Inicialização WinUI 3 iniciada.");
         await ViewModel.InitializeAsync();
+        LoadingOverlay.Visibility = Visibility.Collapsed;
 
-        Logger.Log("Verificando requisições de navegação inicial...");
         if (_activationState.OpenSettingsRequested)
         {
-            RootNavigation.Navigate(typeof(Views.Pages.SettingsPage));
+            NavigateTo(typeof(SettingsPage));
+            RootNavigation.SelectedItem = RootNavigation.SettingsItem;
             _activationState.ClearOpenSettingsRequest();
         }
         else
         {
-            RootNavigation.Navigate(typeof(Views.Pages.PrivacyPage));
+            SelectMenuItem("Privacy");
+            NavigateTo(typeof(PrivacyPage));
         }
-        Logger.Log("Navegação inicial concluída.");
     }
 
-    // Métodos da interface INavigationWindow
-    public INavigationView GetNavigation() => RootNavigation;
-
-    public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
-
-    public void SetPageService(INavigationViewPageProvider pageService)
+    private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
-        // CORREÇÃO: Na versão 4.1+, o método correto é SetPageProviderService
-        RootNavigation.SetPageProviderService(pageService);
+        Activated -= MainWindow_Activated;
+        Closed -= MainWindow_Closed;
+        if (Application.Current is App app)
+        {
+            _ = app.ShutdownAsync();
+        }
     }
 
-    public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
+    private void RootNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        if (args.IsSettingsSelected)
+        {
+            NavigateTo(typeof(SettingsPage));
+            return;
+        }
 
-    public void ShowWindow() => Show();
+        if (args.SelectedItem is not NavigationViewItem item || item.Tag is not string tag) return;
 
-    public void CloseWindow() => Close();
+        var pageType = tag switch
+        {
+            "Privacy" => typeof(PrivacyPage),
+            "Performance" => typeof(PerformancePage),
+            "Network" => typeof(NetworkPage),
+            "Security" => typeof(SecurityPage),
+            "Search" => typeof(SearchPage),
+            "Cleanup" => typeof(CleanupPage),
+            "Appearance" => typeof(AppearancePage),
+            "Tweaks" => typeof(TweaksPage),
+            _ => typeof(PrivacyPage)
+        };
+
+        NavigateTo(pageType);
+    }
+
+    private void NavigateTo(Type pageType)
+    {
+        try
+        {
+            _navigationService.Navigate(pageType);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha de navegação WinUI para {pageType.Name}: {ex.Message}", "ERROR");
+        }
+    }
+
+    private void SelectMenuItem(string tag)
+    {
+        foreach (var item in RootNavigation.MenuItems)
+        {
+            if (item is NavigationViewItem navigationItem && string.Equals(navigationItem.Tag?.ToString(), tag, StringComparison.OrdinalIgnoreCase))
+            {
+                RootNavigation.SelectedItem = navigationItem;
+                return;
+            }
+        }
+    }
 }

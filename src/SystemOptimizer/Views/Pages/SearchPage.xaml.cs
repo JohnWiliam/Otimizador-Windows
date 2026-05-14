@@ -1,16 +1,15 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
+using SystemOptimizer.Views.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class SearchPage : Page
+public sealed partial class SearchPage : Page
 {
     public SearchPage(MainViewModel viewModel)
     {
         InitializeComponent();
-        
-        // Define o DataContext para o ViewModel injetado.
-        // Isso permite que os bindings {Binding SearchTweaks} e os Comandos funcionem.
-        DataContext = viewModel;
+        Content = FluentPageFactory.CreateTweakPage(Resources.Nav_Search, "Search", viewModel.SearchTweaks, viewModel);
     }
 }

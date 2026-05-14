@@ -1,13 +1,15 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
+using SystemOptimizer.Views.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class AppearancePage : Page
+public sealed partial class AppearancePage : Page
 {
     public AppearancePage(MainViewModel viewModel)
     {
         InitializeComponent();
-        DataContext = viewModel;
+        Content = FluentPageFactory.CreateTweakPage(Resources.Nav_Visual, "Appearance", viewModel.AppearanceTweaks, viewModel);
     }
 }

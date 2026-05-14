@@ -1,13 +1,15 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
+using SystemOptimizer.Views.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class TweaksPage : Page
+public sealed partial class TweaksPage : Page
 {
     public TweaksPage(MainViewModel viewModel)
     {
         InitializeComponent();
-        DataContext = viewModel;
+        Content = FluentPageFactory.CreateTweakPage(Resources.Nav_Tweaks, "Tweaks", viewModel.TweaksPageItems, viewModel);
     }
 }

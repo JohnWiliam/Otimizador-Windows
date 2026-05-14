@@ -1,13 +1,15 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
+using SystemOptimizer.Views.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class NetworkPage : Page
+public sealed partial class NetworkPage : Page
 {
     public NetworkPage(MainViewModel viewModel)
     {
         InitializeComponent();
-        DataContext = viewModel;
+        Content = FluentPageFactory.CreateTweakPage(Resources.Nav_Network, "Network", viewModel.NetworkTweaks, viewModel);
     }
 }

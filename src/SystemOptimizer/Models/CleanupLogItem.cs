@@ -1,5 +1,3 @@
-using System.Windows.Media;
-
 namespace SystemOptimizer.Models;
 
 public class CleanupLogItem

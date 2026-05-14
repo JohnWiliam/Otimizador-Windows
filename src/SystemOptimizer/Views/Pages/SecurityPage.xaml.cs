@@ -1,13 +1,15 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
+using SystemOptimizer.Views.Controls;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class SecurityPage : Page
+public sealed partial class SecurityPage : Page
 {
     public SecurityPage(MainViewModel viewModel)
     {
         InitializeComponent();
-        DataContext = viewModel;
+        Content = FluentPageFactory.CreateTweakPage(Resources.Nav_Security, "Security", viewModel.SecurityTweaks, viewModel);
     }
 }
