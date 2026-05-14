@@ -1,114 +1,45 @@
-<Page x:Class="SystemOptimizer.Views.Pages.SettingsPage"
-      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-      xmlns:vm="clr-namespace:SystemOptimizer.ViewModels"
-      xmlns:p="clr-namespace:SystemOptimizer.Properties"
-      xmlns:helpers="clr-namespace:SystemOptimizer.Helpers"
-      mc:Ignorable="d" 
-      d:DesignHeight="650" d:DesignWidth="800"
-      Title="{x:Static p:Resources.Settings_Title}">
+<Page x:Name="RootPage"
+    x:Class="SystemOptimizer.Views.Pages.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <Page.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
-        <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
-    </Page.Resources>
+    <ScrollViewer Padding="28">
+        <StackPanel Spacing="18">
+            <TextBlock Text="Configurações" Style="{StaticResource TitleTextBlockStyle}" />
 
-    <ui:DynamicScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="24">
-            
-            <TextBlock Text="{x:Static p:Resources.Settings_General}" FontSize="20"
-                       FontWeight="SemiBold" Margin="0,0,0,16"
-                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="260" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Idioma" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Text="Altera a cultura da interface. Reinicie para aplicar todos os textos." Opacity="0.72" TextWrapping="Wrap" />
+                </StackPanel>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Languages}" SelectedItem="{Binding CurrentLanguage, Mode=TwoWay}" />
+            </Grid>
 
-            <ui:CardControl Icon="DarkTheme24" Margin="0,0,0,12">
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Text="{x:Static p:Resources.Settings_Appearance}" FontWeight="Medium"/>
-                        <TextBlock Text="{x:Static p:Resources.Settings_ThemeDesc}"
-                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
-                </ui:CardControl.Header>
-                
-                <ComboBox MinWidth="200"
-                          ItemsSource="{Binding ThemeOptions}"
-                          SelectedItem="{Binding CurrentThemeOption}"
-                          DisplayMemberPath="Name" 
-                          SelectedIndex="0" />
-            </ui:CardControl>
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="260" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="Tema" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Text="Usa tema do sistema, claro ou escuro com superfície Fluent 2 e Mica." Opacity="0.72" TextWrapping="Wrap" />
+                </StackPanel>
+                <ComboBox Grid.Column="1" ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding CurrentThemeOption, Mode=TwoWay}" DisplayMemberPath="Name" />
+            </Grid>
 
-            <ui:CardControl Icon="LocalLanguage24">
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Text="{x:Static p:Resources.Settings_Language}" FontWeight="Medium"/>
-                        <TextBlock Text="{x:Static p:Resources.Settings_LanguageDesc}"
-                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
-                </ui:CardControl.Header>
-                <ComboBox MinWidth="200" 
-                          ItemsSource="{Binding Languages}" 
-                          SelectedItem="{Binding CurrentLanguage}"
-                          SelectedIndex="0"/>
-            </ui:CardControl>
+            <ToggleSwitch Header="Persistência segura no logon" IsOn="{Binding IsPersistenceEnabled, Mode=TwoWay}" />
+            <ToggleSwitch Header="Manter atalho instalado" IsOn="{Binding IsKeepInstalledEnabled, Mode=TwoWay}" />
 
-            <TextBlock Text="{x:Static p:Resources.Settings_Behavior}" FontSize="20"
-                       FontWeight="SemiBold" Margin="0,24,0,16"
-                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-
-            <ui:CardControl Icon="SlideHide24">
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Text="{x:Static p:Resources.Settings_Persistence}" FontWeight="Medium"/>
-                        <TextBlock Text="{x:Static p:Resources.Settings_PersistenceDesc}"
-                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
-                </ui:CardControl.Header>
-                
-                <ui:ToggleSwitch IsChecked="{Binding IsPersistenceEnabled}" />
-            </ui:CardControl>
-
-            <ui:CardControl Icon="Pin24" Margin="0,12,0,0">
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Text="{x:Static p:Resources.Settings_KeepInstalled}" FontWeight="Medium"/>
-                        <TextBlock Text="{x:Static p:Resources.Settings_KeepInstalledDesc}"
-                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
-                </ui:CardControl.Header>
-                
-                <ui:ToggleSwitch IsChecked="{Binding IsKeepInstalledEnabled}" />
-            </ui:CardControl>
-
-            <TextBlock Text="{x:Static p:Resources.Settings_Update}" FontSize="20"
-                       FontWeight="SemiBold" Margin="0,24,0,16"
-                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-
-            <ui:CardControl Icon="ArrowSync24">
-                <ui:CardControl.Header>
-                    <StackPanel>
-                        <TextBlock Text="{x:Static p:Resources.Settings_UpdateSystemVersion}" FontWeight="Medium"/>
-                        <TextBlock Text="{x:Static p:Resources.Settings_UpdateCheckDesc}"
-                                   FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                    </StackPanel>
-                </ui:CardControl.Header>
-                
-                <ui:Button Command="{Binding CheckForUpdatesCommand}" 
-                           Appearance="Primary" MinWidth="150">
-                    <Grid>
-                        <StackPanel Orientation="Horizontal" Visibility="{Binding IsCheckingForUpdates, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
-                            <ui:SymbolIcon Symbol="ArrowDownload24" Margin="0,0,8,0"/>
-                            <TextBlock Text="{x:Static p:Resources.Btn_CheckUpdate}"/>
-                        </StackPanel>
-                        
-                        <ui:ProgressRing IsIndeterminate="True" 
-                                         Visibility="{Binding IsCheckingForUpdates, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                         Width="20" Height="20" />
-                    </Grid>
-                </ui:Button>
-            </ui:CardControl>
-
+            <Button Command="{Binding CheckForUpdatesCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <SymbolIcon Symbol="Download" />
+                    <TextBlock Text="Verificar atualização" />
+                </StackPanel>
+            </Button>
         </StackPanel>
-    </ui:DynamicScrollViewer>
+    </ScrollViewer>
 </Page>

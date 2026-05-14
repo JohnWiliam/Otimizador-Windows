@@ -6,11 +6,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
+using Microsoft.UI.Xaml;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Properties;
 using SystemOptimizer.Services;
-using Wpf.Ui.Appearance;
 
 namespace SystemOptimizer.ViewModels;
 
@@ -38,7 +37,7 @@ public partial class SettingsViewModel : ObservableObject
 
     public ObservableCollection<ThemeOption> ThemeOptions { get; } = 
     [
-        new(Resources.Theme_System, ApplicationTheme.Unknown),
+        new(Resources.Theme_System, ApplicationTheme.Default),
         new(Resources.Theme_Light, ApplicationTheme.Light),
         new(Resources.Theme_Dark, ApplicationTheme.Dark)
     ];
@@ -71,14 +70,14 @@ public partial class SettingsViewModel : ObservableObject
         _desktopShortcutPath = Path.Combine(desktop, "System Optimizer.lnk");
         _startMenuShortcutPath = Path.Combine(startMenu, "Programs", "System Optimizer.lnk");
 
-        _currentThemeOption = ThemeOptions.First(x => x.Theme == ApplicationTheme.Unknown);
+        _currentThemeOption = ThemeOptions.First(x => x.Theme == ApplicationTheme.Default);
         UpdateTheme(_currentThemeOption.Theme);
         CheckPersistenceStatus();
         CheckKeepInstalledStatus();
     }
 
     // Chamado quando a linguagem muda
-    partial void OnCurrentLanguageChanged(string value)
+    async partial void OnCurrentLanguageChanged(string value)
     {
         if (string.IsNullOrEmpty(value)) return;
         string cultureCode = value == "English" ? "en-US" : "pt-BR";
@@ -86,20 +85,7 @@ public partial class SettingsViewModel : ObservableObject
         {
             AppSettings.Current.Language = cultureCode;
             AppSettings.Save();
-            var result = MessageBox.Show(Resources.Msg_RestartRequired, Resources.Msg_RestartTitle, MessageBoxButton.YesNo, MessageBoxImage.Information);
-            if (result == MessageBoxResult.Yes)
-            {
-                string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(currentExe))
-                {
-                    Logger.Log("Caminho do executável atual não encontrado ao reiniciar o aplicativo.", "ERROR");
-                    MessageBox.Show("Não foi possível localizar o executável para reiniciar o aplicativo.", Resources.Msg_ErrorTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                Process.Start(currentExe);
-                Application.Current.Shutdown();
-            }
+            await _dialogService.ShowMessageAsync(Resources.Msg_RestartTitle, Resources.Msg_RestartRequired, DialogType.Info);
         }
     }
 
@@ -170,11 +156,7 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private void UpdateTheme(ApplicationTheme theme)
-    {
-        if (theme == ApplicationTheme.Unknown) ApplicationThemeManager.ApplySystemTheme();
-        else ApplicationThemeManager.Apply(theme);
-    }
+    private static void UpdateTheme(ApplicationTheme theme) => App.ApplyTheme(theme);
 
     private void CheckKeepInstalledStatus()
     {

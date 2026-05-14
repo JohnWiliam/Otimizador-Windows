@@ -42,8 +42,9 @@ public class UpdateService : IUpdateService
             {
                 if (latestVersion > currentVersion)
                 {
-                    // Procura o asset .exe
-                    var asset = release.assets.FirstOrDefault(a => a.name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+                    // Procura primeiro o pacote MSIX nativo, mantendo MSIXBundle como opção futura.
+                    var asset = release.assets.FirstOrDefault(a => a.name.EndsWith(".msix", StringComparison.OrdinalIgnoreCase))
+                        ?? release.assets.FirstOrDefault(a => a.name.EndsWith(".msixbundle", StringComparison.OrdinalIgnoreCase));
                     if (asset != null)
                     {
                         return new UpdateInfo(true, release.tag_name, release.body, asset.browser_download_url);
@@ -61,70 +62,55 @@ public class UpdateService : IUpdateService
 
     public async Task DownloadAndInstallAsync(string downloadUrl, IProgress<double> progress)
     {
-        string tempFilePath = Path.GetTempFileName();
-        string newExePath = tempFilePath + ".exe";
+        var extension = Path.GetExtension(new Uri(downloadUrl).AbsolutePath);
+        if (!string.Equals(extension, ".msix", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(extension, ".msixbundle", StringComparison.OrdinalIgnoreCase))
+        {
+            extension = ".msix";
+        }
+
+        string packagePath = Path.Combine(Path.GetTempPath(), $"SystemOptimizer_Update_{Guid.NewGuid():N}{extension}");
 
         try
         {
-            // 1. Download com progresso
             using (var response = await _httpClient.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead))
             {
                 response.EnsureSuccessStatusCode();
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                
-                using (var stream = await response.Content.ReadAsStreamAsync())
-                using (var fileStream = new FileStream(newExePath, FileMode.Create, FileAccess.Write, FileShare.None))
+
+                await using var stream = await response.Content.ReadAsStreamAsync();
+                await using var fileStream = new FileStream(packagePath, FileMode.Create, FileAccess.Write, FileShare.None);
+                var buffer = new byte[81920];
+                var totalRead = 0L;
+                int bytesRead;
+
+                while ((bytesRead = await stream.ReadAsync(buffer)) > 0)
                 {
-                    var buffer = new byte[8192];
-                    var totalRead = 0L;
-                    int bytesRead;
+                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead));
+                    totalRead += bytesRead;
 
-                    while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    if (totalBytes > 0)
                     {
-                        await fileStream.WriteAsync(buffer, 0, bytesRead);
-                        totalRead += bytesRead;
-
-                        if (totalBytes != -1)
-                        {
-                            progress?.Report((double)totalRead / totalBytes * 100);
-                        }
+                        progress?.Report((double)totalRead / totalBytes * 100);
                     }
                 }
             }
 
-            // 2. Substituição do Arquivo (Self-Update)
-            var currentProcess = Process.GetCurrentProcess();
-            var currentExe = currentProcess.MainModule?.FileName;
-
-            if (string.IsNullOrEmpty(currentExe)) throw new Exception("Não foi possível localizar o executável atual.");
-
-            // Nome do backup
-            var oldExe = currentExe + ".old";
-
-            // Se já existir um .old de uma atualização anterior, tenta deletar
-            if (File.Exists(oldExe))
+            progress?.Report(100);
+            var installer = new ProcessStartInfo
             {
-                try { File.Delete(oldExe); } catch { /* Ignora se estiver bloqueado */ }
-            }
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"Add-AppxPackage -ForceUpdateFromAnyVersion -Path '{packagePath}'\"",
+                UseShellExecute = true,
+                Verb = "runas"
+            };
 
-            // Renomeia o atual para .old (Windows permite renomear executável em uso)
-            File.Move(currentExe, oldExe);
-
-            // Move o novo baixado para o local do original
-            File.Move(newExePath, currentExe);
-
-            // 3. Reinicia a aplicação
-            Process.Start(currentExe);
-            
-            // Fecha a atual
-            currentProcess.Kill();
+            Process.Start(installer);
         }
         catch (Exception ex)
         {
-            Logger.Log($"Erro na instalação da atualização: {ex.Message}", "ERROR");
-            
-            // Limpeza em caso de erro
-            if (File.Exists(newExePath)) File.Delete(newExePath);
+            Logger.Log($"Erro na instalação do pacote MSIX: {ex.Message}", "ERROR");
+            if (File.Exists(packagePath)) File.Delete(packagePath);
             throw;
         }
     }

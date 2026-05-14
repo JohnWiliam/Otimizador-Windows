@@ -1,133 +1,103 @@
-# System Optimizer Build Script
-# Compila o gerador de ícones, cria o ícone e publica o app principal com otimização segura.
+# System Optimizer WinUI 3 Build Script
+# Gera o ícone do aplicativo, restaura dependências e empacota a versão final como MSIX.
 
 $ErrorActionPreference = "Stop"
 
-# --- Verificação e Correção do PATH do .NET ---
-Write-Host "Checking for .NET SDK..."
+function Add-DotNetToPathIfNeeded {
+    if (Get-Command dotnet -ErrorAction SilentlyContinue) { return }
 
-# 1. Verifica se o comando já existe no PATH
-if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    # 2. Se não encontrar, procura nos locais padrão (x64 e x86)
     $possiblePaths = @(
         "C:\Program Files\dotnet",
         "C:\Program Files (x86)\dotnet"
     )
 
     foreach ($path in $possiblePaths) {
-        if (Test-Path "$path\dotnet.exe") {
-            Write-Host "O comando 'dotnet' não estava no PATH, mas foi encontrado em: $path" -ForegroundColor Yellow
-            Write-Host "Adicionando ao PATH temporariamente..." -ForegroundColor Yellow
+        if (Test-Path (Join-Path $path "dotnet.exe")) {
+            Write-Host "dotnet encontrado em $path; adicionando ao PATH desta sessão." -ForegroundColor Yellow
             $env:PATH = "$env:PATH;$path"
-            break
+            return
         }
     }
 }
 
-# 3. Verificação Final (Se falhar aqui, realmente não está acessível)
+Add-DotNetToPathIfNeeded
+
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-    Write-Host "ERRO CRÍTICO: O SDK do .NET não foi encontrado." -ForegroundColor Red
-    Write-Host "Certifique-se de que o .NET 10 SDK está instalado corretamente."
-    Write-Host "Dica: Tente fechar e abrir novamente este terminal ou reiniciar o PC."
-    Write-Host "Pressione Enter para sair..."
-    Read-Host
-    exit 1
+    throw "O SDK do .NET não foi encontrado. Instale o .NET SDK com suporte a Windows/WinUI 3."
 }
 
-$dotnetVersion = dotnet --version
-Write-Host "Using .NET SDK version: $dotnetVersion"
-
-# --- paths ---
 $root = $PSScriptRoot
 $iconResizerProj = Join-Path $root "src\IconResizer\IconResizer.csproj"
 $mainProj = Join-Path $root "src\SystemOptimizer\SystemOptimizer.csproj"
 $outputDir = Join-Path $root "Build"
+$msixDir = Join-Path $outputDir "MSIX"
 $assetsDir = Join-Path $root "src\SystemOptimizer\Assets"
 $sourceLogo = Join-Path $assetsDir "logo.png"
 $targetIcon = Join-Path $assetsDir "icon.ico"
+$certPath = if ($env:SYSTEMOPTIMIZER_MSIX_CERTIFICATE) { $env:SYSTEMOPTIMIZER_MSIX_CERTIFICATE } else { Join-Path $outputDir "SystemOptimizer_TemporaryKey.pfx" }
+$certPassword = if ($env:SYSTEMOPTIMIZER_MSIX_CERTIFICATE_PASSWORD) { $env:SYSTEMOPTIMIZER_MSIX_CERTIFICATE_PASSWORD } else { "SystemOptimizer-LocalBuild-ChangeMe!" }
 
-# --- Step 1: Build Icon Resizer Tool ---
-Write-Host "`n[1/3] Building Internal Tools (IconResizer)..."
-dotnet build $iconResizerProj -c Release -v q
-
-# Locate the compiled tool
-# Caminho ajustado para .NET 10 conforme sua estrutura
-$resizerExe = Join-Path $root "src\IconResizer\bin\Release\net10.0-windows\IconResizer.exe"
-
-if (-not (Test-Path $resizerExe)) {
-    Write-Host "Failed to build IconResizer tool." -ForegroundColor Red
-    Write-Host "Verifique se o caminho de saída está correto em: $resizerExe"
-    Write-Host "Pressione Enter para sair..."
-    Read-Host
-    exit 1
-}
-
-# --- Step 2: Generate High-Res Icon ---
-Write-Host "`n[2/3] Generating High-Resolution Icon..."
-if (Test-Path $sourceLogo) {
-    # Run the tool: IconResizer.exe <input> <output>
-    & $resizerExe $sourceLogo $targetIcon
-} else {
-    Write-Warning "logo.png not found in Assets. Skipping icon generation."
-}
-
-# --- Step 3: Build Main Application (Optimized) ---
-Write-Host "`n[3/3] Building and Publishing SystemOptimizer (SingleFile Compressed)..."
+Write-Host "Using .NET SDK version: $(dotnet --version)"
 
 if (Test-Path $outputDir) {
     Remove-Item $outputDir -Recurse -Force
 }
+New-Item -ItemType Directory -Path $msixDir -Force | Out-Null
 
-# Restaura especificamente para win-x64 antes do publish
-Write-Host "Restoring dependencies..."
-dotnet restore $mainProj -r win-x64
-
-Write-Host "Publishing..."
-# Flags explicadas:
-# -p:PublishSingleFile=true            : Gera um único EXE.
-# -p:EnableCompressionInSingleFile=true : Comprime o conteúdo dentro do EXE (Reduz tamanho).
-# -p:PublishReadyToRun=false           : Desativa pré-compilação nativa (Reduz tamanho significativamente).
-# -p:IncludeNativeLibrariesForSelfExtract=true : Inclui libs nativas necessárias.
-
-dotnet publish $mainProj -c Release -r win-x64 --self-contained `
-    -p:PublishSingleFile=true `
-    -p:IncludeNativeLibrariesForSelfExtract=true `
-    -p:EnableCompressionInSingleFile=true `
-    -p:PublishReadyToRun=false `
-    --no-restore `
-    -o $outputDir
-
-# --- Optional Step: UPX Compression ---
-# Se o upx.exe estiver disponível no PATH, aplica compressão extra.
-if ($LASTEXITCODE -eq 0) {
-    $exePath = Join-Path $outputDir "SystemOptimizer.exe"
-    
-    # Verifica se o comando 'upx' existe no sistema
-    if (Get-Command upx -ErrorAction SilentlyContinue) {
-        Write-Host "`n[Bonus] UPX detected! Applying ultra compression..." -ForegroundColor Cyan
-        # --best: melhor compressão
-        # --lzma: algoritmo mais eficiente
-        upx --best --lzma "$exePath"
-    } else {
-        Write-Host "`n[Info] UPX not found. Skipping extra compression (Optional)." -ForegroundColor Gray
-    }
-
-    # Relatório Final
-    if (Test-Path $exePath) {
-        $size = (Get-Item $exePath).Length / 1MB
-        $sizeFormatted = "{0:N2} MB" -f $size
-
-        Write-Host "`nBuild Successful!" -ForegroundColor Green
-        Write-Host "Executable created at: $exePath" -ForegroundColor Green
-        Write-Host "Final Size: $sizeFormatted" -ForegroundColor Cyan
-        Write-Host "Note: This is a portable, self-contained executable."
-    } else {
-        Write-Host "Build finished but executable not found." -ForegroundColor Red
-    }
-} else {
-    Write-Host "Build failed." -ForegroundColor Red
+Write-Host "`n[1/4] Building internal icon tool..."
+dotnet build $iconResizerProj -c Release -v minimal
+$resizerExe = Join-Path $root "src\IconResizer\bin\Release\net10.0-windows\IconResizer.exe"
+if (-not (Test-Path $resizerExe)) {
+    throw "IconResizer não foi encontrado em: $resizerExe"
 }
 
-# --- PAUSA FINAL ---
-Write-Host "`nProcesso finalizado. Pressione Enter para fechar..." -ForegroundColor Yellow
-Read-Host
+Write-Host "`n[2/4] Generating high-resolution icon..."
+if (Test-Path $sourceLogo) {
+    & $resizerExe $sourceLogo $targetIcon
+} else {
+    Write-Warning "logo.png não encontrado em Assets. Mantendo o ícone atual."
+}
+
+Write-Host "`n[3/4] Restoring WinUI 3 dependencies..."
+dotnet restore $mainProj -r win-x64
+
+if (-not (Test-Path $certPath)) {
+    if (-not (Get-Command New-SelfSignedCertificate -ErrorAction SilentlyContinue)) {
+        throw "Nenhum certificado MSIX foi informado e New-SelfSignedCertificate não está disponível. Defina SYSTEMOPTIMIZER_MSIX_CERTIFICATE."
+    }
+
+    Write-Host "Gerando certificado local de assinatura MSIX em: $certPath" -ForegroundColor Yellow
+    $cert = New-SelfSignedCertificate `
+        -Type Custom `
+        -Subject "CN=SystemOptimizer" `
+        -KeyUsage DigitalSignature `
+        -FriendlyName "System Optimizer Local MSIX Signing" `
+        -CertStoreLocation "Cert:\CurrentUser\My" `
+        -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+
+    $securePassword = ConvertTo-SecureString $certPassword -AsPlainText -Force
+    Export-PfxCertificate -Cert $cert -FilePath $certPath -Password $securePassword | Out-Null
+    Write-Warning "Certificado temporário criado. Para instalar o MSIX em outra máquina, confie este certificado ou informe um certificado oficial via SYSTEMOPTIMIZER_MSIX_CERTIFICATE."
+}
+
+Write-Host "`n[4/4] Publishing packaged WinUI 3 app as signed MSIX..."
+dotnet publish $mainProj -c Release -r win-x64 --self-contained --no-restore `
+    -p:WindowsPackageType=MSIX `
+    -p:GenerateAppxPackageOnBuild=true `
+    -p:AppxPackageDir="$msixDir\" `
+    -p:AppxBundle=Never `
+    -p:AppxPackageSigningEnabled=true `
+    -p:PackageCertificateKeyFile="$certPath" `
+    -p:PackageCertificatePassword="$certPassword"
+
+$packages = Get-ChildItem -Path $msixDir -Recurse -Include *.msix,*.msixbundle | Sort-Object LastWriteTime -Descending
+if (-not $packages) {
+    throw "A publicação terminou sem gerar um pacote .MSIX em $msixDir."
+}
+
+$package = $packages | Select-Object -First 1
+$sizeFormatted = "{0:N2} MB" -f ($package.Length / 1MB)
+Write-Host "`nBuild Successful!" -ForegroundColor Green
+Write-Host "MSIX package created at: $($package.FullName)" -ForegroundColor Green
+Write-Host "Final Size: $sizeFormatted" -ForegroundColor Cyan
+Write-Host "Note: o artefato distribuível agora é MSIX; não há empacotamento single-file .exe." -ForegroundColor Cyan

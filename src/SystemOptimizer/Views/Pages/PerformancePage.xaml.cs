@@ -1,13 +1,13 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
 using SystemOptimizer.ViewModels;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class PerformancePage : Page
+public sealed partial class PerformancePage : Page
 {
-    public PerformancePage(MainViewModel viewModel)
+    public PerformancePage()
     {
         InitializeComponent();
-        DataContext = viewModel;
+        DataContext = App.Services.GetService(typeof(MainViewModel));
     }
 }

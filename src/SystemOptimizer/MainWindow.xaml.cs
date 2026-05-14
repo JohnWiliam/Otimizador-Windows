@@ -1,84 +1,86 @@
 using System;
-using System.Windows;
-using Wpf.Ui;
-using Wpf.Ui.Abstractions;
-using Wpf.Ui.Appearance;
-using Wpf.Ui.Controls;
+using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using SystemOptimizer.Helpers;
-using SystemOptimizer.ViewModels;
 using SystemOptimizer.Services;
+using SystemOptimizer.ViewModels;
+using SystemOptimizer.Views.Pages;
 
 namespace SystemOptimizer;
 
-public partial class MainWindow : FluentWindow, INavigationWindow
+public sealed partial class MainWindow : Window
 {
-    public MainViewModel ViewModel { get; }
     private readonly StartupActivationState _activationState;
 
-    // Acesso público para serviços externos
-    public INavigationView NavigationView => RootNavigation;
+    public MainViewModel ViewModel { get; }
 
-    public MainWindow(
-        MainViewModel viewModel,
-        INavigationService navigationService,
-        IServiceProvider serviceProvider,
-        ISnackbarService snackbarService,
-        IContentDialogService contentDialogService,
-        StartupActivationState activationState)
+    public MainWindow(MainViewModel viewModel, StartupActivationState activationState)
     {
         ViewModel = viewModel;
-        DataContext = ViewModel;
         _activationState = activationState;
-
         InitializeComponent();
-
-        SystemThemeWatcher.Watch(this);
-
-        // --- Configuração dos serviços de UI ---
-        navigationService.SetNavigationControl(RootNavigation);
-        snackbarService.SetSnackbarPresenter(SnackbarPresenter);
-
-        // CORREÇÃO: SetContentPresenter (obsoleto) -> SetDialogHost (novo)
-        contentDialogService.SetDialogHost(RootContentDialogPresenter);
-
-        // Injeção do ServiceProvider
-        RootNavigation.SetServiceProvider(serviceProvider);
-
-        Loaded += MainWindow_Loaded;
+        RootGrid.DataContext = ViewModel;
+        ConfigureChrome();
     }
 
-    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    public void NavigateTo(Type pageType) => ContentFrame.Navigate(pageType);
+
+    private async void RootNavigation_Loaded(object sender, RoutedEventArgs e)
     {
-        Logger.Log("MainWindow_Loaded started.");
+        Logger.Log("MainWindow carregada; inicializando dados nativos WinUI.");
         await ViewModel.InitializeAsync();
 
-        Logger.Log("Verificando requisições de navegação inicial...");
         if (_activationState.OpenSettingsRequested)
         {
-            RootNavigation.Navigate(typeof(Views.Pages.SettingsPage));
+            NavigateByTag("settings");
             _activationState.ClearOpenSettingsRequest();
         }
         else
         {
-            RootNavigation.Navigate(typeof(Views.Pages.PrivacyPage));
+            NavigateByTag("privacy");
         }
-        Logger.Log("Navegação inicial concluída.");
     }
 
-    // Métodos da interface INavigationWindow
-    public INavigationView GetNavigation() => RootNavigation;
-
-    public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
-
-    public void SetPageService(INavigationViewPageProvider pageService)
+    private void RootNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
-        // CORREÇÃO: Na versão 4.1+, o método correto é SetPageProviderService
-        RootNavigation.SetPageProviderService(pageService);
+        if (args.SelectedItem is NavigationViewItem item && item.Tag is string tag)
+        {
+            NavigateByTag(tag);
+        }
     }
 
-    public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
+    public void NavigateByTag(string tag)
+    {
+        var pageType = tag switch
+        {
+            "privacy" => typeof(PrivacyPage),
+            "performance" => typeof(PerformancePage),
+            "network" => typeof(NetworkPage),
+            "security" => typeof(SecurityPage),
+            "search" => typeof(SearchPage),
+            "appearance" => typeof(AppearancePage),
+            "tweaks" => typeof(TweaksPage),
+            "cleanup" => typeof(CleanupPage),
+            "settings" => typeof(SettingsPage),
+            _ => typeof(PrivacyPage)
+        };
 
-    public void ShowWindow() => Show();
+        if (ContentFrame.CurrentSourcePageType != pageType)
+        {
+            ContentFrame.Navigate(pageType);
+        }
+    }
 
-    public void CloseWindow() => Close();
+    private void ConfigureChrome()
+    {
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+
+        if (MicaController.IsSupported())
+        {
+            SystemBackdrop = new MicaBackdrop { Kind = MicaKind.BaseAlt };
+        }
+    }
 }

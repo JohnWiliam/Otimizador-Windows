@@ -16,7 +16,7 @@
 
 ## 🇧🇷 Português
 
-O **Otimizador de Sistema** é uma aplicação moderna, portátil e robusta desenvolvida em **C# 14 (WPF)** para ajustar, limpar e acelerar o Windows. Ele utiliza a biblioteca **WPF-UI 4.1** para oferecer uma interface elegante com efeitos **Mica/Acrylic** e **Fluent Design**, garantindo uma experiência nativa no Windows 11.
+O **Otimizador de Sistema** é uma aplicação moderna, empacotada e robusta desenvolvida em **C# 14 com WinUI 3** para ajustar, limpar e acelerar o Windows. Ele utiliza **WinUI 3 / Windows App SDK** para oferecer uma interface nativa com **Fluent 2 UI** e efeito **Mica**, garantindo uma experiência nativa no Windows 11.
 
 Nesta versão, o aplicativo conta com controles granulares (botões individuais de "Aplicar" e "Restaurar") e um sistema de **Auto-Update** integrado.
 
@@ -103,7 +103,7 @@ Você precisa do **.NET 10 SDK** instalado.
     ```powershell
     .\build.ps1
     ```
-3.  O executável final estará em: `Build\SystemOptimizer.exe`.
+3.  O pacote final estará em: `Build\MSIX\*.msix`.
     * *Nota: O arquivo é "Self-Contained" (não requer instalação do .NET no PC alvo) e comprimido.*
 
 ### ⚠️ Aviso
@@ -113,7 +113,7 @@ Este software modifica configurações do registro e serviços do sistema. Embor
 
 ## 🇺🇸 English
 
-**System Optimizer** is a modern, portable, and robust application built in **C# 14 (WPF)** to tweak, clean, and accelerate Windows. It leverages the **WPF-UI 4.1** library to deliver a sleek interface with **Mica/Acrylic** effects and **Fluent Design**, ensuring a native feel on Windows 11.
+**System Optimizer** is a modern, packaged, and robust application built in **C# 14 with WinUI 3** to tweak, clean, and accelerate Windows. It uses **WinUI 3 / Windows App SDK** to deliver a native **Fluent 2 UI** interface with the **Mica** backdrop, ensuring a native feel on Windows 11.
 
 This version features granular controls (individual "Apply" and "Restore" buttons) and an integrated **Auto-Update** system.
 
@@ -200,7 +200,7 @@ You need the **.NET 10 SDK** installed.
     ```powershell
     .\build.ps1
     ```
-3.  The final executable will be located at: `Build\SystemOptimizer.exe`.
+3.  The final package will be located at: `Build\MSIX\*.msix`.
     * *Note: The file is "Self-Contained" (does not require .NET installed on the target PC) and compressed.*
 
 ### ⚠️ Disclaimer

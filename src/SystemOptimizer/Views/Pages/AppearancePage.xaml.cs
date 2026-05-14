@@ -1,13 +1,13 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
 using SystemOptimizer.ViewModels;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class AppearancePage : Page
+public sealed partial class AppearancePage : Page
 {
-    public AppearancePage(MainViewModel viewModel)
+    public AppearancePage()
     {
         InitializeComponent();
-        DataContext = viewModel;
+        DataContext = App.Services.GetService(typeof(MainViewModel));
     }
 }

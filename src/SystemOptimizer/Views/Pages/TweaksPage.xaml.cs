@@ -1,13 +1,13 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
 using SystemOptimizer.ViewModels;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class TweaksPage : Page
+public sealed partial class TweaksPage : Page
 {
-    public TweaksPage(MainViewModel viewModel)
+    public TweaksPage()
     {
         InitializeComponent();
-        DataContext = viewModel;
+        DataContext = App.Services.GetService(typeof(MainViewModel));
     }
 }
