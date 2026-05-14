@@ -1,13 +1,4 @@
-using System.Windows.Controls;
-using SystemOptimizer.ViewModels;
-
+using Microsoft.Extensions.DependencyInjection;
+using SystemOptimizer.Properties;
 namespace SystemOptimizer.Views.Pages;
-
-public partial class SecurityPage : Page
-{
-    public SecurityPage(MainViewModel viewModel)
-    {
-        InitializeComponent();
-        DataContext = viewModel;
-    }
-}
+public sealed class SecurityPage : TweakCategoryPage { public SecurityPage() : base(Resources.Nav_Security, "Security", App.Services.GetRequiredService<SystemOptimizer.ViewModels.MainViewModel>().SecurityTweaks) { } }

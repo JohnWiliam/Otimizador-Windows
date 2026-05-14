@@ -1,16 +1,4 @@
-using System.Windows.Controls;
-using SystemOptimizer.ViewModels;
-
+using Microsoft.Extensions.DependencyInjection;
+using SystemOptimizer.Properties;
 namespace SystemOptimizer.Views.Pages;
-
-public partial class SearchPage : Page
-{
-    public SearchPage(MainViewModel viewModel)
-    {
-        InitializeComponent();
-        
-        // Define o DataContext para o ViewModel injetado.
-        // Isso permite que os bindings {Binding SearchTweaks} e os Comandos funcionem.
-        DataContext = viewModel;
-    }
-}
+public sealed class SearchPage : TweakCategoryPage { public SearchPage() : base(Resources.Nav_Search, "Search", App.Services.GetRequiredService<SystemOptimizer.ViewModels.MainViewModel>().SearchTweaks) { } }

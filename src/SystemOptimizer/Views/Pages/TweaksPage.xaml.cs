@@ -1,13 +1,4 @@
-using System.Windows.Controls;
-using SystemOptimizer.ViewModels;
-
+using Microsoft.Extensions.DependencyInjection;
+using SystemOptimizer.Properties;
 namespace SystemOptimizer.Views.Pages;
-
-public partial class TweaksPage : Page
-{
-    public TweaksPage(MainViewModel viewModel)
-    {
-        InitializeComponent();
-        DataContext = viewModel;
-    }
-}
+public sealed class TweaksPage : TweakCategoryPage { public TweaksPage() : base(Resources.Nav_Tweaks, "Tweaks", App.Services.GetRequiredService<SystemOptimizer.ViewModels.MainViewModel>().TweaksPageItems) { } }

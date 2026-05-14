@@ -16,7 +16,7 @@
 
 ## 🇧🇷 Português
 
-O **Otimizador de Sistema** é uma aplicação moderna, portátil e robusta desenvolvida em **C# 14 (WPF)** para ajustar, limpar e acelerar o Windows. Ele utiliza a biblioteca **WPF-UI 4.1** para oferecer uma interface elegante com efeitos **Mica/Acrylic** e **Fluent Design**, garantindo uma experiência nativa no Windows 11.
+O **Otimizador de Sistema** é uma aplicação moderna, empacotada e robusta desenvolvida em **C# 14 com WinUI 3 / Windows App SDK** para ajustar, limpar e acelerar o Windows. Ele utiliza a biblioteca **WinUI 3 nativo** para oferecer uma interface elegante com efeitos **Mica** e **Fluent 2 UI**, garantindo uma experiência nativa no Windows 11.
 
 Nesta versão, o aplicativo conta com controles granulares (botões individuais de "Aplicar" e "Restaurar") e um sistema de **Auto-Update** integrado.
 
@@ -91,8 +91,8 @@ O projeto segue a arquitetura **MVVM (Model-View-ViewModel)** com **Injeção de
     * 📂 **Models/**: Definições de Tweaks (`RegistryTweak`, `CustomTweak`).
     * 📂 **Services/**: Lógica de negócio (`TweakService`, `CleanupService`, `DialogService`, `UpdateService`).
     * 📂 **ViewModels/**: Lógica de apresentação (`MainViewModel`).
-    * 📂 **Views/**: Interfaces XAML (`MainWindow`, `Pages/`).
-* 📜 **build.ps1**: Script automatizado para compilar o executável portátil.
+    * 📂 **Views/**: Interfaces nativas WinUI 3 (`MainWindow`, `Pages/`).
+* 📜 **build.ps1**: Script automatizado para gerar o pacote MSIX.
 
 ### 🚀 Como Compilar
 
@@ -103,8 +103,8 @@ Você precisa do **.NET 10 SDK** instalado.
     ```powershell
     .\build.ps1
     ```
-3.  O executável final estará em: `Build\SystemOptimizer.exe`.
-    * *Nota: O arquivo é "Self-Contained" (não requer instalação do .NET no PC alvo) e comprimido.*
+3.  O pacote final estará em: `Build\*.msix`.
+    * *Nota: a distribuição agora é empacotada como MSIX, com Windows App SDK/WinUI 3 e sem publicação em EXE portátil single-file.*
 
 ### ⚠️ Aviso
 Este software modifica configurações do registro e serviços do sistema. Embora tenha sido testado e inclua a função **"Restaurar Seleção"**, use por sua conta e risco. Execute sempre como **Administrador**.
@@ -113,7 +113,7 @@ Este software modifica configurações do registro e serviços do sistema. Embor
 
 ## 🇺🇸 English
 
-**System Optimizer** is a modern, portable, and robust application built in **C# 14 (WPF)** to tweak, clean, and accelerate Windows. It leverages the **WPF-UI 4.1** library to deliver a sleek interface with **Mica/Acrylic** effects and **Fluent Design**, ensuring a native feel on Windows 11.
+**System Optimizer** is a modern, packaged, modern, and robust application built in **C# 14 com WinUI 3 / Windows App SDK** to tweak, clean, and accelerate Windows. It leverages the **WinUI 3 nativo** library to deliver a sleek interface with **Mica** and **Fluent 2 UI**, ensuring a native feel on Windows 11.
 
 This version features granular controls (individual "Apply" and "Restore" buttons) and an integrated **Auto-Update** system.
 
@@ -188,8 +188,8 @@ The project follows the **MVVM (Model-View-ViewModel)** architecture with **Depe
     * 📂 **Models/**: Tweak definitions (`RegistryTweak`, `CustomTweak`).
     * 📂 **Services/**: Business logic (`TweakService`, `CleanupService`, `DialogService`, `UpdateService`).
     * 📂 **ViewModels/**: Presentation logic (`MainViewModel`).
-    * 📂 **Views/**: XAML Interfaces (`MainWindow`, `Pages/`).
-* 📜 **build.ps1**: Automated script to compile the portable executable.
+    * 📂 **Views/**: Native WinUI 3 interfaces (`MainWindow`, `Pages/`).
+* 📜 **build.ps1**: Automated script to generate the MSIX package.
 
 ### 🚀 How to Build
 
@@ -200,8 +200,8 @@ You need the **.NET 10 SDK** installed.
     ```powershell
     .\build.ps1
     ```
-3.  The final executable will be located at: `Build\SystemOptimizer.exe`.
-    * *Note: The file is "Self-Contained" (does not require .NET installed on the target PC) and compressed.*
+3.  The final package will be located at: `Build\*.msix`.
+    * *Note: distribution is now MSIX-packaged with Windows App SDK/WinUI 3 instead of a portable single-file EXE.*
 
 ### ⚠️ Disclaimer
 This software modifies system registry settings and services. While it has been tested and includes a **"Restore Selection"** feature, use at your own risk. Always run as **Administrator**.

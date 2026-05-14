@@ -1,12 +1,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.UI;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
-using System.Windows.Media;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Models;
-using SystemOptimizer.Properties; // Namespace dos resources
-using Wpf.Ui.Controls;
+using SystemOptimizer.Properties;
+using Windows.UI;
 
 namespace SystemOptimizer.ViewModels;
 
@@ -18,6 +20,7 @@ public partial class TweakViewModel : ObservableObject
     public string Description => _tweak.Description;
     public string Id => _tweak.Id;
     public TweakCategory Category => _tweak.Category;
+    public ITweak Tweak => _tweak;
 
     [ObservableProperty]
     private bool _isSelected;
@@ -26,57 +29,34 @@ public partial class TweakViewModel : ObservableObject
     private string _statusText = $"○ {Resources.Status_Undefined}";
 
     [ObservableProperty]
-    private SolidColorBrush _statusColor = Brushes.Gray;
+    private SolidColorBrush _statusColor = new(Colors.Gray);
 
     [ObservableProperty]
-    private SymbolRegular _statusIcon = SymbolRegular.QuestionCircle24;
-
-    public ITweak Tweak => _tweak;
+    private Symbol _statusIcon = Symbol.Help;
 
     public TweakViewModel(ITweak tweak)
     {
         _tweak = tweak;
-
         if (_tweak is INotifyPropertyChanged notifyTweak)
         {
             notifyTweak.PropertyChanged += Tweak_PropertyChanged;
         }
-
-        // Inicializa UI com status atual (Seguro pois roda na thread de criação)
         UpdateStatusUI();
     }
 
     private void Tweak_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        // Proteção contra crashes vindos de threads secundárias
+        if (e.PropertyName != nameof(ITweak.Status)) return;
         try
         {
-            if (e.PropertyName == nameof(ITweak.Status))
-            {
-                var app = System.Windows.Application.Current;
-
-                // Se estivermos numa thread secundária, usamos o Dispatcher
-                if (app != null && !app.Dispatcher.CheckAccess())
-                {
-                    app.Dispatcher.Invoke(UpdateStatusUI);
-                }
-                else
-                {
-                    // Se já estamos na UI Thread ou o App não está disponível, chamamos direto
-                    UpdateStatusUI();
-                }
-            }
+            App.DispatchToUi(UpdateStatusUI);
         }
         catch (Exception ex)
         {
-            // Loga o erro mas não derruba o aplicativo
             Logger.Log($"Erro ao atualizar UI do Tweak {_tweak.Id}: {ex.Message}", "WARNING");
         }
     }
 
-    /// <summary>
-    /// Updates the status UI based on the underlying tweak status.
-    /// </summary>
     public void UpdateStatusUI()
     {
         try
@@ -85,30 +65,24 @@ public partial class TweakViewModel : ObservableObject
             {
                 case TweakStatus.Optimized:
                     StatusText = Resources.Status_Optimized;
-                    StatusIcon = SymbolRegular.CheckmarkCircle24;
-                    StatusColor = new SolidColorBrush(Color.FromRgb(0x0f, 0x7b, 0x0f)); // Verde Escuro
+                    StatusIcon = Symbol.Accept;
+                    StatusColor = Brush(0x0f, 0x7b, 0x0f);
                     break;
                 case TweakStatus.Default:
                     StatusText = Resources.Status_Default;
-                    StatusIcon = SymbolRegular.DismissCircle24;
-                    StatusColor = new SolidColorBrush(Color.FromRgb(0xc4, 0x2b, 0x1c)); // Vermelho
+                    StatusIcon = Symbol.Cancel;
+                    StatusColor = Brush(0xc4, 0x2b, 0x1c);
                     break;
                 case TweakStatus.Modified:
                     StatusText = Resources.Status_Modified;
-                    StatusIcon = SymbolRegular.Edit24;
-                    StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Laranja
+                    StatusIcon = Symbol.Edit;
+                    StatusColor = Brush(202, 80, 16);
                     break;
                 default:
                     StatusText = Resources.Status_Unknown;
-                    StatusIcon = SymbolRegular.QuestionCircle24;
-                    StatusColor = Brushes.Gray;
+                    StatusIcon = Symbol.Help;
+                    StatusColor = new SolidColorBrush(Colors.Gray);
                     break;
-            }
-
-            // Proteção extra ao congelar o pincel
-            if (StatusColor.CanFreeze)
-            {
-                StatusColor.Freeze();
             }
         }
         catch (Exception ex)
@@ -117,11 +91,7 @@ public partial class TweakViewModel : ObservableObject
         }
     }
 
-    /// <summary>
-    /// Refreshes the status of the tweak asynchronously.
-    /// </summary>
-    public async Task RefreshStatusAsync()
-    {
-         await Task.Run(_tweak.CheckStatus);
-    }
+    public async Task RefreshStatusAsync() => await Task.Run(_tweak.CheckStatus);
+
+    private static SolidColorBrush Brush(byte r, byte g, byte b) => new(ColorHelper.FromArgb(255, r, g, b));
 }

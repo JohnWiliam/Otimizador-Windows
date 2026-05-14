@@ -1,13 +1,4 @@
-using System.Windows.Controls;
-using SystemOptimizer.ViewModels;
-
+using Microsoft.Extensions.DependencyInjection;
+using SystemOptimizer.Properties;
 namespace SystemOptimizer.Views.Pages;
-
-public partial class PrivacyPage : Page
-{
-    public PrivacyPage(MainViewModel viewModel)
-    {
-        InitializeComponent();
-        DataContext = viewModel;
-    }
-}
+public sealed class PrivacyPage : TweakCategoryPage { public PrivacyPage() : base(Resources.Nav_Privacy, "Privacy", App.Services.GetRequiredService<SystemOptimizer.ViewModels.MainViewModel>().PrivacyTweaks) { } }

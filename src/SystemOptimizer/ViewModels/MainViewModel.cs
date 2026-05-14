@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using SystemOptimizer.Models;
 using SystemOptimizer.Services;
 using System.Collections.Generic;
@@ -12,8 +11,6 @@ using System.Diagnostics;
 using System.Threading;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Properties;
-using Wpf.Ui;
-using Wpf.Ui.Appearance;
 
 namespace SystemOptimizer.ViewModels;
 
@@ -57,20 +54,14 @@ public partial class MainViewModel : ObservableObject
         _cleanupService = cleanupService;
         _dialogService = dialogService;
 
-        _cleanupService.OnLogItem += (item) =>
-        {
-            Application.Current.Dispatcher.Invoke(() => CleanupLogs.Add(item));
-        };
+        _cleanupService.OnLogItem += item => App.DispatchToUi(() => CleanupLogs.Add(item));
 
-        _cleanupService.OnProgress += (progress) =>
+        _cleanupService.OnProgress += progress => App.DispatchToUi(() =>
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                CleanupProgressPercentage = progress.Percentage;
-                CleanupProgressCategory = progress.CurrentCategory;
-                CleanupProcessedItems = progress.ProcessedItems;
-            });
-        };
+            CleanupProgressPercentage = progress.Percentage;
+            CleanupProgressCategory = progress.CurrentCategory;
+            CleanupProcessedItems = progress.ProcessedItems;
+        });
     }
 
     public Task<IReadOnlyList<CleanupCategoryResult>> RunCleanupScanAsync(CleanupOptions options, CancellationToken cancellationToken)

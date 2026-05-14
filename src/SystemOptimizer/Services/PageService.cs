@@ -1,26 +1,11 @@
 using System;
-using System.Windows;
-using Wpf.Ui.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace SystemOptimizer.Services;
 
-public class PageService(IServiceProvider serviceProvider) : INavigationViewPageProvider
+public sealed class PageService
 {
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
-
-    public T? GetPage<T>() where T : class
-    {
-        if (!typeof(FrameworkElement).IsAssignableFrom(typeof(T)))
-            throw new InvalidOperationException("The page should be a WPF control.");
-
-        return (T?)_serviceProvider.GetService(typeof(T));
-    }
-
-    public object? GetPage(Type pageType)
-    {
-        if (!typeof(FrameworkElement).IsAssignableFrom(pageType))
-            throw new InvalidOperationException("The page should be a WPF control.");
-
-        return _serviceProvider.GetService(pageType);
-    }
+    private readonly IServiceProvider _serviceProvider;
+    public PageService(IServiceProvider serviceProvider) => _serviceProvider = serviceProvider;
+    public object GetPage(Type pageType) => _serviceProvider.GetRequiredService(pageType);
 }
