@@ -1,19 +1,15 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
-using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
+using CommunityToolkit.WinUI.Notifications;
 using SystemOptimizer.Helpers;
-using SystemOptimizer.Views.Pages;
-using Wpf.Ui;
-using Wpf.Ui.Abstractions;
 
 namespace SystemOptimizer.Services;
 
 public sealed class StartupTasksService
 {
     private readonly IUpdateService _updateService;
-    private readonly INavigationService _navigationService;
+    private readonly INavigationCoordinator _navigationCoordinator;
     private readonly StartupActivationState _activationState;
     private readonly object _openSettingsLock = new();
     private DateTime _lastOpenSettingsRequestUtc = DateTime.MinValue;
@@ -21,11 +17,11 @@ public sealed class StartupTasksService
 
     public StartupTasksService(
         IUpdateService updateService,
-        INavigationService navigationService,
+        INavigationCoordinator navigationCoordinator,
         StartupActivationState activationState)
     {
         _updateService = updateService;
-        _navigationService = navigationService;
+        _navigationCoordinator = navigationCoordinator;
         _activationState = activationState;
     }
 
@@ -42,7 +38,6 @@ public sealed class StartupTasksService
         {
             Logger.Log("Argumento --open-settings detectado na inicialização.");
             RequestOpenSettings();
-            return;
         }
     }
 
@@ -51,17 +46,7 @@ public sealed class StartupTasksService
         if (_toastActivationRegistered) return;
 
         Logger.Log("Registrando manipulador único de ativação por toast.");
-
-        // Este evento dispara mesmo se o app foi aberto pelo Toast
-        ToastCompatHelper.RegisterActivationHandler(argument =>
-        {
-            // Precisamos despachar para a UI Thread pois isso vem de um thread background
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                HandleToastArguments(argument);
-            });
-        });
-
+        ToastCompatHelper.RegisterActivationHandler(HandleToastArguments);
         _toastActivationRegistered = true;
     }
 
@@ -69,9 +54,7 @@ public sealed class StartupTasksService
     {
         if (string.IsNullOrWhiteSpace(argument)) return;
 
-        Logger.Log($"Evento de ativação de toast recebido: {argument}");
-
-        try 
+        try
         {
             var args = ToastArguments.Parse(argument);
             if (args.TryGetValue("action", out var action) &&
@@ -82,7 +65,7 @@ public sealed class StartupTasksService
         }
         catch (Exception ex)
         {
-             Logger.Log($"Erro ao processar argumentos do toast: {ex.Message}", "ERROR");
+            Logger.Log($"Erro ao processar argumentos do toast: {ex.Message}", "ERROR");
         }
     }
 
@@ -91,36 +74,28 @@ public sealed class StartupTasksService
         lock (_openSettingsLock)
         {
             var now = DateTime.UtcNow;
-            if ((now - _lastOpenSettingsRequestUtc).TotalMilliseconds < 1000)
-            {
-                Logger.Log("Ação open-settings duplicada ignorada.");
-                return;
-            }
-
+            if ((now - _lastOpenSettingsRequestUtc).TotalMilliseconds < 1000) return;
             _lastOpenSettingsRequestUtc = now;
         }
 
-        Logger.Log("Ação open-settings recebida. Solicitando navegação.");
         _activationState.RequestOpenSettings();
         _ = TryNavigateToSettingsAsync();
     }
 
     private async Task TryNavigateToSettingsAsync()
     {
-        if (Application.Current?.Dispatcher == null || Application.Current.MainWindow == null) return;
-
-        await Application.Current.Dispatcher.InvokeAsync(() =>
+        await Task.Yield();
+        try
         {
-            try
+            if (_navigationCoordinator.NavigateToSettings())
             {
-                _navigationService.Navigate(typeof(SettingsPage));
                 _activationState.ClearOpenSettingsRequest();
             }
-            catch (Exception ex)
-            {
-                Logger.Log($"Falha ao navegar para SettingsPage: {ex.Message}", "ERROR");
-            }
-        });
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao navegar para SettingsPage: {ex.Message}", "ERROR");
+        }
     }
 
     private void RunUpdateCheckInBackground()
@@ -130,10 +105,7 @@ public sealed class StartupTasksService
             try
             {
                 var updateInfo = await _updateService.CheckForUpdatesAsync();
-                if (updateInfo.IsAvailable)
-                {
-                    ShowUpdateToast(updateInfo);
-                }
+                if (updateInfo.IsAvailable) ShowUpdateToast(updateInfo);
             }
             catch (Exception ex)
             {

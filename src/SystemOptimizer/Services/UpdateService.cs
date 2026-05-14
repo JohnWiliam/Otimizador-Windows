@@ -11,7 +11,7 @@ using SystemOptimizer.Helpers;
 
 namespace SystemOptimizer.Services;
 
-public class UpdateService : IUpdateService
+public sealed class UpdateService : IUpdateService, IDisposable
 {
     private readonly HttpClient _httpClient;
     private const string RepoOwner = "johnwiliam";
@@ -42,8 +42,8 @@ public class UpdateService : IUpdateService
             {
                 if (latestVersion > currentVersion)
                 {
-                    // Procura o asset .exe
-                    var asset = release.assets.FirstOrDefault(a => a.name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase));
+                    // Procura o pacote MSIX produzido pelo build WinUI 3
+                    var asset = release.assets.FirstOrDefault(a => a.name.EndsWith(".msix", StringComparison.OrdinalIgnoreCase));
                     if (asset != null)
                     {
                         return new UpdateInfo(true, release.tag_name, release.body, asset.browser_download_url);
@@ -62,7 +62,7 @@ public class UpdateService : IUpdateService
     public async Task DownloadAndInstallAsync(string downloadUrl, IProgress<double> progress)
     {
         string tempFilePath = Path.GetTempFileName();
-        string newExePath = tempFilePath + ".exe";
+        string packagePath = tempFilePath + ".msix";
 
         try
         {
@@ -73,7 +73,7 @@ public class UpdateService : IUpdateService
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
                 
                 using (var stream = await response.Content.ReadAsStreamAsync())
-                using (var fileStream = new FileStream(newExePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var fileStream = new FileStream(packagePath, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     var buffer = new byte[8192];
                     var totalRead = 0L;
@@ -92,42 +92,35 @@ public class UpdateService : IUpdateService
                 }
             }
 
-            // 2. Substituição do Arquivo (Self-Update)
-            var currentProcess = Process.GetCurrentProcess();
-            var currentExe = currentProcess.MainModule?.FileName;
-
-            if (string.IsNullOrEmpty(currentExe)) throw new Exception("Não foi possível localizar o executável atual.");
-
-            // Nome do backup
-            var oldExe = currentExe + ".old";
-
-            // Se já existir um .old de uma atualização anterior, tenta deletar
-            if (File.Exists(oldExe))
+            // 2. Instalação do pacote MSIX sem substituir binários em uso.
+            // O App Installer/PowerShell valida o pacote e preserva o modelo de atualização do Windows.
+            var install = new ProcessStartInfo
             {
-                try { File.Delete(oldExe); } catch { /* Ignora se estiver bloqueado */ }
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"Add-AppxPackage -ForceUpdateFromAnyVersion -Path '{packagePath}'\"",
+                UseShellExecute = true,
+                Verb = "runas"
+            };
+
+            using var process = Process.Start(install);
+            process?.WaitForExit();
+
+            if (process?.ExitCode is not 0)
+            {
+                throw new InvalidOperationException($"Falha ao instalar MSIX. Código: {process?.ExitCode}");
             }
-
-            // Renomeia o atual para .old (Windows permite renomear executável em uso)
-            File.Move(currentExe, oldExe);
-
-            // Move o novo baixado para o local do original
-            File.Move(newExePath, currentExe);
-
-            // 3. Reinicia a aplicação
-            Process.Start(currentExe);
-            
-            // Fecha a atual
-            currentProcess.Kill();
         }
         catch (Exception ex)
         {
             Logger.Log($"Erro na instalação da atualização: {ex.Message}", "ERROR");
             
             // Limpeza em caso de erro
-            if (File.Exists(newExePath)) File.Delete(newExePath);
+            if (File.Exists(packagePath)) File.Delete(packagePath);
             throw;
         }
     }
+
+    public void Dispose() => _httpClient.Dispose();
 
     // Classes auxiliares para o JSON do GitHub
     private record GitHubRelease(string tag_name, string body, List<GitHubAsset> assets);

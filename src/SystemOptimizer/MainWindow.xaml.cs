@@ -1,84 +1,81 @@
 using System;
-using System.Windows;
-using Wpf.Ui;
-using Wpf.Ui.Abstractions;
-using Wpf.Ui.Appearance;
-using Wpf.Ui.Controls;
+using Microsoft.UI.Composition.SystemBackdrops;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using SystemOptimizer.Helpers;
-using SystemOptimizer.ViewModels;
 using SystemOptimizer.Services;
+using SystemOptimizer.ViewModels;
+using SystemOptimizer.Views.Pages;
 
 namespace SystemOptimizer;
 
-public partial class MainWindow : FluentWindow, INavigationWindow
+public sealed partial class MainWindow : Window
 {
-    public MainViewModel ViewModel { get; }
+    private readonly MainViewModel _viewModel;
     private readonly StartupActivationState _activationState;
-
-    // Acesso público para serviços externos
-    public INavigationView NavigationView => RootNavigation;
+    private readonly INavigationCoordinator _navigationCoordinator;
+    private readonly IXamlRootProvider _xamlRootProvider;
+    private bool _isInitialized;
 
     public MainWindow(
         MainViewModel viewModel,
-        INavigationService navigationService,
-        IServiceProvider serviceProvider,
-        ISnackbarService snackbarService,
-        IContentDialogService contentDialogService,
-        StartupActivationState activationState)
+        StartupActivationState activationState,
+        INavigationCoordinator navigationCoordinator,
+        IXamlRootProvider xamlRootProvider)
     {
-        ViewModel = viewModel;
-        DataContext = ViewModel;
+        _viewModel = viewModel;
         _activationState = activationState;
+        _navigationCoordinator = navigationCoordinator;
+        _xamlRootProvider = xamlRootProvider;
 
         InitializeComponent();
+        Title = _viewModel.ApplicationTitle;
+        SystemBackdrop = new MicaBackdrop { Kind = MicaKind.BaseAlt };
+        ExtendsContentIntoTitleBar = true;
 
-        SystemThemeWatcher.Watch(this);
-
-        // --- Configuração dos serviços de UI ---
-        navigationService.SetNavigationControl(RootNavigation);
-        snackbarService.SetSnackbarPresenter(SnackbarPresenter);
-
-        // CORREÇÃO: SetContentPresenter (obsoleto) -> SetDialogHost (novo)
-        contentDialogService.SetDialogHost(RootContentDialogPresenter);
-
-        // Injeção do ServiceProvider
-        RootNavigation.SetServiceProvider(serviceProvider);
-
-        Loaded += MainWindow_Loaded;
+        _navigationCoordinator.Initialize(ContentFrame);
+        _xamlRootProvider.Initialize(ContentFrame);
+        Activated += OnActivated;
+        Closed += (_, _) => _xamlRootProvider.Clear();
     }
 
-    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    private async void OnActivated(object sender, WindowActivatedEventArgs args)
     {
-        Logger.Log("MainWindow_Loaded started.");
-        await ViewModel.InitializeAsync();
+        if (_isInitialized) return;
+        _isInitialized = true;
 
-        Logger.Log("Verificando requisições de navegação inicial...");
-        if (_activationState.OpenSettingsRequested)
-        {
-            RootNavigation.Navigate(typeof(Views.Pages.SettingsPage));
-            _activationState.ClearOpenSettingsRequest();
-        }
-        else
-        {
-            RootNavigation.Navigate(typeof(Views.Pages.PrivacyPage));
-        }
-        Logger.Log("Navegação inicial concluída.");
+        Logger.Log("Inicializando experiência WinUI 3 nativa.");
+        await _viewModel.InitializeAsync();
+        InitializingOverlay.Visibility = Visibility.Collapsed;
+
+        Navigate(_activationState.OpenSettingsRequested ? "settings" : "privacy");
+        _activationState.ClearOpenSettingsRequest();
     }
 
-    // Métodos da interface INavigationWindow
-    public INavigationView GetNavigation() => RootNavigation;
-
-    public bool Navigate(Type pageType) => RootNavigation.Navigate(pageType);
-
-    public void SetPageService(INavigationViewPageProvider pageService)
+    private void RootNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
-        // CORREÇÃO: Na versão 4.1+, o método correto é SetPageProviderService
-        RootNavigation.SetPageProviderService(pageService);
+        if (args.SelectedItemContainer?.Tag is string tag)
+        {
+            Navigate(tag);
+        }
     }
 
-    public void SetServiceProvider(IServiceProvider serviceProvider) => RootNavigation.SetServiceProvider(serviceProvider);
+    private void Navigate(string tag)
+    {
+        Type pageType = tag switch
+        {
+            "privacy" => typeof(PrivacyPage),
+            "performance" => typeof(PerformancePage),
+            "network" => typeof(NetworkPage),
+            "security" => typeof(SecurityPage),
+            "search" => typeof(SearchPage),
+            "appearance" => typeof(AppearancePage),
+            "tweaks" => typeof(TweaksPage),
+            "cleanup" => typeof(CleanupPage),
+            "settings" => typeof(SettingsPage),
+            _ => typeof(PrivacyPage)
+        };
 
-    public void ShowWindow() => Show();
-
-    public void CloseWindow() => Close();
+        ContentFrame.Navigate(pageType);
+    }
 }

@@ -6,16 +6,17 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Properties;
 using SystemOptimizer.Services;
-using Wpf.Ui.Appearance;
+using Microsoft.UI.Xaml;
 
 namespace SystemOptimizer.ViewModels;
 
 // Classe auxiliar para as opções do ComboBox
-public record ThemeOption(string Name, ApplicationTheme Theme);
+public enum AppThemePreference { System, Light, Dark }
+
+public record ThemeOption(string Name, AppThemePreference Theme);
 
 public partial class SettingsViewModel : ObservableObject
 {
@@ -38,9 +39,9 @@ public partial class SettingsViewModel : ObservableObject
 
     public ObservableCollection<ThemeOption> ThemeOptions { get; } = 
     [
-        new(Resources.Theme_System, ApplicationTheme.Unknown),
-        new(Resources.Theme_Light, ApplicationTheme.Light),
-        new(Resources.Theme_Dark, ApplicationTheme.Dark)
+        new(Resources.Theme_System, AppThemePreference.System),
+        new(Resources.Theme_Light, AppThemePreference.Light),
+        new(Resources.Theme_Dark, AppThemePreference.Dark)
     ];
 
     [ObservableProperty]
@@ -71,7 +72,7 @@ public partial class SettingsViewModel : ObservableObject
         _desktopShortcutPath = Path.Combine(desktop, "System Optimizer.lnk");
         _startMenuShortcutPath = Path.Combine(startMenu, "Programs", "System Optimizer.lnk");
 
-        _currentThemeOption = ThemeOptions.First(x => x.Theme == ApplicationTheme.Unknown);
+        _currentThemeOption = ThemeOptions.First(x => x.Theme == AppThemePreference.System);
         UpdateTheme(_currentThemeOption.Theme);
         CheckPersistenceStatus();
         CheckKeepInstalledStatus();
@@ -86,20 +87,7 @@ public partial class SettingsViewModel : ObservableObject
         {
             AppSettings.Current.Language = cultureCode;
             AppSettings.Save();
-            var result = MessageBox.Show(Resources.Msg_RestartRequired, Resources.Msg_RestartTitle, MessageBoxButton.YesNo, MessageBoxImage.Information);
-            if (result == MessageBoxResult.Yes)
-            {
-                string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(currentExe))
-                {
-                    Logger.Log("Caminho do executável atual não encontrado ao reiniciar o aplicativo.", "ERROR");
-                    MessageBox.Show("Não foi possível localizar o executável para reiniciar o aplicativo.", Resources.Msg_ErrorTitle, MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                Process.Start(currentExe);
-                Application.Current.Shutdown();
-            }
+            _ = _dialogService.ShowMessageAsync(Resources.Msg_RestartTitle, Resources.Msg_RestartRequired, DialogType.Info);
         }
     }
 
@@ -170,10 +158,16 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private void UpdateTheme(ApplicationTheme theme)
+    private static void UpdateTheme(AppThemePreference theme)
     {
-        if (theme == ApplicationTheme.Unknown) ApplicationThemeManager.ApplySystemTheme();
-        else ApplicationThemeManager.Apply(theme);
+        if (Application.Current?.Resources is null) return;
+
+        Application.Current.RequestedTheme = theme switch
+        {
+            AppThemePreference.Light => ApplicationTheme.Light,
+            AppThemePreference.Dark => ApplicationTheme.Dark,
+            _ => ApplicationTheme.Light
+        };
     }
 
     private void CheckKeepInstalledStatus()

@@ -1,13 +1,15 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class NetworkPage : Page
+public sealed partial class NetworkPage : Page
 {
-    public NetworkPage(MainViewModel viewModel)
+    public NetworkPage()
     {
         InitializeComponent();
-        DataContext = viewModel;
+        var viewModel = App.GetService<MainViewModel>();
+        PageUiFactory.BuildTweakPage(ContentHost, Resources.Nav_Network, "Ajustes modernos para pilha de rede, DNS e conectividade.", "Network", viewModel.NetworkTweaks, viewModel, false);
     }
 }

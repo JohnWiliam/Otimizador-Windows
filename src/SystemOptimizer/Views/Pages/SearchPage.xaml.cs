@@ -1,16 +1,15 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class SearchPage : Page
+public sealed partial class SearchPage : Page
 {
-    public SearchPage(MainViewModel viewModel)
+    public SearchPage()
     {
         InitializeComponent();
-        
-        // Define o DataContext para o ViewModel injetado.
-        // Isso permite que os bindings {Binding SearchTweaks} e os Comandos funcionem.
-        DataContext = viewModel;
+        var viewModel = App.GetService<MainViewModel>();
+        PageUiFactory.BuildTweakPage(ContentHost, Resources.Search_Title, Resources.Search_Subtitle, "Search", viewModel.SearchTweaks, viewModel, true);
     }
 }

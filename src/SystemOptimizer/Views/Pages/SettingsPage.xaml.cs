@@ -1,20 +1,37 @@
-using System.Windows.Controls; // Necessário para a classe Page padrão
-using Wpf.Ui.Controls;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class SettingsPage : Page
+public sealed partial class SettingsPage : Page
 {
-    public SettingsViewModel ViewModel { get; }
-
-    public SettingsPage(SettingsViewModel viewModel)
+    public SettingsPage()
     {
-        ViewModel = viewModel;
-        
         InitializeComponent();
-        
-        // Define o DataContext para o ViewModel injetado
-        DataContext = ViewModel;
+        var viewModel = App.GetService<SettingsViewModel>();
+        ContentHost.Children.Add(PageUiFactory.Header(Resources.Settings_Title, Resources.Settings_General));
+
+        var languageBox = new ComboBox { Header = Resources.Settings_Language, Width = 260, ItemsSource = viewModel.Languages, SelectedItem = viewModel.CurrentLanguage };
+        languageBox.SelectionChanged += (_, _) => viewModel.CurrentLanguage = languageBox.SelectedItem?.ToString() ?? viewModel.CurrentLanguage;
+        ContentHost.Children.Add(languageBox);
+
+        var themeBox = new ComboBox { Header = Resources.Settings_Appearance, Width = 260, ItemsSource = viewModel.ThemeOptions, SelectedItem = viewModel.CurrentThemeOption, DisplayMemberPath = "Name" };
+        themeBox.SelectionChanged += (_, _) =>
+        {
+            if (themeBox.SelectedItem is ThemeOption option) viewModel.CurrentThemeOption = option;
+        };
+        ContentHost.Children.Add(themeBox);
+
+        var persistence = new ToggleSwitch { Header = Resources.Settings_Persistence, OnContent = "Ativado", OffContent = "Desativado", IsOn = viewModel.IsPersistenceEnabled };
+        persistence.Toggled += (_, _) => viewModel.IsPersistenceEnabled = persistence.IsOn;
+        ContentHost.Children.Add(persistence);
+
+        var keepInstalled = new ToggleSwitch { Header = Resources.Settings_KeepInstalled, OnContent = "Ativado", OffContent = "Desativado", IsOn = viewModel.IsKeepInstalledEnabled };
+        keepInstalled.Toggled += (_, _) => viewModel.IsKeepInstalledEnabled = keepInstalled.IsOn;
+        ContentHost.Children.Add(keepInstalled);
+
+        ContentHost.Children.Add(new Button { Content = Resources.Btn_CheckUpdate, Command = viewModel.CheckForUpdatesCommand });
     }
 }

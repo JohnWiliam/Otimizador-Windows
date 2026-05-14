@@ -1,40 +1,38 @@
 using System;
-using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
+using CommunityToolkit.WinUI.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
+using SystemOptimizer.Helpers;
+using SystemOptimizer.Models;
+using SystemOptimizer.Properties;
 using SystemOptimizer.Services;
 using SystemOptimizer.ViewModels;
-using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
-using SystemOptimizer.Properties;
-using Wpf.Ui;
-using Wpf.Ui.Abstractions; 
-using System.Net.Http;
-using CommunityToolkit.WinUI.Notifications;
-using SystemOptimizer.Models;
 
 namespace SystemOptimizer;
 
 public partial class App : Application
 {
     private readonly IHost _host;
+    private Window? _window;
     private bool _isSilentMode;
 
     public App()
     {
+        InitializeComponent();
+        UnhandledException += OnUnhandledException;
+
         _host = Host.CreateDefaultBuilder()
-            .ConfigureServices((context, services) =>
+            .ConfigureServices(services =>
             {
-                // 1. ViewModels
                 services.AddSingleton<MainViewModel>();
                 services.AddSingleton<SettingsViewModel>();
                 services.AddTransient<TweakViewModel>();
 
-                // 2. Core Services
                 services.AddSingleton<TweakService>();
                 services.AddSingleton<CleanupExecutionEngine>();
                 services.AddSingleton<ICleanupTargetProvider, UserTempCleanupTargetProvider>();
@@ -48,109 +46,54 @@ public partial class App : Application
                 services.AddSingleton<IUpdateService, UpdateService>();
                 services.AddSingleton<StartupActivationState>();
                 services.AddSingleton<StartupTasksService>();
-
-                // 3. UI Services
-                services.AddSingleton<Wpf.Ui.Abstractions.INavigationViewPageProvider, PageService>();
-                services.AddSingleton<INavigationService, NavigationService>();
+                services.AddSingleton<INavigationCoordinator, NavigationCoordinator>();
+                services.AddSingleton<IXamlRootProvider, XamlRootProvider>();
                 services.AddSingleton<IDialogService, DialogService>();
-                services.AddSingleton<ISnackbarService, SnackbarService>();
-                services.AddSingleton<IContentDialogService, ContentDialogService>();
 
-                // 4. Windows & Pages
-                services.AddSingleton<MainWindow>();
-                services.AddTransient<TweaksPage>();
-                services.AddTransient<PerformancePage>();
+                services.AddTransient<MainWindow>();
                 services.AddTransient<PrivacyPage>();
+                services.AddTransient<PerformancePage>();
                 services.AddTransient<NetworkPage>();
                 services.AddTransient<SecurityPage>();
-                services.AddTransient<SearchPage>(); 
-                services.AddTransient<CleanupPage>();
+                services.AddTransient<SearchPage>();
                 services.AddTransient<AppearancePage>();
+                services.AddTransient<TweaksPage>();
+                services.AddTransient<CleanupPage>();
                 services.AddTransient<SettingsPage>();
             })
             .Build();
-
     }
 
-    public async Task RunSilentModeWithoutUiAsync()
+    public static T GetService<T>() where T : notnull
+        => ((App)Current)._host.Services.GetRequiredService<T>();
+
+    public static DispatcherQueue UiDispatcherQueue => Current.DispatcherQueue;
+
+    protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
-        AppSettings.Load();
-        var culture = new System.Globalization.CultureInfo(AppSettings.Current.Language);
-        Thread.CurrentThread.CurrentCulture = culture;
-        Thread.CurrentThread.CurrentUICulture = culture;
-        SystemOptimizer.Properties.Resources.Culture = culture;
-
         await _host.StartAsync();
-        await RunSilentModeAsync();
-        await _host.StopAsync();
-        _host.Dispose();
-    }
 
-    protected override async void OnStartup(StartupEventArgs e)
-    {
-        _isSilentMode = e.Args.Contains("--silent", StringComparer.OrdinalIgnoreCase);
-
-        AppSettings.Load();
-        var culture = new System.Globalization.CultureInfo(AppSettings.Current.Language);
-        Thread.CurrentThread.CurrentCulture = culture;
-        Thread.CurrentThread.CurrentUICulture = culture;
-        SystemOptimizer.Properties.Resources.Culture = culture;
-
-        this.DispatcherUnhandledException += OnDispatcherUnhandledException;
-
-        await _host.StartAsync();
+        var commandLineArgs = Environment.GetCommandLineArgs();
+        _isSilentMode = commandLineArgs.Any(a => string.Equals(a, "--silent", StringComparison.OrdinalIgnoreCase));
 
         if (_isSilentMode)
         {
-            try
-            {
-                await RunSilentModeAsync();
-                Shutdown();
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Falha ao iniciar modo silencioso: {ex}", "ERROR");
-                Shutdown(1);
-            }
-        }
-        else
-        {
-            var startupTasks = _host.Services.GetRequiredService<StartupTasksService>();
-            startupTasks.Initialize(e.Args);
-            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-            mainWindow.Show();
+            await RunSilentModeAsync();
+            Exit();
+            return;
         }
 
-        base.OnStartup(e);
+        var startupTasks = _host.Services.GetRequiredService<StartupTasksService>();
+        startupTasks.Initialize(commandLineArgs);
+
+        _window = _host.Services.GetRequiredService<MainWindow>();
+        _window.Activate();
     }
 
-    protected override async void OnExit(ExitEventArgs e)
+    private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        await _host.StopAsync();
-        _host.Dispose();
-        base.OnExit(e);
-    }
-
-    private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
-    {
-        string errorMsg = $"Ocorreu um erro inesperado: {e.Exception}";
-        Logger.Log(errorMsg, "ERROR");
-
-        if (!_isSilentMode)
-        {
-            MessageBox.Show(
-                $"Ocorreu um erro inesperado: {e.Exception.Message}",
-                "Erro do Sistema",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-
+        Logger.Log($"Ocorreu um erro inesperado: {e.Exception}", "ERROR");
         e.Handled = true;
-
-        if (_isSilentMode)
-        {
-            Shutdown(1);
-        }
     }
 
     private async Task RunSilentModeAsync()
@@ -164,37 +107,25 @@ public partial class App : Application
             await tweakService.RefreshStatusesAsync();
 
             var savedTweakIds = TweakPersistence.LoadState();
+            var appliedCount = 0;
 
-            if (savedTweakIds.Count == 0)
+            foreach (var id in savedTweakIds)
             {
-                Logger.Log("Nenhum tweak salvo para persistência.");
-            }
-            else
-            {
-                int appliedCount = 0;
-                foreach (var id in savedTweakIds)
-                {
-                    var tweak = tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
-                    if (tweak != null && !tweak.IsOptimized)
-                    {
-                        Logger.Log($"Reaplicando tweak persistente: {tweak.Title} ({tweak.Id})");
-                        var result = tweak.Apply();
-                        if (result.Success) appliedCount++;
-                        else Logger.Log($"Falha ao aplicar {tweak.Id}: {result.Message}", "ERROR");
-                    }
-                }
-                Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
+                var tweak = tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
+                if (tweak is null || tweak.IsOptimized) continue;
+
+                Logger.Log($"Reaplicando tweak persistente: {tweak.Title} ({tweak.Id})");
+                var result = tweak.Apply();
+                if (result.Success) appliedCount++;
+                else Logger.Log($"Falha ao aplicar {tweak.Id}: {result.Message}", "ERROR");
             }
 
+            Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
             await CheckForUpdatesAndNotifyAsync(updateService);
         }
         catch (Exception ex)
         {
             Logger.Log($"Erro crítico no modo silencioso: {ex}", "ERROR");
-            if (_isSilentMode)
-            {
-                Shutdown(1);
-            }
         }
     }
 
@@ -203,29 +134,18 @@ public partial class App : Application
         try
         {
             var updateInfo = await updateService.CheckForUpdatesAsync();
-            if (!updateInfo.IsAvailable)
-            {
-                Logger.Log("Modo silencioso: nenhuma atualização encontrada.");
-                return;
-            }
+            if (!updateInfo.IsAvailable) return;
 
-            ShowUpdateToast(updateInfo);
-            Logger.Log($"Modo silencioso: atualização {updateInfo.Version} detectada e notificação exibida.");
+            var toastBuilder = new ToastContentBuilder()
+                .AddText("Atualização disponível")
+                .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
+                .AddArgument("action", "open-settings");
+
+            ToastCompatHelper.Show(toastBuilder);
         }
         catch (Exception ex)
         {
             Logger.Log($"Erro ao verificar atualizações no modo silencioso: {ex.Message}", "ERROR");
         }
     }
-
-    private static void ShowUpdateToast(UpdateInfo updateInfo)
-    {
-        var toastBuilder = new ToastContentBuilder()
-            .AddText("Atualização disponível")
-            .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
-            .AddArgument("action", "open-settings");
-
-        Helpers.ToastCompatHelper.Show(toastBuilder);
-    }
-
 }

@@ -1,6 +1,6 @@
 using System;
 using System.Globalization;
-using System.Windows.Data;
+using Microsoft.UI.Xaml.Data;
 
 namespace SystemOptimizer.Helpers;
 

@@ -1,13 +1,15 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class SecurityPage : Page
+public sealed partial class SecurityPage : Page
 {
-    public SecurityPage(MainViewModel viewModel)
+    public SecurityPage()
     {
         InitializeComponent();
-        DataContext = viewModel;
+        var viewModel = App.GetService<MainViewModel>();
+        PageUiFactory.BuildTweakPage(ContentHost, Resources.Nav_Security, "Fortaleça recursos de proteção mantendo visibilidade das mudanças.", "Security", viewModel.SecurityTweaks, viewModel, false);
     }
 }

@@ -16,7 +16,7 @@
 
 ## 🇧🇷 Português
 
-O **Otimizador de Sistema** é uma aplicação moderna, portátil e robusta desenvolvida em **C# 14 (WPF)** para ajustar, limpar e acelerar o Windows. Ele utiliza a biblioteca **WPF-UI 4.1** para oferecer uma interface elegante com efeitos **Mica/Acrylic** e **Fluent Design**, garantindo uma experiência nativa no Windows 11.
+O **Otimizador de Sistema** é uma aplicação moderna, portátil e robusta desenvolvida em **C# 14 com WinUI 3** para ajustar, limpar e acelerar o Windows. Ele utiliza **Windows App SDK / WinUI 3** para oferecer uma interface nativa com **Fluent 2**, **Mica** e controles modernos, garantindo uma experiência nativa no Windows 11.
 
 Nesta versão, o aplicativo conta com controles granulares (botões individuais de "Aplicar" e "Restaurar") e um sistema de **Auto-Update** integrado.
 
@@ -27,7 +27,7 @@ O aplicativo é dividido em categorias inteligentes para facilitar o uso:
 #### 🔄 Atualizações (Updates)
 Mantenha o sistema sempre na última versão sem esforço.
 * **Verificação Integrada**: Consulta a API do GitHub Releases para encontrar novidades.
-* **Instalação Silenciosa**: O sistema baixa e substitui o executável automaticamente em segundo plano.
+* **Instalação MSIX**: O sistema baixa o pacote `.msix` e delega a atualização ao App Installer/PowerShell, sem substituir binários em uso.
 * **Interface de Progresso**: Visualize as notas da versão e o progresso do download em tempo real.
 
 #### 🛡️ Privacidade (Privacy)
@@ -92,7 +92,7 @@ O projeto segue a arquitetura **MVVM (Model-View-ViewModel)** com **Injeção de
     * 📂 **Services/**: Lógica de negócio (`TweakService`, `CleanupService`, `DialogService`, `UpdateService`).
     * 📂 **ViewModels/**: Lógica de apresentação (`MainViewModel`).
     * 📂 **Views/**: Interfaces XAML (`MainWindow`, `Pages/`).
-* 📜 **build.ps1**: Script automatizado para compilar o executável portátil.
+* 📜 **build.ps1**: Script automatizado para compilar e empacotar o aplicativo WinUI 3 em MSIX.
 
 ### 🚀 Como Compilar
 
@@ -103,8 +103,8 @@ Você precisa do **.NET 10 SDK** instalado.
     ```powershell
     .\build.ps1
     ```
-3.  O executável final estará em: `Build\SystemOptimizer.exe`.
-    * *Nota: O arquivo é "Self-Contained" (não requer instalação do .NET no PC alvo) e comprimido.*
+3.  O pacote final estará em: `Build\MSIX\*.msix`.
+    * *Nota: o pacote é MSIX, usa o modelo de aplicativo moderno do Windows e mantém a saída self-contained.*
 
 ### ⚠️ Aviso
 Este software modifica configurações do registro e serviços do sistema. Embora tenha sido testado e inclua a função **"Restaurar Seleção"**, use por sua conta e risco. Execute sempre como **Administrador**.
@@ -113,7 +113,7 @@ Este software modifica configurações do registro e serviços do sistema. Embor
 
 ## 🇺🇸 English
 
-**System Optimizer** is a modern, portable, and robust application built in **C# 14 (WPF)** to tweak, clean, and accelerate Windows. It leverages the **WPF-UI 4.1** library to deliver a sleek interface with **Mica/Acrylic** effects and **Fluent Design**, ensuring a native feel on Windows 11.
+**System Optimizer** is a modern, portable, and robust application built in **C# 14 with WinUI 3** to tweak, clean, and accelerate Windows. It leverages the **Windows App SDK / WinUI 3** to deliver a native interface with **Fluent 2**, **Mica**, and modern controls, ensuring a native feel on Windows 11.
 
 This version features granular controls (individual "Apply" and "Restore" buttons) and an integrated **Auto-Update** system.
 
@@ -124,7 +124,7 @@ The application is organized into smart categories for ease of use:
 #### 🔄 Updates
 Keep the system always up to date effortlessly.
 * **Automatic Check**: Queries GitHub Releases API for updates.
-* **Silent Install**: Downloads and replaces the executable automatically in the background.
+* **MSIX Install**: Downloads the `.msix` package and delegates installation to App Installer/PowerShell without replacing in-use binaries.
 * **Progress UI**: View release notes and download progress in real-time.
 
 #### 🛡️ Privacy
@@ -189,7 +189,7 @@ The project follows the **MVVM (Model-View-ViewModel)** architecture with **Depe
     * 📂 **Services/**: Business logic (`TweakService`, `CleanupService`, `DialogService`, `UpdateService`).
     * 📂 **ViewModels/**: Presentation logic (`MainViewModel`).
     * 📂 **Views/**: XAML Interfaces (`MainWindow`, `Pages/`).
-* 📜 **build.ps1**: Automated script to compile the portable executable.
+* 📜 **build.ps1**: Automated script to compile and package the WinUI 3 app as MSIX.
 
 ### 🚀 How to Build
 
@@ -200,8 +200,8 @@ You need the **.NET 10 SDK** installed.
     ```powershell
     .\build.ps1
     ```
-3.  The final executable will be located at: `Build\SystemOptimizer.exe`.
-    * *Note: The file is "Self-Contained" (does not require .NET installed on the target PC) and compressed.*
+3.  The final package will be located at: `Build\MSIX\*.msix`.
+    * *Note: the output is an MSIX package using the modern Windows app model while remaining self-contained.*
 
 ### ⚠️ Disclaimer
 This software modifies system registry settings and services. While it has been tested and includes a **"Restore Selection"** feature, use at your own risk. Always run as **Administrator**.

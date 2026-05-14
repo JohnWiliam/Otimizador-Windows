@@ -1,13 +1,15 @@
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
+using SystemOptimizer.Properties;
 using SystemOptimizer.ViewModels;
 
 namespace SystemOptimizer.Views.Pages;
 
-public partial class PrivacyPage : Page
+public sealed partial class PrivacyPage : Page
 {
-    public PrivacyPage(MainViewModel viewModel)
+    public PrivacyPage()
     {
         InitializeComponent();
-        DataContext = viewModel;
+        var viewModel = App.GetService<MainViewModel>();
+        PageUiFactory.BuildTweakPage(ContentHost, Resources.Nav_Privacy, "Controle telemetria, sugestões e permissões com ajustes nativos do Windows.", "Privacy", viewModel.PrivacyTweaks, viewModel, false);
     }
 }
