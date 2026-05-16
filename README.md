@@ -48,7 +48,7 @@ Extraia o máximo do seu hardware.
 Otimize sua conexão para menor latência e maior estabilidade.
 * 📶 **TCP Auto-Tuning**: Ajuste dinâmico da janela TCP.
 * 📦 **Algoritmo CUBIC**: Gestão moderna de congestionamento para alta velocidade.
-* 🔔 **ECN & RSS**: Notificação de congestionamento e escalonamento de recepção.
+* 🔔 **ECN & RSS**: Notificação de congestionamento e escalonamento de recepção, preservando RSS em hardware moderno com múltiplos núcleos.
 
 #### 🔒 Segurança (Security)
 Fortaleça a proteção básica do sistema.
@@ -71,7 +71,7 @@ Ajuste a aparência para focar em desempenho ou estética.
 #### 🛠️ Ajustes Finos (Tweaks)
 Funcionalidades avançadas com foco na longevidade do hardware (SSDs) e automação.
 * 🧠 **SysMain (Superfetch)**: Otimiza o serviço de pré-busca, reduzindo uso de disco/RAM (Ideal para SSDs).
-* 🛑 **Prefetch**: Impede a criação de arquivos de rastreamento de inicialização, poupando ciclos de escrita.
+* 🛑 **Prefetch**: Só desativa a pré-busca quando a unidade de sistema é detectada como SSD; em HDD ela permanece ativa para evitar perda de desempenho.
 * 🤖 **Persistência Inteligente**: Cria uma tarefa agendada para reaplicar otimizações silenciosamente a cada login, impedindo que o Windows as reverta.
 
 #### 🧹 Limpeza Inteligente (Cleanup)

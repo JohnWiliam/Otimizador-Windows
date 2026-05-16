@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using SystemOptimizer.Helpers;
 
@@ -118,15 +119,7 @@ public sealed class UpdateService : IUpdateService, IDisposable
 
             if (string.IsNullOrEmpty(currentExe)) throw new Exception("Não foi possível localizar o executável atual.");
 
-            var updaterScriptPath = CreateUpdaterScript(currentExe, newExePath, currentProcess.Id);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                ArgumentList = { "/c", updaterScriptPath },
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = Path.GetDirectoryName(currentExe) ?? Environment.CurrentDirectory
-            });
+            StartUpdaterProcess(currentExe, newExePath, currentProcess.Id);
 
             currentProcess.CloseMainWindow();
             Environment.Exit(0);
@@ -166,31 +159,58 @@ public sealed class UpdateService : IUpdateService, IDisposable
         }
     }
 
-    private static string CreateUpdaterScript(string currentExe, string newExePath, int currentProcessId)
+    private static void StartUpdaterProcess(string currentExe, string newExePath, int currentProcessId)
     {
-        string scriptPath = Path.Combine(Path.GetTempPath(), "SystemOptimizer", "Updates", $"apply-update-{Guid.NewGuid():N}.cmd");
-        string oldExe = currentExe + ".old";
-        string script = $"""
-@echo off
-setlocal
-set "CURRENT_EXE={currentExe}"
-set "NEW_EXE={newExePath}"
-set "OLD_EXE={oldExe}"
-timeout /t 2 /nobreak >nul
-:wait_process
-tasklist /fi "PID eq {currentProcessId}" | find "{currentProcessId}" >nul
-if not errorlevel 1 (
-  timeout /t 1 /nobreak >nul
-  goto wait_process
-)
-if exist "%OLD_EXE%" del /f /q "%OLD_EXE%"
-move /y "%CURRENT_EXE%" "%OLD_EXE%"
-move /y "%NEW_EXE%" "%CURRENT_EXE%"
-start "" "%CURRENT_EXE%"
-del /f /q "%~f0"
+        const string updateCommand = """
+$ErrorActionPreference = 'Stop'
+
+function Assert-SafeExecutablePath([string]$PathToValidate) {
+    $fullPath = [System.IO.Path]::GetFullPath($PathToValidate)
+    if (-not $fullPath.EndsWith('.exe', [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Caminho de executável inválido: $fullPath"
+    }
+    return $fullPath
+}
+
+$current = Assert-SafeExecutablePath $env:SYSTEMOPTIMIZER_CURRENT_EXE
+$new = Assert-SafeExecutablePath $env:SYSTEMOPTIMIZER_NEW_EXE
+$processId = [int]$env:SYSTEMOPTIMIZER_PROCESS_ID
+$old = "$current.old"
+
+Start-Sleep -Seconds 2
+$process = Get-Process -Id $processId -ErrorAction SilentlyContinue
+if ($null -ne $process) {
+    Wait-Process -Id $processId -Timeout 30 -ErrorAction SilentlyContinue
+}
+
+if (Test-Path -LiteralPath $old) {
+    Remove-Item -LiteralPath $old -Force
+}
+
+Move-Item -LiteralPath $current -Destination $old -Force
+Move-Item -LiteralPath $new -Destination $current -Force
+Start-Process -FilePath $current -WorkingDirectory ([System.IO.Path]::GetDirectoryName($current))
 """;
-        File.WriteAllText(scriptPath, script);
-        return scriptPath;
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = Path.GetDirectoryName(currentExe) ?? Environment.CurrentDirectory
+        };
+
+        string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(updateCommand));
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-ExecutionPolicy");
+        startInfo.ArgumentList.Add("Bypass");
+        startInfo.ArgumentList.Add("-EncodedCommand");
+        startInfo.ArgumentList.Add(encodedCommand);
+        startInfo.Environment["SYSTEMOPTIMIZER_CURRENT_EXE"] = currentExe;
+        startInfo.Environment["SYSTEMOPTIMIZER_NEW_EXE"] = newExePath;
+        startInfo.Environment["SYSTEMOPTIMIZER_PROCESS_ID"] = currentProcessId.ToString();
+
+        Process.Start(startInfo);
     }
 
     private static void TryDelete(string path)

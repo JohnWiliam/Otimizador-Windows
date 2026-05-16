@@ -107,20 +107,37 @@ public sealed class StartupTasksService
 
     private async Task TryNavigateToSettingsAsync()
     {
-        if (Application.Current?.Dispatcher == null || Application.Current.MainWindow == null) return;
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher == null) return;
 
-        await Application.Current.Dispatcher.InvokeAsync(() =>
+        for (int attempt = 1; attempt <= 20; attempt++)
         {
-            try
+            bool navigated = await dispatcher.InvokeAsync(() =>
             {
-                _navigationService.Navigate(typeof(SettingsPage));
-                _activationState.ClearOpenSettingsRequest();
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Falha ao navegar para SettingsPage: {ex.Message}", "ERROR");
-            }
-        });
+                if (Application.Current.MainWindow is not { IsLoaded: true })
+                {
+                    return false;
+                }
+
+                try
+                {
+                    _navigationService.Navigate(typeof(SettingsPage));
+                    _activationState.ClearOpenSettingsRequest();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Falha ao navegar para SettingsPage: {ex.Message}", "ERROR");
+                    return false;
+                }
+            });
+
+            if (navigated) return;
+
+            await Task.Delay(150);
+        }
+
+        Logger.Log("Navegação para SettingsPage adiada: janela principal ainda não está pronta.", "WARNING");
     }
 
     private void RunUpdateCheckInBackground()

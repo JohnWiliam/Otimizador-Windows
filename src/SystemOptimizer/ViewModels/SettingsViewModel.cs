@@ -195,7 +195,7 @@ public partial class SettingsViewModel : ObservableObject
                 if (!File.Exists(_targetExePath))
                 {
                     string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-                    if (!string.IsNullOrEmpty(currentExe)) File.Copy(currentExe, _targetExePath, true);
+                    if (!string.IsNullOrEmpty(currentExe)) CopyExecutableSafely(currentExe, _targetExePath, overwrite: true);
                 }
                 CreateShortcut(_desktopShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
                 CreateShortcut(_startMenuShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
@@ -410,7 +410,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            File.Copy(currentExe, _targetExePath, true);
+            CopyExecutableSafely(currentExe, _targetExePath, overwrite: true);
             Logger.Log("PERSISTENCE_STEP=copy status=overwritten", "PERSISTENCE");
         }
         catch (IOException ex) when (File.Exists(_targetExePath))
@@ -432,6 +432,38 @@ public partial class SettingsViewModel : ObservableObject
                 $"Binário de persistência bloqueado e não corresponde ao executável esperado. target='{_targetExePath}', current='{currentExe}'.",
                 ex);
         }
+    }
+
+    private static void CopyExecutableSafely(string sourcePath, string destinationPath, bool overwrite)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+        {
+            throw new FileNotFoundException("Executável de origem não encontrado.", sourcePath);
+        }
+
+        string destinationDirectory = Path.GetDirectoryName(destinationPath)
+            ?? throw new InvalidOperationException("Destino do executável não possui diretório válido.");
+        Directory.CreateDirectory(destinationDirectory);
+
+        var sourceInfo = new FileInfo(sourcePath);
+        var destinationRoot = Path.GetPathRoot(Path.GetFullPath(destinationPath));
+        if (!string.IsNullOrEmpty(destinationRoot))
+        {
+            var destinationDrive = new DriveInfo(destinationRoot);
+            if (destinationDrive.IsReady && destinationDrive.AvailableFreeSpace < sourceInfo.Length)
+            {
+                throw new IOException($"Espaço insuficiente em '{destinationRoot}' para copiar o executável.");
+            }
+        }
+
+        using var source = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+        using var destination = new FileStream(
+            destinationPath,
+            overwrite ? FileMode.Create : FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.None);
+
+        source.CopyTo(destination);
     }
 
     private void DisablePersistence()

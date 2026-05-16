@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace SystemOptimizer.Helpers;
 
@@ -8,6 +9,7 @@ public static class Logger
 {
     private const long MaxLogBytes = 2 * 1024 * 1024;
     private const int RetainedLogFiles = 3;
+    private const string MutexName = @"Local\SystemOptimizerLogger";
     private static readonly object SyncRoot = new();
 
     // Define o caminho fixo: C:\ProgramData\SystemOptimizer\system_optimizer_log.txt
@@ -43,8 +45,22 @@ public static class Logger
 
             lock (SyncRoot)
             {
-                RotateIfNeeded(Encoding.UTF8.GetByteCount(logEntry));
-                File.AppendAllText(LogFile, logEntry, Encoding.UTF8);
+                using var mutex = new Mutex(false, MutexName);
+                bool hasMutex = false;
+                try
+                {
+                    hasMutex = mutex.WaitOne(TimeSpan.FromSeconds(2));
+                    if (!hasMutex) return;
+
+                    RotateIfNeeded(Encoding.UTF8.GetByteCount(logEntry));
+                    using var stream = new FileStream(LogFile, FileMode.Append, FileAccess.Write, FileShare.Read);
+                    using var writer = new StreamWriter(stream, Encoding.UTF8);
+                    writer.Write(logEntry);
+                }
+                finally
+                {
+                    if (hasMutex) mutex.ReleaseMutex();
+                }
             }
         }
         catch
@@ -67,12 +83,10 @@ public static class Logger
             string destination = $"{LogFile}.{i + 1}";
             if (File.Exists(source))
             {
-                File.Copy(source, destination, true);
-                File.Delete(source);
+                File.Move(source, destination, true);
             }
         }
 
-        File.Copy(LogFile, $"{LogFile}.1", true);
-        File.WriteAllText(LogFile, string.Empty, Encoding.UTF8);
+        File.Move(LogFile, $"{LogFile}.1", true);
     }
 }

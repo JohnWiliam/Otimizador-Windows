@@ -34,7 +34,12 @@ public class TweakService
     {
         await Task.Run(() =>
         {
-            Parallel.ForEach(Tweaks, tweak =>
+            var parallelOptions = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount / 2, 1, 4)
+            };
+
+            Parallel.ForEach(Tweaks, parallelOptions, tweak =>
             {
                 try { tweak.CheckStatus(); }
                 catch (Exception ex) { Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR"); }
@@ -108,9 +113,9 @@ public class TweakService
                 var user = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", null);
                 return policy is int i1 && i1 == 1 && user is int i2 && i2 == 0;
             }));
-        Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, Resources.P5_Title, Resources.P5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, Resources.P5_Title, Resources.P5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, RegistryTweak.DeleteValue));
         Tweaks.Add(new RegistryTweak("P6", TweakCategory.Privacy, Resources.P6_Title, Resources.P6_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338393Enabled", 0, 1));
-        Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, Resources.P7_Title, Resources.P7_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, Resources.P7_Title, Resources.P7_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, RegistryTweak.DeleteValue));
     }
 
     private void AddPerformanceTweaks()
@@ -298,19 +303,30 @@ public class TweakService
             }
         ));
 
-        Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, Resources.N4_Title, Resources.N4_Desc,
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled"); return true; },
+        Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, Resources.N4_Title,
+            Resources.N4_Desc + " (Proteção: RSS só é desativado em CPUs de núcleo único; em hardware moderno ele permanece habilitado.)",
+            () =>
+            {
+                if (!ShouldDisableReceiveSideScaling())
+                {
+                    Logger.Log("N4 ignorado: RSS é benéfico em hardware moderno com múltiplos núcleos.", "WARNING");
+                    return false;
+                }
+
+                CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled");
+                return true;
+            },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
             () => { var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower(); return res.Contains("rss") && (res.Contains("disabled") || res.Contains("desabilitado")); }
         ));
 
-        Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, Resources.N5_Title, Resources.N5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, "DELETE"));
+        Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, Resources.N5_Title, Resources.N5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, RegistryTweak.DeleteValue));
     }
 
     private void AddSecurityTweaks()
     {
         Tweaks.Add(new RegistryTweak("S1", TweakCategory.Security, Resources.S1_Title, Resources.S1_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0, 1));
-        Tweaks.Add(new RegistryTweak("S2", TweakCategory.Security, Resources.S2_Title, Resources.S2_Desc, @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDriveTypeAutoRun", 255, "DELETE"));
+        Tweaks.Add(new RegistryTweak("S2", TweakCategory.Security, Resources.S2_Title, Resources.S2_Desc, @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDriveTypeAutoRun", 255, RegistryTweak.DeleteValue));
     }
 
     private void AddAppearanceTweaks()
@@ -353,7 +369,60 @@ public class TweakService
         ));
 
         // SE2: Prefetch
-        Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, Resources.SE2_Title, Resources.SE2_Desc,
-            @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
+        Tweaks.Add(new CustomTweak("SE2", TweakCategory.Tweaks, Resources.SE2_Title,
+            Resources.SE2_Desc + " (Proteção: só desativa em unidade de sistema SSD; em HDD o Prefetch permanece ativo.)",
+            () =>
+            {
+                if (!IsSystemDriveLikelySsd())
+                {
+                    Logger.Log("SE2 ignorado: unidade de sistema não parece ser SSD ou não pôde ser detectada com segurança.", "WARNING");
+                    return false;
+                }
+
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, RegistryValueKind.DWord);
+                return true;
+            },
+            () =>
+            {
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 3, RegistryValueKind.DWord);
+                return true;
+            },
+            () =>
+            {
+                var value = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", -1);
+                return value is int i && i == 0;
+            }
+        ));
     }
+
+    private static bool ShouldDisableReceiveSideScaling() => Environment.ProcessorCount <= 1;
+
+    private static bool IsSystemDriveLikelySsd()
+    {
+        try
+        {
+            string systemRoot = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows)) ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(systemRoot)) return false;
+
+            var drive = new DriveInfo(systemRoot);
+            if (drive.DriveType != DriveType.Fixed) return false;
+
+            string driveLetter = systemRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).TrimEnd(':');
+            string script = $"$partition = Get-Partition -DriveLetter '{driveLetter}' -ErrorAction Stop; " +
+                            "$disk = $partition | Get-Disk -ErrorAction Stop; " +
+                            "$physical = Get-PhysicalDisk | Where-Object { $_.DeviceId -eq $disk.Number }; " +
+                            "$physical.MediaType";
+
+            string mediaType = CommandHelper.RunCommand("powershell", $"-NoProfile -ExecutionPolicy Bypass -Command {ToPowerShellLiteral(script)}");
+            return mediaType.Contains("SSD", StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao detectar tipo da unidade de sistema: {ex.Message}", "WARNING");
+            return false;
+        }
+    }
+
+    private static string ToPowerShellLiteral(string value) => $"'{value.Replace("'", "''")}'";
+
 }

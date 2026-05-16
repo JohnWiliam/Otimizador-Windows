@@ -47,6 +47,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     private readonly Queue<CleanupLogItem> _pendingLogs = new();
     private readonly object _pendingLogsLock = new();
+    private readonly object _cleanupCtsLock = new();
     private CancellationTokenSource? _cleanupCts;
     private CancellationTokenSource? _logRenderCts;
     private Task? _logRenderTask;
@@ -56,6 +57,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public ICommand AnalyzeCommand { get; }
     public ICommand CleanupSelectedCommand { get; }
     public ICommand CancelCommand { get; }
+
+    public MainViewModel ViewModel { get; }
 
     public ObservableCollection<CleanupCategorySummaryItem> ScanResults { get; } = [];
 
@@ -67,7 +70,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
         InitializeComponent();
         _viewModel = viewModel;
-        DataContext = viewModel;
+        ViewModel = viewModel;
+        DataContext = this;
 
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -128,12 +132,13 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         if (IsBusyLocal)
             return;
 
+        CancellationTokenSource? operationCts = null;
         try
         {
             IsBusyLocal = true;
             IsOptionsExpanded = false;
             HasScanResults = false;
-            _cleanupCts = new CancellationTokenSource();
+            operationCts = BeginCleanupOperation();
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -142,7 +147,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             });
 
             var options = BuildCleanupOptions();
-            var results = await _viewModel.RunCleanupScanAsync(options, _cleanupCts.Token);
+            var results = await _viewModel.RunCleanupScanAsync(options, operationCts.Token);
 
             foreach (var result in results)
                 ScanResults.Add(CreateSummaryItem(result));
@@ -173,8 +178,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         finally
         {
-            _cleanupCts?.Dispose();
-            _cleanupCts = null;
+            if (operationCts != null)
+            {
+                EndCleanupOperation(operationCts);
+                operationCts.Dispose();
+            }
             IsBusyLocal = false;
         }
     }
@@ -184,10 +192,11 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         if (IsBusyLocal || !HasScanResults)
             return;
 
+        CancellationTokenSource? operationCts = null;
         try
         {
             IsBusyLocal = true;
-            _cleanupCts = new CancellationTokenSource();
+            operationCts = BeginCleanupOperation();
 
             var selected = ScanResults.Where(x => x.IsSelected).Select(x => x.Key).ToHashSet();
             var options = BuildCleanupOptions(selected);
@@ -200,7 +209,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
             SmoothScrollToLogsCard();
 
-            await _viewModel.RunSelectedCleanupAsync(options, _cleanupCts.Token);
+            await _viewModel.RunSelectedCleanupAsync(options, operationCts.Token);
             ScanResults.Clear();
             HasScanResults = false;
         }
@@ -214,15 +223,52 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         finally
         {
-            _cleanupCts?.Dispose();
-            _cleanupCts = null;
+            if (operationCts != null)
+            {
+                EndCleanupOperation(operationCts);
+                operationCts.Dispose();
+            }
             IsBusyLocal = false;
+        }
+    }
+
+    private CancellationTokenSource BeginCleanupOperation()
+    {
+        var cts = new CancellationTokenSource();
+        lock (_cleanupCtsLock)
+        {
+            if (_cleanupCts != null)
+            {
+                cts.Dispose();
+                throw new InvalidOperationException("Já existe uma operação de limpeza em andamento.");
+            }
+
+            _cleanupCts = cts;
+        }
+
+        return cts;
+    }
+
+    private void EndCleanupOperation(CancellationTokenSource cts)
+    {
+        lock (_cleanupCtsLock)
+        {
+            if (ReferenceEquals(_cleanupCts, cts))
+            {
+                _cleanupCts = null;
+            }
         }
     }
 
     private void CancelCurrentOperation()
     {
-        _cleanupCts?.Cancel();
+        CancellationTokenSource? cts;
+        lock (_cleanupCtsLock)
+        {
+            cts = _cleanupCts;
+        }
+
+        cts?.Cancel();
     }
 
     private CleanupOptions BuildCleanupOptions(ISet<string>? selectedCategories = null)
