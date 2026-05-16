@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
 using Wpf.Ui;
@@ -15,6 +14,7 @@ public sealed class StartupTasksService
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
     private readonly StartupActivationState _activationState;
+    private readonly UpdateNotificationService _updateNotificationService;
     private readonly object _openSettingsLock = new();
     private DateTime _lastOpenSettingsRequestUtc = DateTime.MinValue;
     private bool _toastActivationRegistered;
@@ -22,11 +22,13 @@ public sealed class StartupTasksService
     public StartupTasksService(
         IUpdateService updateService,
         INavigationService navigationService,
-        StartupActivationState activationState)
+        StartupActivationState activationState,
+        UpdateNotificationService updateNotificationService)
     {
         _updateService = updateService;
         _navigationService = navigationService;
         _activationState = activationState;
+        _updateNotificationService = updateNotificationService;
     }
 
     public void Initialize(string[] args)
@@ -132,7 +134,7 @@ public sealed class StartupTasksService
                 var updateInfo = await _updateService.CheckForUpdatesAsync();
                 if (updateInfo.IsAvailable)
                 {
-                    ShowUpdateToast(updateInfo);
+                    _updateNotificationService.ShowUpdateNotification(updateInfo);
                 }
             }
             catch (Exception ex)
@@ -142,13 +144,4 @@ public sealed class StartupTasksService
         });
     }
 
-    private static void ShowUpdateToast(UpdateInfo updateInfo)
-    {
-        var toastBuilder = new ToastContentBuilder()
-            .AddText("Atualização disponível")
-            .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
-            .AddArgument("action", "open-settings");
-
-        ToastCompatHelper.Show(toastBuilder);
-    }
 }

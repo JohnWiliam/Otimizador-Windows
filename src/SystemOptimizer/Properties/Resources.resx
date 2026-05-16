@@ -59,11 +59,11 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="P1_Title" xml:space="preserve"><value>Desativar Telemetria</value></data>
-  <data name="P1_Desc" xml:space="preserve"><value>Impede o envio de dados diagnósticos para a Microsoft.</value></data>
+  <data name="P1_Desc" xml:space="preserve"><value>Aplica política de telemetria mínima e limita coleta de logs diagnósticos. Observação: no Windows Home o nível mínimo pode permanecer em Security.</value></data>
   <data name="P2_Title" xml:space="preserve"><value>Desativar DiagTrack</value></data>
   <data name="P2_Desc" xml:space="preserve"><value>Desabilita o serviço de Experiência do Usuário Conectado.</value></data>
   <data name="P3_Title" xml:space="preserve"><value>Desativar Cortana</value></data>
-  <data name="P3_Desc" xml:space="preserve"><value>Bloqueia o assistente de voz legado e pesquisa web.</value></data>
+  <data name="P3_Desc" xml:space="preserve"><value>Desativa a Cortana em versões compatíveis do Windows; em builds recentes do Windows 11 a Cortana já foi removida e o tweak é tratado como compatibilidade.</value></data>
   <data name="P4_Title" xml:space="preserve"><value>Desativar ID de Anúncio</value></data>
   <data name="P4_Desc" xml:space="preserve"><value>Impede rastreamento comercial entre aplicativos.</value></data>
   <data name="P5_Title" xml:space="preserve"><value>Desativar Geolocalização</value></data>
@@ -79,7 +79,7 @@
   <data name="PF3_Title" xml:space="preserve"><value>Input Mouse 1:1</value></data>
   <data name="PF3_Desc" xml:space="preserve"><value>Remove aprimoramento de precisão (Aceleração).</value></data>
   <data name="PF5_Title" xml:space="preserve"><value>Prioridade de CPU</value></data>
-  <data name="PF5_Desc" xml:space="preserve"><value>Ajusta prioridade para Programas vs Serviços (26 hex).</value></data>
+  <data name="PF5_Desc" xml:space="preserve"><value>Prioriza programas em primeiro plano (0x26). Pode reduzir responsividade de serviços e workloads em background.</value></data>
   <data name="PF6_Title" xml:space="preserve"><value>Throttling de Rede</value></data>
   <data name="PF6_Desc" xml:space="preserve"><value>Remove limite de processamento de pacotes (Index FFFFFF).</value></data>
   <data name="PF7_Title" xml:space="preserve"><value>Agendamento GPU</value></data>
@@ -93,7 +93,7 @@
   <data name="N2_Title" xml:space="preserve"><value>Algoritmo CUBIC</value></data>
   <data name="N2_Desc" xml:space="preserve"><value>Gestão moderna de congestionamento para alta velocidade.</value></data>
   <data name="N3_Title" xml:space="preserve"><value>Ativar ECN</value></data>
-  <data name="N3_Desc" xml:space="preserve"><value>Notificação Explícita de Congestionamento (Menos Perda).</value></data>
+  <data name="N3_Desc" xml:space="preserve"><value>Habilita ECN (Explicit Congestion Notification). Use apenas se sua rede/roteador oferecer suporte adequado; pode causar incompatibilidade em algumas redes residenciais e serviços online.</value></data>
   <data name="N4_Title" xml:space="preserve"><value>Desativar RSS</value></data>
   <data name="N4_Desc" xml:space="preserve"><value>Receive Side Scaling (Teste de estabilidade/driver).</value></data>
   <data name="N5_Title" xml:space="preserve"><value>Desativar QoS Limit</value></data>

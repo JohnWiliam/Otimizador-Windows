@@ -44,10 +44,54 @@ public class TweakService
 
     private void AddPrivacyTweaks()
     {
-         Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, Resources.P1_Title, Resources.P1_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, "DELETE"));
+        Tweaks.Add(new CustomTweak("P1", TweakCategory.Privacy, Resources.P1_Title, Resources.P1_Desc,
+            () =>
+            {
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, RegistryValueKind.DWord);
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "LimitDiagnosticLogCollection", 1, RegistryValueKind.DWord);
+                return true;
+            },
+            () =>
+            {
+                DeleteRegistryValue(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry");
+                DeleteRegistryValue(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\DataCollection", "LimitDiagnosticLogCollection");
+                return true;
+            },
+            () => IsRegistryDWord(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0)
+                && IsRegistryDWord(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "LimitDiagnosticLogCollection", 1)
+        ));
         Tweaks.Add(new RegistryTweak("P2", TweakCategory.Privacy, Resources.P2_Title, Resources.P2_Desc, @"HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack", "Start", 4, 2));
-        Tweaks.Add(new RegistryTweak("P3", TweakCategory.Privacy, Resources.P3_Title, Resources.P3_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0, "DELETE"));
-        Tweaks.Add(new RegistryTweak("P4", TweakCategory.Privacy, Resources.P4_Title, Resources.P4_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, "DELETE"));
+        Tweaks.Add(new CustomTweak("P3", TweakCategory.Privacy, Resources.P3_Title, Resources.P3_Desc,
+            () =>
+            {
+                if (Environment.OSVersion.Version.Build >= 25967) return true;
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0, RegistryValueKind.DWord);
+                return true;
+            },
+            () =>
+            {
+                DeleteRegistryValue(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana");
+                return true;
+            },
+            () => Environment.OSVersion.Version.Build >= 25967
+                || IsRegistryDWord(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0)
+        ));
+        Tweaks.Add(new CustomTweak("P4", TweakCategory.Privacy, Resources.P4_Title, Resources.P4_Desc,
+            () =>
+            {
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, RegistryValueKind.DWord);
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 0, RegistryValueKind.DWord);
+                return true;
+            },
+            () =>
+            {
+                DeleteRegistryValue(Registry.LocalMachine, @"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy");
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 1, RegistryValueKind.DWord);
+                return true;
+            },
+            () => IsRegistryDWord(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1)
+                && IsRegistryDWord(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 0)
+        ));
         Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, Resources.P5_Title, Resources.P5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, "DELETE"));
         Tweaks.Add(new RegistryTweak("P6", TweakCategory.Privacy, Resources.P6_Title, Resources.P6_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338393Enabled", 0, 1));
         Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, Resources.P7_Title, Resources.P7_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, "DELETE"));
@@ -89,7 +133,9 @@ public class TweakService
             () => {
                 var v1 = Registry.GetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", null);
                 var v2 = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR", null);
-                return (v1 is int i1 && i1 == 0) && (v2 is int i2 && i2 == 0);
+                bool userDisabled = v1 is int i1 && i1 == 0;
+                bool policyDisabled = v2 is int i2 && i2 == 0;
+                return policyDisabled || userDisabled;
             }
         ));
 
@@ -119,7 +165,7 @@ public class TweakService
         Tweaks.Add(new RegistryTweak("PF5", TweakCategory.Performance, Resources.PF5_Title, Resources.PF5_Desc,
             @"HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl", "Win32PrioritySeparation", 38, 2));
         Tweaks.Add(new RegistryTweak("PF6", TweakCategory.Performance, Resources.PF6_Title, Resources.PF6_Desc,
-            @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", "NetworkThrottlingIndex", -1, 10));
+            @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", "NetworkThrottlingIndex", unchecked((int)0xFFFFFFFF), 10, RegistryValueKind.DWord));
         Tweaks.Add(new RegistryTweak("PF7", TweakCategory.Performance, Resources.PF7_Title, Resources.PF7_Desc,
             @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1));
 
@@ -179,7 +225,8 @@ public class TweakService
                     && (hvci is int i3 && i3 == 0)
                     && (policyVbs is int i4 && i4 == 0)
                     && (policyHvci is int i5 && i5 == 0);
-            }
+            },
+            TweakStatus.PendingReboot
         ));
 
         Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, Resources.PF9_Title, Resources.PF9_Desc,
@@ -227,8 +274,11 @@ public class TweakService
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("netsh", "int tcp show global");
-                return res.Contains("enabled") || res.Contains("habilitado");
+                var lines = CommandHelper.RunCommand("netsh", "int tcp show global")
+                    .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+                return lines.Any(line => IsEcnStatusLine(line)
+                    && (line.Contains("enabled", StringComparison.OrdinalIgnoreCase)
+                        || line.Contains("habilitado", StringComparison.OrdinalIgnoreCase)));
             }
         ));
 
@@ -272,7 +322,7 @@ public class TweakService
     private void AddCustomTweaks()
     {
         // SE1: SysMain
-        Tweaks.Add(new CustomTweak("SE1", TweakCategory.Tweaks, Resources.SE1_Title, Resources.SE1_Desc,
+        Tweaks.Add(new CustomTweak("SE1", TweakCategory.Services, Resources.SE1_Title, Resources.SE1_Desc,
             () => {
                 CommandHelper.RunCommand("sc", "config SysMain start= disabled");
                 CommandHelper.RunCommandNoWait("sc", "stop SysMain");
@@ -287,7 +337,34 @@ public class TweakService
         ));
 
         // SE2: Prefetch
-        Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, Resources.SE2_Title, Resources.SE2_Desc,
+        Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Services, Resources.SE2_Title, Resources.SE2_Desc,
             @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
+    }
+
+
+    private static bool IsRegistryDWord(string keyName, string valueName, int expectedValue)
+    {
+        var value = Registry.GetValue(keyName, valueName, null);
+        return value is int intValue && intValue == expectedValue;
+    }
+
+    private static void DeleteRegistryValue(RegistryKey hive, string subKeyName, string valueName)
+    {
+        try
+        {
+            using var key = hive.OpenSubKey(subKeyName, true);
+            key?.DeleteValue(valueName, false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao remover valor de registro '{subKeyName}\\{valueName}': {ex.Message}", "WARNING");
+        }
+    }
+
+    private static bool IsEcnStatusLine(string line)
+    {
+        return line.Contains("ECN", StringComparison.OrdinalIgnoreCase)
+            || line.Contains("ecncapability", StringComparison.OrdinalIgnoreCase)
+            || line.Contains("Capacidade ECN", StringComparison.OrdinalIgnoreCase);
     }
 }

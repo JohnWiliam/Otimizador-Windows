@@ -126,7 +126,7 @@ public partial class MainViewModel : ObservableObject
                 case TweakCategory.Security: SecurityTweaks.Add(vm); break;
                 case TweakCategory.Appearance: AppearanceTweaks.Add(vm); break;
                 case TweakCategory.Search: SearchTweaks.Add(vm); break;
-                case TweakCategory.Tweaks: TweaksPageItems.Add(vm); break;
+                case TweakCategory.Services: TweaksPageItems.Add(vm); break;
             }
         }
     }

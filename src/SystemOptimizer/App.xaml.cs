@@ -13,9 +13,6 @@ using SystemOptimizer.Views.Pages;
 using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
-using System.Net.Http;
-using CommunityToolkit.WinUI.Notifications;
-using SystemOptimizer.Models;
 
 namespace SystemOptimizer;
 
@@ -23,6 +20,7 @@ public partial class App : Application
 {
     private readonly IHost _host;
     private bool _isSilentMode;
+    private bool _hostDisposed;
 
     public App()
     {
@@ -47,6 +45,7 @@ public partial class App : Application
                 services.AddSingleton<CleanupService>();
                 services.AddSingleton<IUpdateService, UpdateService>();
                 services.AddSingleton<StartupActivationState>();
+                services.AddSingleton<UpdateNotificationService>();
                 services.AddSingleton<StartupTasksService>();
 
                 // 3. UI Services
@@ -81,54 +80,88 @@ public partial class App : Application
         SystemOptimizer.Properties.Resources.Culture = culture;
 
         await _host.StartAsync();
-        await RunSilentModeAsync();
-        await _host.StopAsync();
-        _host.Dispose();
+        try
+        {
+            await RunSilentModeAsync();
+        }
+        finally
+        {
+            await StopAndDisposeHostAsync();
+        }
     }
 
     protected override async void OnStartup(StartupEventArgs e)
     {
-        _isSilentMode = e.Args.Contains("--silent", StringComparer.OrdinalIgnoreCase);
-
-        AppSettings.Load();
-        var culture = new System.Globalization.CultureInfo(AppSettings.Current.Language);
-        Thread.CurrentThread.CurrentCulture = culture;
-        Thread.CurrentThread.CurrentUICulture = culture;
-        SystemOptimizer.Properties.Resources.Culture = culture;
-
-        this.DispatcherUnhandledException += OnDispatcherUnhandledException;
-
-        await _host.StartAsync();
-
-        if (_isSilentMode)
+        try
         {
-            try
-            {
-                await RunSilentModeAsync();
-                Shutdown();
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Falha ao iniciar modo silencioso: {ex}", "ERROR");
-                Shutdown(1);
-            }
-        }
-        else
-        {
-            var startupTasks = _host.Services.GetRequiredService<StartupTasksService>();
-            startupTasks.Initialize(e.Args);
-            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-            mainWindow.Show();
-        }
+            _isSilentMode = e.Args.Contains("--silent", StringComparer.OrdinalIgnoreCase);
 
-        base.OnStartup(e);
+            AppSettings.Load();
+            var culture = new System.Globalization.CultureInfo(AppSettings.Current.Language);
+            Thread.CurrentThread.CurrentCulture = culture;
+            Thread.CurrentThread.CurrentUICulture = culture;
+            SystemOptimizer.Properties.Resources.Culture = culture;
+
+            DispatcherUnhandledException += OnDispatcherUnhandledException;
+
+            await _host.StartAsync();
+
+            if (_isSilentMode)
+            {
+                try
+                {
+                    await RunSilentModeAsync();
+                    Shutdown();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Falha ao iniciar modo silencioso: {ex}", "ERROR");
+                    Shutdown(1);
+                }
+            }
+            else
+            {
+                var startupTasks = _host.Services.GetRequiredService<StartupTasksService>();
+                startupTasks.Initialize(e.Args);
+                var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+                mainWindow.Show();
+            }
+
+            base.OnStartup(e);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha crítica no startup: {ex}", "ERROR");
+            Shutdown(1);
+        }
     }
 
-    protected override async void OnExit(ExitEventArgs e)
+    protected override void OnExit(ExitEventArgs e)
     {
-        await _host.StopAsync();
-        _host.Dispose();
+        StopAndDisposeHostAsync().GetAwaiter().GetResult();
         base.OnExit(e);
+    }
+
+    private async Task StopAndDisposeHostAsync()
+    {
+        if (_hostDisposed)
+        {
+            return;
+        }
+
+        try
+        {
+            await _host.StopAsync(TimeSpan.FromSeconds(5));
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao parar host: {ex.Message}", "ERROR");
+        }
+        finally
+        {
+            _host.Dispose();
+            _hostDisposed = true;
+        }
     }
 
     private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
@@ -160,6 +193,7 @@ public partial class App : Application
             Logger.Log("Iniciando Modo Silencioso (Auto-Run)...");
             var tweakService = _host.Services.GetRequiredService<TweakService>();
             var updateService = _host.Services.GetRequiredService<IUpdateService>();
+            var updateNotificationService = _host.Services.GetRequiredService<UpdateNotificationService>();
             tweakService.LoadTweaks();
             await tweakService.RefreshStatusesAsync();
 
@@ -186,7 +220,7 @@ public partial class App : Application
                 Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
             }
 
-            await CheckForUpdatesAndNotifyAsync(updateService);
+            await CheckForUpdatesAndNotifyAsync(updateService, updateNotificationService);
         }
         catch (Exception ex)
         {
@@ -198,7 +232,7 @@ public partial class App : Application
         }
     }
 
-    private static async Task CheckForUpdatesAndNotifyAsync(IUpdateService updateService)
+    private static async Task CheckForUpdatesAndNotifyAsync(IUpdateService updateService, UpdateNotificationService updateNotificationService)
     {
         try
         {
@@ -209,7 +243,7 @@ public partial class App : Application
                 return;
             }
 
-            ShowUpdateToast(updateInfo);
+            updateNotificationService.ShowUpdateNotification(updateInfo);
             Logger.Log($"Modo silencioso: atualização {updateInfo.Version} detectada e notificação exibida.");
         }
         catch (Exception ex)
@@ -218,14 +252,5 @@ public partial class App : Application
         }
     }
 
-    private static void ShowUpdateToast(UpdateInfo updateInfo)
-    {
-        var toastBuilder = new ToastContentBuilder()
-            .AddText("Atualização disponível")
-            .AddText($"Versão {updateInfo.Version} disponível. Abra as configurações para atualizar.")
-            .AddArgument("action", "open-settings");
-
-        Helpers.ToastCompatHelper.Show(toastBuilder);
-    }
 
 }

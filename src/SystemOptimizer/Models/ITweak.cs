@@ -7,8 +7,9 @@ public enum TweakCategory
     Network,
     Security,
     Appearance,
-    Tweaks, // Renomeado de Search para Tweaks no passado, mantido
-    Search  // Nova categoria para a Pesquisa Online
+    Services,
+    Search,
+    Tweaks = Services // Alias legado para compatibilidade com estados/configurações existentes.
 }
 
 public enum TweakStatus
@@ -17,7 +18,8 @@ public enum TweakStatus
     Default,
     Modified,
     Unknown,
-    Processing
+    Processing,
+    PendingReboot
 }
 
 public interface ITweak

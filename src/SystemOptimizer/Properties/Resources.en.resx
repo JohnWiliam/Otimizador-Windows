@@ -59,11 +59,11 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="P1_Title" xml:space="preserve"><value>Disable Telemetry</value></data>
-  <data name="P1_Desc" xml:space="preserve"><value>Prevents sending diagnostic data to Microsoft.</value></data>
+  <data name="P1_Desc" xml:space="preserve"><value>Applies the minimum telemetry policy and limits diagnostic log collection. Note: on Windows Home the minimum level may remain Security.</value></data>
   <data name="P2_Title" xml:space="preserve"><value>Disable DiagTrack</value></data>
   <data name="P2_Desc" xml:space="preserve"><value>Disables the Connected User Experience service.</value></data>
   <data name="P3_Title" xml:space="preserve"><value>Disable Cortana</value></data>
-  <data name="P3_Desc" xml:space="preserve"><value>Blocks legacy voice assistant and web search.</value></data>
+  <data name="P3_Desc" xml:space="preserve"><value>Disables Cortana on compatible Windows versions; on recent Windows 11 builds Cortana has already been removed and this tweak is treated as compatibility-only.</value></data>
   <data name="P4_Title" xml:space="preserve"><value>Disable Ad ID</value></data>
   <data name="P4_Desc" xml:space="preserve"><value>Prevents commercial tracking across apps.</value></data>
   <data name="P5_Title" xml:space="preserve"><value>Disable Geolocation</value></data>
@@ -79,7 +79,7 @@
   <data name="PF3_Title" xml:space="preserve"><value>Input Mouse 1:1</value></data>
   <data name="PF3_Desc" xml:space="preserve"><value>Removes precision enhancement (Acceleration).</value></data>
   <data name="PF5_Title" xml:space="preserve"><value>CPU Priority</value></data>
-  <data name="PF5_Desc" xml:space="preserve"><value>Adjusts priority for Programs vs Services (26 hex).</value></data>
+  <data name="PF5_Desc" xml:space="preserve"><value>Prioritizes foreground programs (0x26). This may reduce responsiveness of services and mixed background workloads.</value></data>
   <data name="PF6_Title" xml:space="preserve"><value>Network Throttling</value></data>
   <data name="PF6_Desc" xml:space="preserve"><value>Removes packet processing limit (Index FFFFFF).</value></data>
   <data name="PF7_Title" xml:space="preserve"><value>GPU Scheduling</value></data>
@@ -93,7 +93,7 @@
   <data name="N2_Title" xml:space="preserve"><value>CUBIC Algorithm</value></data>
   <data name="N2_Desc" xml:space="preserve"><value>Modern congestion management for high speed.</value></data>
   <data name="N3_Title" xml:space="preserve"><value>Enable ECN</value></data>
-  <data name="N3_Desc" xml:space="preserve"><value>Explicit Congestion Notification (Less Loss).</value></data>
+  <data name="N3_Desc" xml:space="preserve"><value>Enables ECN (Explicit Congestion Notification). Use only when your network/router supports it properly; it may cause compatibility issues on some home networks and online services.</value></data>
   <data name="N4_Title" xml:space="preserve"><value>Disable RSS</value></data>
   <data name="N4_Desc" xml:space="preserve"><value>Receive Side Scaling (Stability/driver test).</value></data>
   <data name="N5_Title" xml:space="preserve"><value>Disable QoS Limit</value></data>

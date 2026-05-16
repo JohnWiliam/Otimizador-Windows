@@ -1,5 +1,6 @@
 using Microsoft.Win32;
 using System;
+using System.Globalization;
 using SystemOptimizer.Helpers;
 
 namespace SystemOptimizer.Models;
@@ -106,15 +107,54 @@ public class RegistryTweak : TweakBase
             }
             else
             {
-                if (val.ToString() == _optimizedValue.ToString())
-                    Status = TweakStatus.Optimized;
-                else
-                    Status = TweakStatus.Default;
+                Status = ValuesAreEquivalent(val, _optimizedValue, _valueKind)
+                    ? TweakStatus.Optimized
+                    : TweakStatus.Default;
             }
         }
         catch
         {
             Status = TweakStatus.Unknown;
+        }
+    }
+
+    private static bool ValuesAreEquivalent(object currentValue, object optimizedValue, RegistryValueKind valueKind)
+    {
+        if (valueKind is RegistryValueKind.DWord or RegistryValueKind.QWord)
+        {
+            return TryConvertToUInt64(currentValue, out ulong current)
+                && TryConvertToUInt64(optimizedValue, out ulong optimized)
+                && current == optimized;
+        }
+
+        return string.Equals(
+            Convert.ToString(currentValue, CultureInfo.InvariantCulture),
+            Convert.ToString(optimizedValue, CultureInfo.InvariantCulture),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryConvertToUInt64(object value, out ulong result)
+    {
+        try
+        {
+            result = value switch
+            {
+                int i => unchecked((uint)i),
+                uint u => u,
+                long l => unchecked((ulong)l),
+                ulong ul => ul,
+                short s => unchecked((ushort)s),
+                ushort us => us,
+                byte b => b,
+                string text when ulong.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) => parsed,
+                _ => Convert.ToUInt64(value, CultureInfo.InvariantCulture)
+            };
+            return true;
+        }
+        catch
+        {
+            result = 0;
+            return false;
         }
     }
 }

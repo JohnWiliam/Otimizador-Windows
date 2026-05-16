@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -27,19 +26,19 @@ public class CleanupExecutionEngine
         switch (target.Strategy)
         {
             case CleanupExecutionStrategy.DeleteDirectoryContents:
-                CleanupDirectory(target.Path, result);
+                await Task.Run(() => CleanupDirectory(target.Path, result));
                 break;
             case CleanupExecutionStrategy.ExecuteCommand:
-                ExecuteCommand(target, result);
+                await ExecuteCommandAsync(target, result);
                 break;
             case CleanupExecutionStrategy.EmptyRecycleBin:
-                EmptyRecycleBin(result);
+                await Task.Run(() => EmptyRecycleBin(result));
                 break;
             case CleanupExecutionStrategy.CleanupWindowsUpdate:
                 await CleanupWindowsUpdateAsync(target.Path, result);
                 break;
             case CleanupExecutionStrategy.CleanupBrowserCache:
-                CleanupBrowserCache(result);
+                await Task.Run(() => CleanupBrowserCache(result));
                 break;
             default:
                 result.Failures++;
@@ -51,7 +50,7 @@ public class CleanupExecutionEngine
         return result;
     }
 
-    private static void ExecuteCommand(CleanupTarget target, CleanupResult result)
+    private static async Task ExecuteCommandAsync(CleanupTarget target, CleanupResult result)
     {
         try
         {
@@ -61,8 +60,15 @@ public class CleanupExecutionEngine
                 return;
             }
 
-            CommandHelper.RunCommand(target.Command, target.Arguments ?? string.Empty);
-            result.ItemsRemoved = 1;
+            var commandResult = await CommandHelper.RunCommandDetailedAsync(target.Command, target.Arguments ?? string.Empty);
+            if (commandResult.IsSuccess)
+            {
+                result.ItemsRemoved = 1;
+                return;
+            }
+
+            result.Failures++;
+            Logger.Log($"Comando de limpeza '{target.CategoryName}' falhou. ExitCode={commandResult.ExitCode}, Timeout={commandResult.TimedOut}, StdErr='{commandResult.StdErr}'", "ERROR");
         }
         catch (Exception ex)
         {
@@ -87,12 +93,17 @@ public class CleanupExecutionEngine
 
     private static void CleanupDirectory(string path, CleanupResult result)
     {
-        if (!Directory.Exists(path))
+        if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path) || IsUnsafeCleanupRoot(path))
         {
             return;
         }
 
         var dirInfo = new DirectoryInfo(path);
+        if (IsReparsePoint(dirInfo))
+        {
+            Logger.Log($"Limpeza ignorada para ponto de nova análise/reparse: '{path}'", "WARNING");
+            return;
+        }
 
         try
         {
@@ -100,9 +111,16 @@ public class CleanupExecutionEngine
             {
                 try
                 {
+                    if (IsReparsePoint(file))
+                    {
+                        result.ItemsIgnored++;
+                        continue;
+                    }
+
+                    string fullName = file.FullName;
                     long size = file.Length;
-                    file.Delete();
-                    if (!file.Exists)
+                    File.Delete(fullName);
+                    if (!File.Exists(fullName))
                     {
                         result.BytesRemoved += size;
                         result.ItemsRemoved++;
@@ -133,7 +151,13 @@ public class CleanupExecutionEngine
             {
                 try
                 {
-                    dir.Delete(true);
+                    if (IsReparsePoint(dir))
+                    {
+                        result.ItemsIgnored++;
+                        continue;
+                    }
+
+                    dir.Delete(false);
                     result.ItemsRemoved++;
                 }
                 catch (Exception ex)
@@ -148,6 +172,22 @@ public class CleanupExecutionEngine
         {
             result.Failures++;
             Logger.Log($"Erro ao enumerar diretórios em '{path}': {ex.Message}", "ERROR");
+        }
+    }
+
+    private static bool IsReparsePoint(FileSystemInfo info) => (info.Attributes & FileAttributes.ReparsePoint) != 0;
+
+    private static bool IsUnsafeCleanupRoot(string path)
+    {
+        try
+        {
+            string fullPath = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            string? root = Path.GetPathRoot(fullPath)?.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return string.IsNullOrWhiteSpace(root) || string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return true;
         }
     }
 

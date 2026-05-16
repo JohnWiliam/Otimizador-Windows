@@ -5,6 +5,10 @@ namespace SystemOptimizer.Helpers;
 
 public static class Logger
 {
+    private const long MaxLogBytes = 1024 * 1024;
+    private const int MaxArchiveFiles = 3;
+    private static readonly object SyncRoot = new();
+
     // Define o caminho fixo: C:\ProgramData\SystemOptimizer\system_optimizer_log.txt
     private static readonly string LogFolder = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), 
@@ -36,12 +40,48 @@ public static class Logger
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string logEntry = $"[{timestamp}] [{type}] {message}{Environment.NewLine}";
 
-            // Adiciona o texto ao final do arquivo (Append)
-            File.AppendAllText(LogFile, logEntry);
+            lock (SyncRoot)
+            {
+                RotateIfNeeded();
+                File.AppendAllText(LogFile, logEntry);
+            }
         }
         catch
         {
             // Ignora erros de gravação de log (ex: arquivo em uso)
+        }
+    }
+
+    private static void RotateIfNeeded()
+    {
+        try
+        {
+            var logInfo = new FileInfo(LogFile);
+            if (!logInfo.Exists || logInfo.Length < MaxLogBytes)
+            {
+                return;
+            }
+
+            string oldestArchive = $"{LogFile}.{MaxArchiveFiles}";
+            if (File.Exists(oldestArchive))
+            {
+                File.Delete(oldestArchive);
+            }
+
+            for (int i = MaxArchiveFiles - 1; i >= 1; i--)
+            {
+                string source = $"{LogFile}.{i}";
+                if (File.Exists(source))
+                {
+                    File.Move(source, $"{LogFile}.{i + 1}", true);
+                }
+            }
+
+            File.Move(LogFile, $"{LogFile}.1", true);
+        }
+        catch
+        {
+            // Se a rotação falhar, não impedimos o fluxo principal do app.
         }
     }
 }
