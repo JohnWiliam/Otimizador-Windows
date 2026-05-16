@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using SystemOptimizer.Helpers;
@@ -221,23 +222,19 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             string psScript = $@"
-                $WshShell = New-Object -comObject WScript.Shell;
-                $Shortcut = $WshShell.CreateShortcut('{shortcutPath}');
-                $Shortcut.TargetPath = '{targetPath}';
-                $Shortcut.Description = '{description}';
-                $Shortcut.WorkingDirectory = '{Path.GetDirectoryName(targetPath)}';
+                $ErrorActionPreference = 'Stop'
+                $WshShell = New-Object -ComObject WScript.Shell
+                $Shortcut = $WshShell.CreateShortcut({ToPowerShellLiteral(shortcutPath)})
+                $Shortcut.TargetPath = {ToPowerShellLiteral(targetPath)}
+                $Shortcut.Description = {ToPowerShellLiteral(description)}
+                $Shortcut.WorkingDirectory = {ToPowerShellLiteral(Path.GetDirectoryName(targetPath) ?? string.Empty)}
                 $Shortcut.Save()";
 
-            var psi = new ProcessStartInfo
+            var result = RunPowerShellScript(psScript);
+            if (!result.IsSuccess)
             {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(psi);
-            process?.WaitForExit();
+                throw new InvalidOperationException($"PowerShell retornou ExitCode={result.ExitCode}. {result.StdErr}");
+            }
         }
         catch (Exception ex)
         {
@@ -250,7 +247,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         var script = $@"
             $ErrorActionPreference = 'Stop'
-            $task = Get-ScheduledTask -TaskName '{TaskName}'
+            $task = Get-ScheduledTask -TaskName {ToPowerShellLiteral(TaskName)}
             $action = $task.Actions | Select-Object -First 1
             $hasOnLogonTrigger = $task.Triggers | Where-Object {{ $_.TriggerType -eq 'Logon' }}
             $actionExecute = if ($null -ne $action.Execute) {{ $action.Execute }} else {{ '' }}
@@ -263,8 +260,13 @@ public partial class SettingsViewModel : ObservableObject
             Write-Output ('RUNLEVEL=' + $runLevel)
         ";
 
-        var escapedScript = script.Replace("\"", "\\\"").Replace("\r", " ").Replace("\n", "; ");
-        var res = CommandHelper.RunCommand("powershell.exe", $"-NoProfile -Command \"{escapedScript}\"");
+        var commandResult = RunPowerShellScript(script);
+        var res = commandResult.StdOut;
+
+        if (!commandResult.IsSuccess && string.IsNullOrWhiteSpace(res))
+        {
+            res = commandResult.StdErr;
+        }
 
         if (string.IsNullOrWhiteSpace(res) ||
             res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) ||
@@ -309,6 +311,24 @@ public partial class SettingsViewModel : ObservableObject
 #pragma warning disable MVVMTK0034
         SetProperty(ref _isPersistenceEnabled, isValid, nameof(IsPersistenceEnabled));
 #pragma warning restore MVVMTK0034
+    }
+
+    private static CommandHelper.CommandResult RunPowerShellScript(string script)
+    {
+        string encodedScript = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+        return CommandHelper.RunCommandDetailed("powershell.exe",
+        [
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-EncodedCommand",
+            encodedScript
+        ]);
+    }
+
+    private static string ToPowerShellLiteral(string value)
+    {
+        return "'" + value.Replace("'", "''") + "'";
     }
 
     private static string GetTaskInfoValue(string[] lines, string key)
@@ -358,8 +378,11 @@ public partial class SettingsViewModel : ObservableObject
 
             // (d) Criar/atualizar tarefa (etapa final obrigatória)
             Logger.Log($"PERSISTENCE_STEP=task_create task='{TaskName}'", "PERSISTENCE");
-            string cmd = $"/create /tn \"{TaskName}\" /tr \"\\\"{_targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
-            var result = CommandHelper.RunCommandDetailed("schtasks", cmd);
+            string taskRun = $"\"{_targetExePath}\" --silent";
+            var result = CommandHelper.RunCommandDetailed("schtasks",
+            [
+                "/create", "/tn", TaskName, "/tr", taskRun, "/sc", "onlogon", "/rl", "HIGHEST", "/f"
+            ]);
 
             Logger.Log($"PERSISTENCE_STEP=task_create result Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
 
@@ -415,7 +438,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            var result = CommandHelper.RunCommandDetailed("schtasks", $"/delete /tn \"{TaskName}\" /f");
+            var result = CommandHelper.RunCommandDetailed("schtasks", ["/delete", "/tn", TaskName, "/f"]);
             Logger.Log($"Resultado schtasks/delete -> Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
             Logger.Log("Persistência desativada.");
         }

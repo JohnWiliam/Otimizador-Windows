@@ -30,7 +30,7 @@ public class CleanupExecutionEngine
                 CleanupDirectory(target.Path, result);
                 break;
             case CleanupExecutionStrategy.ExecuteCommand:
-                ExecuteCommand(target, result);
+                await ExecuteCommandAsync(target, result);
                 break;
             case CleanupExecutionStrategy.EmptyRecycleBin:
                 EmptyRecycleBin(result);
@@ -51,7 +51,7 @@ public class CleanupExecutionEngine
         return result;
     }
 
-    private static void ExecuteCommand(CleanupTarget target, CleanupResult result)
+    private static async Task ExecuteCommandAsync(CleanupTarget target, CleanupResult result)
     {
         try
         {
@@ -61,7 +61,14 @@ public class CleanupExecutionEngine
                 return;
             }
 
-            CommandHelper.RunCommand(target.Command, target.Arguments ?? string.Empty);
+            var commandResult = await CommandHelper.RunCommandDetailedAsync(target.Command, target.Arguments ?? string.Empty);
+            if (!commandResult.IsSuccess)
+            {
+                result.Failures++;
+                Logger.Log($"Comando de limpeza '{target.CategoryName}' falhou. ExitCode={commandResult.ExitCode}, StdErr='{commandResult.StdErr}'", "ERROR");
+                return;
+            }
+
             result.ItemsRemoved = 1;
         }
         catch (Exception ex)
@@ -87,7 +94,7 @@ public class CleanupExecutionEngine
 
     private static void CleanupDirectory(string path, CleanupResult result)
     {
-        if (!Directory.Exists(path))
+        if (!Directory.Exists(path) || IsReparsePoint(path))
         {
             return;
         }
@@ -100,13 +107,17 @@ public class CleanupExecutionEngine
             {
                 try
                 {
-                    long size = file.Length;
-                    file.Delete();
-                    if (!file.Exists)
+                    if (file.Attributes.HasFlag(FileAttributes.ReparsePoint))
                     {
-                        result.BytesRemoved += size;
-                        result.ItemsRemoved++;
+                        result.ItemsIgnored++;
+                        continue;
                     }
+
+                    string fullName = file.FullName;
+                    long size = file.Length;
+                    File.Delete(fullName);
+                    result.BytesRemoved += size;
+                    result.ItemsRemoved++;
                 }
                 catch (Exception ex)
                 {
@@ -133,7 +144,13 @@ public class CleanupExecutionEngine
             {
                 try
                 {
-                    dir.Delete(true);
+                    if (dir.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    {
+                        result.ItemsIgnored++;
+                        continue;
+                    }
+
+                    Directory.Delete(dir.FullName, recursive: false);
                     result.ItemsRemoved++;
                 }
                 catch (Exception ex)
@@ -148,6 +165,18 @@ public class CleanupExecutionEngine
         {
             result.Failures++;
             Logger.Log($"Erro ao enumerar diretórios em '{path}': {ex.Message}", "ERROR");
+        }
+    }
+
+    private static bool IsReparsePoint(string path)
+    {
+        try
+        {
+            return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
+        }
+        catch
+        {
+            return true;
         }
     }
 
@@ -255,21 +284,22 @@ public class CleanupExecutionEngine
                 foreach (var s in services)
                 {
                     using var sc = new ServiceController(s);
+                    sc.Refresh();
                     if (start)
                     {
-                        if (sc.Status != ServiceControllerStatus.Running)
+                        if (sc.Status != ServiceControllerStatus.Running && sc.Status != ServiceControllerStatus.StartPending)
                         {
                             sc.Start();
-                            sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(10));
                         }
+                        sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(10));
                     }
                     else
                     {
-                        if (sc.Status != ServiceControllerStatus.Stopped)
+                        if (sc.Status != ServiceControllerStatus.Stopped && sc.Status != ServiceControllerStatus.StopPending)
                         {
                             sc.Stop();
-                            sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(10));
                         }
+                        sc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(10));
                     }
                 }
                 return true;

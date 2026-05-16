@@ -23,6 +23,7 @@ public partial class App : Application
 {
     private readonly IHost _host;
     private bool _isSilentMode;
+    private bool _hostDisposed;
 
     public App()
     {
@@ -81,12 +82,30 @@ public partial class App : Application
         SystemOptimizer.Properties.Resources.Culture = culture;
 
         await _host.StartAsync();
-        await RunSilentModeAsync();
-        await _host.StopAsync();
-        _host.Dispose();
+        try
+        {
+            await RunSilentModeAsync();
+        }
+        finally
+        {
+            await StopHostAsync();
+        }
     }
 
     protected override async void OnStartup(StartupEventArgs e)
+    {
+        try
+        {
+            await OnStartupAsync(e);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha fatal ao iniciar aplicação: {ex}", "ERROR");
+            Shutdown(_isSilentMode ? 1 : 0);
+        }
+    }
+
+    private async Task OnStartupAsync(StartupEventArgs e)
     {
         _isSilentMode = e.Args.Contains("--silent", StringComparer.OrdinalIgnoreCase);
 
@@ -124,11 +143,30 @@ public partial class App : Application
         base.OnStartup(e);
     }
 
-    protected override async void OnExit(ExitEventArgs e)
+    protected override void OnExit(ExitEventArgs e)
     {
-        await _host.StopAsync();
-        _host.Dispose();
+        StopHostAsync().GetAwaiter().GetResult();
         base.OnExit(e);
+    }
+
+    private async Task StopHostAsync()
+    {
+        if (_hostDisposed) return;
+
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await _host.StopAsync(cts.Token);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Erro ao parar host: {ex.Message}", "ERROR");
+        }
+        finally
+        {
+            _host.Dispose();
+            _hostDisposed = true;
+        }
     }
 
     private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)

@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SystemOptimizer.Helpers;
@@ -42,13 +44,32 @@ public static class CommandHelper
 
     public static CommandResult RunCommandDetailed(string fileName, string arguments, int timeoutMs = 5000)
     {
-        Logger.Log($"Executing command: {fileName} {arguments}", "CMD_START");
+        return RunCommandDetailedAsync(fileName, arguments, timeoutMs).GetAwaiter().GetResult();
+    }
+
+    public static Task<CommandResult> RunCommandDetailedAsync(string fileName, string arguments, int timeoutMs = 5000)
+    {
+        return RunCommandDetailedAsync(fileName, arguments, null, timeoutMs);
+    }
+
+    public static Task<CommandResult> RunCommandDetailedAsync(string fileName, IEnumerable<string> argumentList, int timeoutMs = 5000)
+    {
+        return RunCommandDetailedAsync(fileName, null, argumentList, timeoutMs);
+    }
+
+    public static CommandResult RunCommandDetailed(string fileName, IEnumerable<string> argumentList, int timeoutMs = 5000)
+    {
+        return RunCommandDetailedAsync(fileName, argumentList, timeoutMs).GetAwaiter().GetResult();
+    }
+
+    private static async Task<CommandResult> RunCommandDetailedAsync(string fileName, string? arguments, IEnumerable<string>? argumentList, int timeoutMs)
+    {
+        Logger.Log($"Executing command: {fileName} {FormatArguments(arguments, argumentList)}", "CMD_START");
         try
         {
             var psi = new ProcessStartInfo
             {
                 FileName = fileName,
-                Arguments = arguments,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -58,6 +79,18 @@ public static class CommandHelper
                 StandardErrorEncoding = Encoding.UTF8
             };
 
+            if (argumentList != null)
+            {
+                foreach (string argument in argumentList)
+                {
+                    psi.ArgumentList.Add(argument);
+                }
+            }
+            else
+            {
+                psi.Arguments = arguments ?? string.Empty;
+            }
+
             using var process = Process.Start(psi);
             if (process == null)
             {
@@ -65,32 +98,33 @@ public static class CommandHelper
                 return new CommandResult(false, false, null, string.Empty, string.Empty);
             }
 
-            // Leitura assíncrona para evitar Deadlocks
             var outputTask = process.StandardOutput.ReadToEndAsync();
             var errorTask = process.StandardError.ReadToEndAsync();
 
-            // Aguarda a saída do processo com timeout
-            if (!process.WaitForExit(timeoutMs))
+            using var cts = new CancellationTokenSource(timeoutMs);
+            try
+            {
+                await process.WaitForExitAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
             {
                 Logger.Log($"Command timed out ({timeoutMs}ms): {fileName} {arguments}", "CMD_TIMEOUT");
                 try
                 {
-                    process.Kill();
+                    process.Kill(entireProcessTree: true);
                 }
                 catch (Exception kEx)
                 {
                     Logger.Log($"Failed to kill timed out process: {kEx.Message}", "CMD_ERROR");
                 }
-                string timeoutStdOut = outputTask.IsCompletedSuccessfully ? outputTask.Result : string.Empty;
-                string timeoutStdErr = errorTask.IsCompletedSuccessfully ? errorTask.Result : string.Empty;
+
+                string timeoutStdOut = outputTask.IsCompletedSuccessfully ? await outputTask : string.Empty;
+                string timeoutStdErr = errorTask.IsCompletedSuccessfully ? await errorTask : string.Empty;
                 return new CommandResult(true, true, null, timeoutStdOut, timeoutStdErr);
             }
 
-            // Se o processo terminou, aguardamos as tarefas de leitura terminarem
-            Task.WaitAll(outputTask, errorTask);
-
-            string output = outputTask.Result;
-            string error = errorTask.Result;
+            string output = await outputTask;
+            string error = await errorTask;
 
             Logger.Log($"Command finished. ExitCode: {process.ExitCode}. OutputLen: {output.Length}. ErrorLen: {error.Length}", "CMD_END");
             if (!string.IsNullOrWhiteSpace(error))
@@ -106,6 +140,11 @@ public static class CommandHelper
         }
     }
 
+    private static string FormatArguments(string? arguments, IEnumerable<string>? argumentList)
+    {
+        return argumentList == null ? arguments ?? string.Empty : string.Join(" ", argumentList);
+    }
+
     public static void RunCommandNoWait(string fileName, string arguments)
     {
         Logger.Log($"Executing (NoWait): {fileName} {arguments}", "CMD_ASYNC");
@@ -119,7 +158,7 @@ public static class CommandHelper
                 WindowStyle = ProcessWindowStyle.Hidden,
                 CreateNoWindow = true
             };
-            Process.Start(psi);
+            Process.Start(psi)?.Dispose();
         }
         catch (Exception ex)
         {
