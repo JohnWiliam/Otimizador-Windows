@@ -44,7 +44,9 @@ public static class Logger
             lock (SyncRoot)
             {
                 RotateIfNeeded(Encoding.UTF8.GetByteCount(logEntry));
-                File.AppendAllText(LogFile, logEntry, Encoding.UTF8);
+                using var stream = new FileStream(LogFile, FileMode.Append, FileAccess.Write, FileShare.Read);
+                using var writer = new StreamWriter(stream, Encoding.UTF8);
+                writer.Write(logEntry);
             }
         }
         catch
@@ -67,12 +69,10 @@ public static class Logger
             string destination = $"{LogFile}.{i + 1}";
             if (File.Exists(source))
             {
-                File.Copy(source, destination, true);
-                File.Delete(source);
+                File.Move(source, destination, true);
             }
         }
 
-        File.Copy(LogFile, $"{LogFile}.1", true);
-        File.WriteAllText(LogFile, string.Empty, Encoding.UTF8);
+        File.Move(LogFile, $"{LogFile}.1", true);
     }
 }

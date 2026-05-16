@@ -94,8 +94,8 @@
   <data name="N2_Desc" xml:space="preserve"><value>Modern congestion management for high speed.</value></data>
   <data name="N3_Title" xml:space="preserve"><value>Enable ECN</value></data>
   <data name="N3_Desc" xml:space="preserve"><value>Explicit Congestion Notification (Less Loss).</value></data>
-  <data name="N4_Title" xml:space="preserve"><value>Disable RSS</value></data>
-  <data name="N4_Desc" xml:space="preserve"><value>Receive Side Scaling (Stability/driver test).</value></data>
+  <data name="N4_Title" xml:space="preserve"><value>Enable RSS</value></data>
+  <data name="N4_Desc" xml:space="preserve"><value>Receive Side Scaling for better distribution on modern CPUs.</value></data>
   <data name="N5_Title" xml:space="preserve"><value>Disable QoS Limit</value></data>
   <data name="N5_Desc" xml:space="preserve"><value>Removes bandwidth reservation (Packet Scheduler).</value></data>
   <data name="S1_Title" xml:space="preserve"><value>Show Extensions</value></data>
@@ -110,8 +110,8 @@
   <data name="A3_Desc" xml:space="preserve"><value>Adjusts for 'Best Performance' (Partial).</value></data>
   <data name="SE1_Title" xml:space="preserve"><value>Disable SysMain</value></data>
   <data name="SE1_Desc" xml:space="preserve"><value>Optimizes disk usage for SSDs (Superfetch).</value></data>
-  <data name="SE2_Title" xml:space="preserve"><value>Disable Prefetch</value></data>
-  <data name="SE2_Desc" xml:space="preserve"><value>Prevents creation of boot traces (RegWrite).</value></data>
+  <data name="SE2_Title" xml:space="preserve"><value>Disable Prefetch on SSD</value></data>
+  <data name="SE2_Desc" xml:space="preserve"><value>Disables Prefetch only when the system drive is an SSD.</value></data>
   <data name="Settings_Title" xml:space="preserve"><value>Settings</value></data>
   <data name="Settings_General" xml:space="preserve"><value>General</value></data>
   <data name="Settings_Appearance" xml:space="preserve"><value>Appearance</value></data>

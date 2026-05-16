@@ -119,14 +119,23 @@ public sealed class UpdateService : IUpdateService, IDisposable
             if (string.IsNullOrEmpty(currentExe)) throw new Exception("Não foi possível localizar o executável atual.");
 
             var updaterScriptPath = CreateUpdaterScript(currentExe, newExePath, currentProcess.Id);
-            Process.Start(new ProcessStartInfo
+            var startInfo = new ProcessStartInfo
             {
-                FileName = "cmd.exe",
-                ArgumentList = { "/c", updaterScriptPath },
+                FileName = "powershell.exe",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WorkingDirectory = Path.GetDirectoryName(currentExe) ?? Environment.CurrentDirectory
-            });
+            };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-ExecutionPolicy");
+            startInfo.ArgumentList.Add("Bypass");
+            startInfo.ArgumentList.Add("-File");
+            startInfo.ArgumentList.Add(updaterScriptPath);
+            startInfo.Environment["SYSTEM_OPTIMIZER_CURRENT_EXE"] = currentExe;
+            startInfo.Environment["SYSTEM_OPTIMIZER_NEW_EXE"] = newExePath;
+            startInfo.Environment["SYSTEM_OPTIMIZER_OLD_EXE"] = currentExe + ".old";
+            startInfo.Environment["SYSTEM_OPTIMIZER_PROCESS_ID"] = currentProcess.Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            Process.Start(startInfo);
 
             currentProcess.CloseMainWindow();
             Environment.Exit(0);
@@ -168,29 +177,57 @@ public sealed class UpdateService : IUpdateService, IDisposable
 
     private static string CreateUpdaterScript(string currentExe, string newExePath, int currentProcessId)
     {
-        string scriptPath = Path.Combine(Path.GetTempPath(), "SystemOptimizer", "Updates", $"apply-update-{Guid.NewGuid():N}.cmd");
-        string oldExe = currentExe + ".old";
-        string script = $"""
-@echo off
-setlocal
-set "CURRENT_EXE={currentExe}"
-set "NEW_EXE={newExePath}"
-set "OLD_EXE={oldExe}"
-timeout /t 2 /nobreak >nul
-:wait_process
-tasklist /fi "PID eq {currentProcessId}" | find "{currentProcessId}" >nul
-if not errorlevel 1 (
-  timeout /t 1 /nobreak >nul
-  goto wait_process
-)
-if exist "%OLD_EXE%" del /f /q "%OLD_EXE%"
-move /y "%CURRENT_EXE%" "%OLD_EXE%"
-move /y "%NEW_EXE%" "%CURRENT_EXE%"
-start "" "%CURRENT_EXE%"
-del /f /q "%~f0"
+        ValidateUpdaterPath(currentExe, nameof(currentExe));
+        ValidateUpdaterPath(newExePath, nameof(newExePath));
+        if (currentProcessId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(currentProcessId));
+        }
+
+        string scriptDirectory = Path.Combine(Path.GetTempPath(), "SystemOptimizer", "Updates", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(scriptDirectory);
+        string scriptPath = Path.Combine(scriptDirectory, "apply-update.ps1");
+        const string script = """
+$ErrorActionPreference = 'Stop'
+$currentExe = $env:SYSTEM_OPTIMIZER_CURRENT_EXE
+$newExe = $env:SYSTEM_OPTIMIZER_NEW_EXE
+$oldExe = $env:SYSTEM_OPTIMIZER_OLD_EXE
+$processIdText = $env:SYSTEM_OPTIMIZER_PROCESS_ID
+
+if ([string]::IsNullOrWhiteSpace($currentExe) -or [string]::IsNullOrWhiteSpace($newExe) -or [string]::IsNullOrWhiteSpace($oldExe)) {
+    throw 'Variáveis de ambiente obrigatórias ausentes.'
+}
+
+$processId = 0
+if (-not [int]::TryParse($processIdText, [ref]$processId)) {
+    throw 'PID inválido para o atualizador.'
+}
+Start-Sleep -Seconds 2
+while (Get-Process -Id $processId -ErrorAction SilentlyContinue) {
+    Start-Sleep -Seconds 1
+}
+
+if (Test-Path -LiteralPath $oldExe) {
+    Remove-Item -LiteralPath $oldExe -Force
+}
+Move-Item -LiteralPath $currentExe -Destination $oldExe -Force
+Move-Item -LiteralPath $newExe -Destination $currentExe -Force
+Start-Process -FilePath $currentExe -WorkingDirectory (Split-Path -LiteralPath $currentExe -Parent)
+Remove-Item -LiteralPath $PSCommandPath -Force
+Remove-Item -LiteralPath (Split-Path -LiteralPath $PSCommandPath -Parent) -Force
 """;
-        File.WriteAllText(scriptPath, script);
+        using var stream = new FileStream(scriptPath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+        using var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+        writer.Write(script);
         return scriptPath;
+    }
+
+    private static void ValidateUpdaterPath(string path, string paramName)
+    {
+        if (string.IsNullOrWhiteSpace(path) || path.IndexOfAny(['\r', '\n', '\0']) >= 0)
+        {
+            throw new ArgumentException("Caminho inválido para o atualizador.", paramName);
+        }
     }
 
     private static void TryDelete(string path)

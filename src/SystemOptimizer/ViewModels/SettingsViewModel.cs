@@ -192,10 +192,11 @@ public partial class SettingsViewModel : ObservableObject
             if (create)
             {
                 if (!Directory.Exists(_appDataPath)) Directory.CreateDirectory(_appDataPath);
+                ValidateWritableDirectory(_appDataPath);
                 if (!File.Exists(_targetExePath))
                 {
                     string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-                    if (!string.IsNullOrEmpty(currentExe)) File.Copy(currentExe, _targetExePath, true);
+                    if (!string.IsNullOrEmpty(currentExe)) PreparePersistenceBinary(currentExe);
                 }
                 CreateShortcut(_desktopShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
                 CreateShortcut(_startMenuShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
@@ -365,6 +366,7 @@ public partial class SettingsViewModel : ObservableObject
             Logger.Log($"PERSISTENCE_STEP=ensure_directory path='{_appDataPath}'", "PERSISTENCE");
             if (!Directory.Exists(_appDataPath))
                 Directory.CreateDirectory(_appDataPath);
+            ValidateWritableDirectory(_appDataPath);
 
             // (b) Preparar binário
             Logger.Log($"PERSISTENCE_STEP=prepare_binary source='{currentExe}' target='{_targetExePath}'", "PERSISTENCE");
@@ -408,29 +410,92 @@ public partial class SettingsViewModel : ObservableObject
 
     private void PreparePersistenceBinary(string currentExe)
     {
+        ValidateSourceExecutable(currentExe);
+        ValidateWritableDirectory(_appDataPath);
+        EnsureSufficientFreeSpace(currentExe, _appDataPath);
+
+        string temporaryTarget = Path.Combine(_appDataPath, $"SystemOptimizer-{Guid.NewGuid():N}.tmp");
         try
         {
-            File.Copy(currentExe, _targetExePath, true);
-            Logger.Log("PERSISTENCE_STEP=copy status=overwritten", "PERSISTENCE");
+            File.Copy(currentExe, temporaryTarget, overwrite: false);
+            using (File.Open(temporaryTarget, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                // Valida permissão e lock exclusivo antes da substituição final.
+            }
+
+            try
+            {
+                File.Move(temporaryTarget, _targetExePath, overwrite: true);
+                Logger.Log("PERSISTENCE_STEP=copy status=overwritten", "PERSISTENCE");
+            }
+            catch (IOException ex) when (IsExpectedPersistenceBinaryPresent())
+            {
+                Logger.Log($"PERSISTENCE_STEP=copy status=skipped_locked validated=true message='{ex.Message}'", "PERSISTENCE");
+            }
         }
-        catch (IOException ex) when (File.Exists(_targetExePath))
+        finally
         {
-            string expectedPath = Path.Combine(_appDataPath, "SystemOptimizer.exe");
-            bool hasExpectedPath = PathsAreEquivalent(_targetExePath, expectedPath);
-            bool hasExpectedName = string.Equals(
+            if (File.Exists(temporaryTarget))
+            {
+                File.Delete(temporaryTarget);
+            }
+        }
+    }
+
+    private bool IsExpectedPersistenceBinaryPresent()
+    {
+        string expectedPath = Path.Combine(_appDataPath, "SystemOptimizer.exe");
+        return File.Exists(_targetExePath)
+            && PathsAreEquivalent(_targetExePath, expectedPath)
+            && string.Equals(
                 Path.GetFileName(_targetExePath),
                 Path.GetFileName(expectedPath),
                 StringComparison.OrdinalIgnoreCase);
+    }
 
-            if (hasExpectedPath && hasExpectedName)
+    private static void ValidateSourceExecutable(string currentExe)
+    {
+        if (string.IsNullOrWhiteSpace(currentExe) || !File.Exists(currentExe))
+        {
+            throw new FileNotFoundException("Executável atual não encontrado para persistência.", currentExe);
+        }
+
+        using var stream = File.Open(currentExe, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        Span<byte> header = stackalloc byte[2];
+        if (stream.Read(header) != 2 || header[0] != 'M' || header[1] != 'Z')
+        {
+            throw new InvalidDataException("Executável atual não possui cabeçalho PE válido.");
+        }
+    }
+
+    private static void ValidateWritableDirectory(string directoryPath)
+    {
+        string probePath = Path.Combine(directoryPath, $".write-test-{Guid.NewGuid():N}.tmp");
+        try
+        {
+            using (File.Open(probePath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             {
-                Logger.Log($"PERSISTENCE_STEP=copy status=skipped_locked validated=true message='{ex.Message}'", "PERSISTENCE");
-                return;
             }
+        }
+        finally
+        {
+            if (File.Exists(probePath))
+            {
+                File.Delete(probePath);
+            }
+        }
+    }
 
-            throw new IOException(
-                $"Binário de persistência bloqueado e não corresponde ao executável esperado. target='{_targetExePath}', current='{currentExe}'.",
-                ex);
+    private static void EnsureSufficientFreeSpace(string sourcePath, string destinationDirectory)
+    {
+        var source = new FileInfo(sourcePath);
+        string root = Path.GetPathRoot(Path.GetFullPath(destinationDirectory))
+            ?? throw new InvalidOperationException("Não foi possível determinar o volume de destino.");
+        var drive = new DriveInfo(root);
+        long requiredBytes = source.Length + (1024 * 1024);
+        if (drive.AvailableFreeSpace < requiredBytes)
+        {
+            throw new IOException($"Espaço insuficiente para copiar o executável. Necessário={requiredBytes} bytes, disponível={drive.AvailableFreeSpace} bytes.");
         }
     }
 

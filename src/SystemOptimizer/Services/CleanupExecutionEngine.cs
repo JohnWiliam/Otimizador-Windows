@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Threading.Tasks;
@@ -99,72 +98,97 @@ public class CleanupExecutionEngine
             return;
         }
 
-        var dirInfo = new DirectoryInfo(path);
+        CleanupDirectoryContents(new DirectoryInfo(path), result, deleteCurrentDirectory: false);
+    }
+
+    private static void CleanupDirectoryContents(DirectoryInfo directory, CleanupResult result, bool deleteCurrentDirectory)
+    {
+        if (directory.Attributes.HasFlag(FileAttributes.ReparsePoint))
+        {
+            result.ItemsIgnored++;
+            return;
+        }
 
         try
         {
-            foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+            foreach (var file in directory.EnumerateFiles("*", SearchOption.TopDirectoryOnly))
+            {
+                DeleteFile(file, result);
+            }
+        }
+        catch (Exception ex)
+        {
+            result.Failures++;
+            Logger.Log($"Erro ao enumerar arquivos em '{directory.FullName}': {ex.Message}", "ERROR");
+        }
+
+        try
+        {
+            foreach (var childDirectory in directory.EnumerateDirectories("*", SearchOption.TopDirectoryOnly))
             {
                 try
                 {
-                    if (file.Attributes.HasFlag(FileAttributes.ReparsePoint))
+                    if (childDirectory.Attributes.HasFlag(FileAttributes.ReparsePoint))
                     {
                         result.ItemsIgnored++;
                         continue;
                     }
 
-                    string fullName = file.FullName;
-                    long size = file.Length;
-                    File.Delete(fullName);
-                    result.BytesRemoved += size;
-                    result.ItemsRemoved++;
+                    CleanupDirectoryContents(childDirectory, result, deleteCurrentDirectory: true);
                 }
                 catch (Exception ex)
                 {
                     result.ItemsIgnored++;
                     result.Failures++;
-                    Logger.Log($"Falha ao remover arquivo '{file.FullName}': {ex.Message}", "WARNING");
+                    Logger.Log($"Falha ao processar diretório '{childDirectory.FullName}': {ex.Message}", "WARNING");
                 }
             }
         }
         catch (Exception ex)
         {
             result.Failures++;
-            Logger.Log($"Erro ao enumerar arquivos em '{path}': {ex.Message}", "ERROR");
+            Logger.Log($"Erro ao enumerar diretórios em '{directory.FullName}': {ex.Message}", "ERROR");
+        }
+
+        if (!deleteCurrentDirectory)
+        {
+            return;
         }
 
         try
         {
-            var directories = dirInfo
-                .EnumerateDirectories("*", SearchOption.AllDirectories)
-                .OrderByDescending(d => d.FullName.Length)
-                .ToList();
-
-            foreach (var dir in directories)
-            {
-                try
-                {
-                    if (dir.Attributes.HasFlag(FileAttributes.ReparsePoint))
-                    {
-                        result.ItemsIgnored++;
-                        continue;
-                    }
-
-                    Directory.Delete(dir.FullName, recursive: false);
-                    result.ItemsRemoved++;
-                }
-                catch (Exception ex)
-                {
-                    result.ItemsIgnored++;
-                    result.Failures++;
-                    Logger.Log($"Falha ao remover diretório '{dir.FullName}': {ex.Message}", "WARNING");
-                }
-            }
+            directory.Delete(recursive: false);
+            result.ItemsRemoved++;
         }
         catch (Exception ex)
         {
+            result.ItemsIgnored++;
             result.Failures++;
-            Logger.Log($"Erro ao enumerar diretórios em '{path}': {ex.Message}", "ERROR");
+            Logger.Log($"Falha ao remover diretório '{directory.FullName}': {ex.Message}", "WARNING");
+        }
+    }
+
+    private static void DeleteFile(FileInfo file, CleanupResult result)
+    {
+        try
+        {
+            if (file.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            {
+                result.ItemsIgnored++;
+                return;
+            }
+
+            string fullName = file.FullName;
+            long size = file.Length;
+            file.Delete();
+            result.BytesRemoved += size;
+            result.ItemsRemoved++;
+        }
+        catch (Exception ex)
+        {
+            result.ItemsIgnored++;
+            result.Failures++;
+            Logger.Log($"Falha ao remover arquivo '{file.FullName}': {ex.Message}", "WARNING");
         }
     }
 
@@ -183,10 +207,17 @@ public class CleanupExecutionEngine
     private static void CleanupBrowserCache(CleanupResult result)
     {
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "Google", "Chrome", "User Data"), result);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "Microsoft", "Edge", "User Data"), result);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data"), result);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "Opera Software", "Opera Stable"), result);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Google", "Chrome", "User Data"), "chrome", result);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Microsoft", "Edge", "User Data"), "msedge", result);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data"), "brave", result);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Opera Software", "Opera Stable"), "opera", result);
+
+        if (IsAnyProcessRunning("firefox"))
+        {
+            result.ItemsIgnored++;
+            Logger.Log("Cache do Firefox ignorado porque o navegador está em execução.", "WARNING");
+            return;
+        }
 
         string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
         if (!Directory.Exists(firefoxPath))
@@ -209,8 +240,15 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static void CleanupChromiumBrowser(string userDataPath, CleanupResult result)
+    private static void CleanupChromiumBrowser(string userDataPath, string processName, CleanupResult result)
     {
+        if (IsAnyProcessRunning(processName))
+        {
+            result.ItemsIgnored++;
+            Logger.Log($"Cache Chromium ignorado para '{userDataPath}' porque '{processName}' está em execução.", "WARNING");
+            return;
+        }
+
         if (!Directory.Exists(userDataPath))
         {
             return;
@@ -243,6 +281,19 @@ public class CleanupExecutionEngine
         {
             result.Failures++;
             Logger.Log($"Falha ao limpar cache Chromium em '{userDataPath}': {ex.Message}", "ERROR");
+        }
+    }
+
+    private static bool IsAnyProcessRunning(string processName)
+    {
+        try
+        {
+            return Process.GetProcessesByName(processName).Length > 0;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Não foi possível verificar processo '{processName}': {ex.Message}", "WARNING");
+            return true;
         }
     }
 

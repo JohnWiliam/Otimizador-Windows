@@ -107,10 +107,19 @@ public sealed class StartupTasksService
 
     private async Task TryNavigateToSettingsAsync()
     {
-        if (Application.Current?.Dispatcher == null || Application.Current.MainWindow == null) return;
+        if (Application.Current?.Dispatcher == null)
+        {
+            return;
+        }
 
         await Application.Current.Dispatcher.InvokeAsync(() =>
         {
+            if (Application.Current.MainWindow is not SystemOptimizer.MainWindow { IsLoaded: true })
+            {
+                Logger.Log("Navegação para SettingsPage adiada até a janela principal estar carregada.");
+                return;
+            }
+
             try
             {
                 _navigationService.Navigate(typeof(SettingsPage));
