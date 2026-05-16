@@ -2,19 +2,29 @@ using System;
 
 namespace SystemOptimizer.Models;
 
-public class CustomTweak(
-    string id,
-    TweakCategory category,
-    string title,
-    string description,
-    Func<bool> apply,
-    Func<bool> revert,
-    Func<bool> check)
-    : TweakBase(id, category, title, description)
+public class CustomTweak : TweakBase
 {
-    private readonly Func<bool> _applyAction = apply;
-    private readonly Func<bool> _revertAction = revert;
-    private readonly Func<bool> _checkAction = check;
+    private readonly Func<bool> _applyAction;
+    private readonly Func<bool> _revertAction;
+    private readonly Func<bool> _checkAction;
+    private readonly TweakStatus? _statusAfterSuccessfulApply;
+
+    public CustomTweak(
+        string id,
+        TweakCategory category,
+        string title,
+        string description,
+        Func<bool> apply,
+        Func<bool> revert,
+        Func<bool> check,
+        TweakStatus? statusAfterSuccessfulApply = null)
+        : base(id, category, title, description)
+    {
+        _applyAction = apply;
+        _revertAction = revert;
+        _checkAction = check;
+        _statusAfterSuccessfulApply = statusAfterSuccessfulApply;
+    }
 
     public override (bool Success, string Message) Apply()
     {
@@ -22,6 +32,14 @@ public class CustomTweak(
         {
             bool res = _applyAction();
             if (!res) return (false, "Ação retornou falha.");
+
+            if (_statusAfterSuccessfulApply.HasValue)
+            {
+                Status = _statusAfterSuccessfulApply.Value;
+                return (true, Status == TweakStatus.PendingReboot
+                    ? "Tweak aplicado. Reinicie o Windows para concluir a alteração."
+                    : "Tweak aplicado com sucesso.");
+            }
 
             CheckStatus();
             if (IsOptimized) return (true, "Tweak aplicado com sucesso.");

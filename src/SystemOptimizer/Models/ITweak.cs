@@ -17,7 +17,8 @@ public enum TweakStatus
     Default,
     Modified,
     Unknown,
-    Processing
+    Processing,
+    PendingReboot
 }
 
 public interface ITweak

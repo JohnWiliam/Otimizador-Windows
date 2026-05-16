@@ -42,6 +42,11 @@ public static class CommandHelper
 
     public static CommandResult RunCommandDetailed(string fileName, string arguments, int timeoutMs = 5000)
     {
+        return RunCommandDetailedAsync(fileName, arguments, timeoutMs).GetAwaiter().GetResult();
+    }
+
+    public static async Task<CommandResult> RunCommandDetailedAsync(string fileName, string arguments, int timeoutMs = 5000)
+    {
         Logger.Log($"Executing command: {fileName} {arguments}", "CMD_START");
         try
         {
@@ -65,32 +70,28 @@ public static class CommandHelper
                 return new CommandResult(false, false, null, string.Empty, string.Empty);
             }
 
-            // Leitura assíncrona para evitar Deadlocks
             var outputTask = process.StandardOutput.ReadToEndAsync();
             var errorTask = process.StandardError.ReadToEndAsync();
-
-            // Aguarda a saída do processo com timeout
-            if (!process.WaitForExit(timeoutMs))
+            var exited = await WaitForExitAsync(process, timeoutMs);
+            if (!exited)
             {
                 Logger.Log($"Command timed out ({timeoutMs}ms): {fileName} {arguments}", "CMD_TIMEOUT");
                 try
                 {
-                    process.Kill();
+                    process.Kill(entireProcessTree: true);
                 }
                 catch (Exception kEx)
                 {
                     Logger.Log($"Failed to kill timed out process: {kEx.Message}", "CMD_ERROR");
                 }
-                string timeoutStdOut = outputTask.IsCompletedSuccessfully ? outputTask.Result : string.Empty;
-                string timeoutStdErr = errorTask.IsCompletedSuccessfully ? errorTask.Result : string.Empty;
+
+                string timeoutStdOut = outputTask.IsCompletedSuccessfully ? await outputTask : string.Empty;
+                string timeoutStdErr = errorTask.IsCompletedSuccessfully ? await errorTask : string.Empty;
                 return new CommandResult(true, true, null, timeoutStdOut, timeoutStdErr);
             }
 
-            // Se o processo terminou, aguardamos as tarefas de leitura terminarem
-            Task.WaitAll(outputTask, errorTask);
-
-            string output = outputTask.Result;
-            string error = errorTask.Result;
+            string output = await outputTask;
+            string error = await errorTask;
 
             Logger.Log($"Command finished. ExitCode: {process.ExitCode}. OutputLen: {output.Length}. ErrorLen: {error.Length}", "CMD_END");
             if (!string.IsNullOrWhiteSpace(error))
@@ -103,6 +104,20 @@ public static class CommandHelper
         {
             Logger.Log($"Exception running command {fileName}: {ex.Message}", "CMD_EXCEPTION");
             return new CommandResult(false, false, null, string.Empty, ex.Message);
+        }
+    }
+
+    private static async Task<bool> WaitForExitAsync(Process process, int timeoutMs)
+    {
+        try
+        {
+            using var cts = new System.Threading.CancellationTokenSource(timeoutMs);
+            await process.WaitForExitAsync(cts.Token);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
         }
     }
 

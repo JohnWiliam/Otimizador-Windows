@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using System.Windows;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Properties;
@@ -110,7 +111,14 @@ public partial class SettingsViewModel : ObservableObject
 
     partial void OnIsPersistenceEnabledChanged(bool value)
     {
-        if (value) EnablePersistence(); else DisablePersistence();
+        if (value)
+        {
+            _ = EnablePersistenceAsync();
+        }
+        else
+        {
+            DisablePersistence();
+        }
     }
 
     partial void OnIsKeepInstalledEnabledChanged(bool value)
@@ -220,28 +228,56 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            string psScript = $@"
-                $WshShell = New-Object -comObject WScript.Shell;
-                $Shortcut = $WshShell.CreateShortcut('{shortcutPath}');
-                $Shortcut.TargetPath = '{targetPath}';
-                $Shortcut.Description = '{description}';
-                $Shortcut.WorkingDirectory = '{Path.GetDirectoryName(targetPath)}';
-                $Shortcut.Save()";
-
-            var psi = new ProcessStartInfo
+            var shortcutDirectory = Path.GetDirectoryName(shortcutPath);
+            if (!string.IsNullOrWhiteSpace(shortcutDirectory))
             {
-                FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript}\"",
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
+                Directory.CreateDirectory(shortcutDirectory);
+            }
 
-            using var process = Process.Start(psi);
-            process?.WaitForExit();
+            Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType == null)
+            {
+                throw new InvalidOperationException("WScript.Shell indisponível para criar atalhos.");
+            }
+
+            object? shell = null;
+            object? shortcut = null;
+            try
+            {
+                shell = Activator.CreateInstance(shellType);
+                if (shell == null)
+                {
+                    throw new InvalidOperationException("Não foi possível instanciar WScript.Shell.");
+                }
+
+                shortcut = shellType.InvokeMember("CreateShortcut", System.Reflection.BindingFlags.InvokeMethod, null, shell, [shortcutPath]);
+                if (shortcut == null)
+                {
+                    throw new InvalidOperationException("Não foi possível criar o objeto de atalho.");
+                }
+
+                var shortcutType = shortcut.GetType();
+                shortcutType.InvokeMember("TargetPath", System.Reflection.BindingFlags.SetProperty, null, shortcut, [targetPath]);
+                shortcutType.InvokeMember("Description", System.Reflection.BindingFlags.SetProperty, null, shortcut, [description]);
+                shortcutType.InvokeMember("WorkingDirectory", System.Reflection.BindingFlags.SetProperty, null, shortcut, [Path.GetDirectoryName(targetPath) ?? string.Empty]);
+                shortcutType.InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, shortcut, null);
+            }
+            finally
+            {
+                if (shortcut != null && Marshal.IsComObject(shortcut))
+                {
+                    Marshal.FinalReleaseComObject(shortcut);
+                }
+
+                if (shell != null && Marshal.IsComObject(shell))
+                {
+                    Marshal.FinalReleaseComObject(shell);
+                }
+            }
         }
         catch (Exception ex)
         {
-            Logger.Log($"Falha ao criar atalho via PowerShell: {ex.Message}", "ERROR");
+            Logger.Log($"Falha ao criar atalho via COM: {ex.Message}", "ERROR");
             throw;
         }
     }
@@ -334,7 +370,7 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private async void EnablePersistence()
+    private async Task EnablePersistenceAsync()
     {
         try
         {

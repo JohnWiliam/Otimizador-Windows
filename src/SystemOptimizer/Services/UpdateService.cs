@@ -11,11 +11,12 @@ using SystemOptimizer.Helpers;
 
 namespace SystemOptimizer.Services;
 
-public class UpdateService : IUpdateService
+public sealed class UpdateService : IUpdateService
 {
     private readonly HttpClient _httpClient;
     private const string RepoOwner = "johnwiliam";
     private const string RepoName = "otimizador-windows";
+    private static readonly string ExpectedReleasePathPrefix = $"/{RepoOwner}/{RepoName}/releases/download/";
 
     public UpdateService()
     {
@@ -61,6 +62,11 @@ public class UpdateService : IUpdateService
 
     public async Task DownloadAndInstallAsync(string downloadUrl, IProgress<double> progress)
     {
+        if (!IsTrustedReleaseDownloadUrl(downloadUrl))
+        {
+            throw new InvalidOperationException("URL de atualização não pertence aos releases oficiais do projeto.");
+        }
+
         string tempFilePath = Path.GetTempFileName();
         string newExePath = tempFilePath + ".exe";
 
@@ -73,7 +79,7 @@ public class UpdateService : IUpdateService
                 var totalBytes = response.Content.Headers.ContentLength ?? -1L;
                 
                 using (var stream = await response.Content.ReadAsStreamAsync())
-                using (var fileStream = new FileStream(newExePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var fileStream = new FileStream(newExePath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
                 {
                     var buffer = new byte[8192];
                     var totalRead = 0L;
@@ -92,8 +98,10 @@ public class UpdateService : IUpdateService
                 }
             }
 
+            ValidateDownloadedExecutable(newExePath);
+
             // 2. Substituição do Arquivo (Self-Update)
-            var currentProcess = Process.GetCurrentProcess();
+            using var currentProcess = Process.GetCurrentProcess();
             var currentExe = currentProcess.MainModule?.FileName;
 
             if (string.IsNullOrEmpty(currentExe)) throw new Exception("Não foi possível localizar o executável atual.");
@@ -114,7 +122,7 @@ public class UpdateService : IUpdateService
             File.Move(newExePath, currentExe);
 
             // 3. Reinicia a aplicação
-            Process.Start(currentExe);
+            Process.Start(new ProcessStartInfo(currentExe) { UseShellExecute = true });
             
             // Fecha a atual
             currentProcess.Kill();
@@ -124,8 +132,61 @@ public class UpdateService : IUpdateService
             Logger.Log($"Erro na instalação da atualização: {ex.Message}", "ERROR");
             
             // Limpeza em caso de erro
-            if (File.Exists(newExePath)) File.Delete(newExePath);
+            TryDeleteFile(newExePath);
             throw;
+        }
+        finally
+        {
+            TryDeleteFile(tempFilePath);
+        }
+    }
+
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+    }
+
+    private static bool IsTrustedReleaseDownloadUrl(string downloadUrl)
+    {
+        if (!Uri.TryCreate(downloadUrl, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        return uri.Scheme == Uri.UriSchemeHttps
+            && string.Equals(uri.Host, "github.com", StringComparison.OrdinalIgnoreCase)
+            && uri.AbsolutePath.StartsWith(ExpectedReleasePathPrefix, StringComparison.OrdinalIgnoreCase)
+            && uri.AbsolutePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void ValidateDownloadedExecutable(string path)
+    {
+        var info = new FileInfo(path);
+        if (!info.Exists || info.Length < 2)
+        {
+            throw new InvalidOperationException("Arquivo de atualização vazio ou inexistente.");
+        }
+
+        Span<byte> header = stackalloc byte[2];
+        using var file = File.OpenRead(path);
+        if (file.Read(header) != 2 || header[0] != (byte)'M' || header[1] != (byte)'Z')
+        {
+            throw new InvalidOperationException("Arquivo de atualização não parece ser um executável Windows válido.");
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(path) && File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch
+        {
+            // Ignora limpeza de temporários bloqueados.
         }
     }
 

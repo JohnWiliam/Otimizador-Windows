@@ -27,19 +27,19 @@ public class CleanupExecutionEngine
         switch (target.Strategy)
         {
             case CleanupExecutionStrategy.DeleteDirectoryContents:
-                CleanupDirectory(target.Path, result);
+                await Task.Run(() => CleanupDirectory(target.Path, result));
                 break;
             case CleanupExecutionStrategy.ExecuteCommand:
-                ExecuteCommand(target, result);
+                await ExecuteCommandAsync(target, result);
                 break;
             case CleanupExecutionStrategy.EmptyRecycleBin:
-                EmptyRecycleBin(result);
+                await Task.Run(() => EmptyRecycleBin(result));
                 break;
             case CleanupExecutionStrategy.CleanupWindowsUpdate:
                 await CleanupWindowsUpdateAsync(target.Path, result);
                 break;
             case CleanupExecutionStrategy.CleanupBrowserCache:
-                CleanupBrowserCache(result);
+                await Task.Run(() => CleanupBrowserCache(result));
                 break;
             default:
                 result.Failures++;
@@ -51,7 +51,7 @@ public class CleanupExecutionEngine
         return result;
     }
 
-    private static void ExecuteCommand(CleanupTarget target, CleanupResult result)
+    private static async Task ExecuteCommandAsync(CleanupTarget target, CleanupResult result)
     {
         try
         {
@@ -61,7 +61,7 @@ public class CleanupExecutionEngine
                 return;
             }
 
-            CommandHelper.RunCommand(target.Command, target.Arguments ?? string.Empty);
+            await CommandHelper.RunCommandDetailedAsync(target.Command, target.Arguments ?? string.Empty);
             result.ItemsRemoved = 1;
         }
         catch (Exception ex)
@@ -87,22 +87,30 @@ public class CleanupExecutionEngine
 
     private static void CleanupDirectory(string path, CleanupResult result)
     {
-        if (!Directory.Exists(path))
+        if (!IsSafeCleanupRoot(path))
         {
+            Logger.Log($"Caminho de limpeza rejeitado por segurança: '{path}'", "WARNING");
+            result.Failures++;
             return;
         }
 
         var dirInfo = new DirectoryInfo(path);
+        var enumerationOptions = new EnumerationOptions
+        {
+            RecurseSubdirectories = true,
+            IgnoreInaccessible = true,
+            AttributesToSkip = FileAttributes.ReparsePoint
+        };
 
         try
         {
-            foreach (var file in dirInfo.EnumerateFiles("*", SearchOption.AllDirectories))
+            foreach (var file in dirInfo.EnumerateFiles("*", enumerationOptions))
             {
                 try
                 {
                     long size = file.Length;
                     file.Delete();
-                    if (!file.Exists)
+                    if (!File.Exists(file.FullName))
                     {
                         result.BytesRemoved += size;
                         result.ItemsRemoved++;
@@ -125,7 +133,7 @@ public class CleanupExecutionEngine
         try
         {
             var directories = dirInfo
-                .EnumerateDirectories("*", SearchOption.AllDirectories)
+                .EnumerateDirectories("*", enumerationOptions)
                 .OrderByDescending(d => d.FullName.Length)
                 .ToList();
 
@@ -133,7 +141,13 @@ public class CleanupExecutionEngine
             {
                 try
                 {
-                    dir.Delete(true);
+                    if ((dir.Attributes & FileAttributes.ReparsePoint) != 0)
+                    {
+                        result.ItemsIgnored++;
+                        continue;
+                    }
+
+                    dir.Delete(false);
                     result.ItemsRemoved++;
                 }
                 catch (Exception ex)
@@ -148,6 +162,34 @@ public class CleanupExecutionEngine
         {
             result.Failures++;
             Logger.Log($"Erro ao enumerar diretórios em '{path}': {ex.Message}", "ERROR");
+        }
+    }
+
+    private static bool IsSafeCleanupRoot(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            string fullPath = Path.GetFullPath(path);
+            string root = Path.GetPathRoot(fullPath) ?? string.Empty;
+            if (string.Equals(fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                    root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var attributes = File.GetAttributes(fullPath);
+            return (attributes & FileAttributes.Directory) != 0
+                && (attributes & FileAttributes.ReparsePoint) == 0;
+        }
+        catch
+        {
+            return false;
         }
     }
 

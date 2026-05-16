@@ -23,6 +23,7 @@ public partial class App : Application
 {
     private readonly IHost _host;
     private bool _isSilentMode;
+    private bool _hostDisposed;
 
     public App()
     {
@@ -80,10 +81,24 @@ public partial class App : Application
         Thread.CurrentThread.CurrentUICulture = culture;
         SystemOptimizer.Properties.Resources.Culture = culture;
 
-        await _host.StartAsync();
-        await RunSilentModeAsync();
-        await _host.StopAsync();
-        _host.Dispose();
+        try
+        {
+            await _host.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao iniciar host: {ex}", "ERROR");
+            Shutdown(1);
+            return;
+        }
+        try
+        {
+            await RunSilentModeAsync();
+        }
+        finally
+        {
+            await StopAndDisposeHostAsync();
+        }
     }
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -98,7 +113,16 @@ public partial class App : Application
 
         this.DispatcherUnhandledException += OnDispatcherUnhandledException;
 
-        await _host.StartAsync();
+        try
+        {
+            await _host.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao iniciar host: {ex}", "ERROR");
+            Shutdown(1);
+            return;
+        }
 
         if (_isSilentMode)
         {
@@ -124,11 +148,32 @@ public partial class App : Application
         base.OnStartup(e);
     }
 
-    protected override async void OnExit(ExitEventArgs e)
+    protected override void OnExit(ExitEventArgs e)
     {
-        await _host.StopAsync();
-        _host.Dispose();
+        StopAndDisposeHostAsync().GetAwaiter().GetResult();
         base.OnExit(e);
+    }
+
+    private async Task StopAndDisposeHostAsync()
+    {
+        if (_hostDisposed)
+        {
+            return;
+        }
+
+        try
+        {
+            await _host.StopAsync(TimeSpan.FromSeconds(5));
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao parar host: {ex.Message}", "ERROR");
+        }
+        finally
+        {
+            _host.Dispose();
+            _hostDisposed = true;
+        }
     }
 
     private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)

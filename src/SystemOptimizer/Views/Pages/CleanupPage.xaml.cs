@@ -72,6 +72,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         Loaded += CleanupPage_Loaded;
+        Unloaded += CleanupPage_Unloaded;
     }
 
     public bool IsOptionsExpanded
@@ -479,6 +480,18 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4FC3F7"));
 
         return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E0E0E0"));
+    }
+
+    private void CleanupPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _viewModel.CleanupLogs.CollectionChanged -= CleanupLogs_CollectionChanged;
+        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        _cleanupCts?.Cancel();
+        _cleanupCts?.Dispose();
+        _cleanupCts = null;
+        _logRenderCts?.Cancel();
+        _logRenderCts?.Dispose();
+        _logRenderCts = null;
     }
 
     private void CleanupPage_Loaded(object sender, RoutedEventArgs e)

@@ -98,6 +98,11 @@ public partial class TweakViewModel : ObservableObject
                     StatusIcon = SymbolRegular.Edit24;
                     StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Laranja
                     break;
+                case TweakStatus.PendingReboot:
+                    StatusText = "Reinicialização pendente";
+                    StatusIcon = SymbolRegular.ArrowSync24;
+                    StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Laranja
+                    break;
                 default:
                     StatusText = Resources.Status_Unknown;
                     StatusIcon = SymbolRegular.QuestionCircle24;
