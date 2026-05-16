@@ -22,6 +22,7 @@ public abstract class TweakBase : ObservableObject, ITweak
     }
 
     public bool IsOptimized => Status == TweakStatus.Optimized;
+    public bool PendingReboot => Status == TweakStatus.PendingReboot;
 
     protected TweakBase(string id, TweakCategory category, string title, string description)
     {

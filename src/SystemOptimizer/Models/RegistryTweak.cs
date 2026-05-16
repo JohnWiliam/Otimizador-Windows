@@ -1,6 +1,5 @@
 using Microsoft.Win32;
 using System;
-using SystemOptimizer.Helpers;
 
 namespace SystemOptimizer.Models;
 
@@ -106,7 +105,7 @@ public class RegistryTweak : TweakBase
             }
             else
             {
-                if (val.ToString() == _optimizedValue.ToString())
+                if (RegistryValuesEqual(val, _optimizedValue))
                     Status = TweakStatus.Optimized;
                 else
                     Status = TweakStatus.Default;
@@ -116,5 +115,25 @@ public class RegistryTweak : TweakBase
         {
             Status = TweakStatus.Unknown;
         }
+    }
+
+    private static bool RegistryValuesEqual(object actual, object expected)
+    {
+        if (actual is int actualInt && expected is int expectedInt)
+        {
+            return actualInt == expectedInt;
+        }
+
+        if (actual is int actualDword && expected is uint expectedDword)
+        {
+            return unchecked((uint)actualDword) == expectedDword;
+        }
+
+        if (actual is string actualString && expected is string expectedString)
+        {
+            return string.Equals(actualString, expectedString, StringComparison.Ordinal);
+        }
+
+        return string.Equals(actual.ToString(), expected.ToString(), StringComparison.Ordinal);
     }
 }
