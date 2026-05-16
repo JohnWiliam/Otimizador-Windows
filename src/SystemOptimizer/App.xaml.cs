@@ -22,7 +22,9 @@ namespace SystemOptimizer;
 public partial class App : Application
 {
     private readonly IHost _host;
+    private readonly SemaphoreSlim _hostLifecycleLock = new(1, 1);
     private bool _isSilentMode;
+    private bool _hostStarted;
     private bool _hostDisposed;
 
     public App()
@@ -81,7 +83,7 @@ public partial class App : Application
         Thread.CurrentThread.CurrentUICulture = culture;
         SystemOptimizer.Properties.Resources.Culture = culture;
 
-        await _host.StartAsync();
+        await EnsureHostStartedAsync();
         try
         {
             await RunSilentModeAsync();
@@ -117,7 +119,7 @@ public partial class App : Application
 
         this.DispatcherUnhandledException += OnDispatcherUnhandledException;
 
-        await _host.StartAsync();
+        await EnsureHostStartedAsync();
 
         if (_isSilentMode)
         {
@@ -134,10 +136,10 @@ public partial class App : Application
         }
         else
         {
-            var startupTasks = _host.Services.GetRequiredService<StartupTasksService>();
-            startupTasks.Initialize(e.Args);
             var mainWindow = _host.Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
+            var startupTasks = _host.Services.GetRequiredService<StartupTasksService>();
+            startupTasks.Initialize(e.Args);
         }
 
         base.OnStartup(e);
@@ -149,23 +151,59 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    private async Task StopHostAsync()
+    private async Task EnsureHostStartedAsync()
     {
-        if (_hostDisposed) return;
-
+        await _hostLifecycleLock.WaitAsync();
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            await _host.StopAsync(cts.Token);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Erro ao parar host: {ex.Message}", "ERROR");
+            if (_hostDisposed)
+            {
+                throw new ObjectDisposedException(nameof(_host), "Host já foi finalizado.");
+            }
+
+            if (_hostStarted)
+            {
+                return;
+            }
+
+            await _host.StartAsync();
+            _hostStarted = true;
         }
         finally
         {
-            _host.Dispose();
-            _hostDisposed = true;
+            _hostLifecycleLock.Release();
+        }
+    }
+
+    private async Task StopHostAsync()
+    {
+        await _hostLifecycleLock.WaitAsync();
+        try
+        {
+            if (_hostDisposed) return;
+
+            try
+            {
+                if (_hostStarted)
+                {
+                    using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                    await _host.StopAsync(cts.Token);
+                    _hostStarted = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Erro ao parar host: {ex.Message}", "ERROR");
+            }
+            finally
+            {
+                _host.Dispose();
+                _hostDisposed = true;
+            }
+        }
+        finally
+        {
+            _hostLifecycleLock.Release();
         }
     }
 

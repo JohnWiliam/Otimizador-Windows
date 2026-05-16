@@ -195,7 +195,7 @@ public partial class SettingsViewModel : ObservableObject
                 if (!File.Exists(_targetExePath))
                 {
                     string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-                    if (!string.IsNullOrEmpty(currentExe)) File.Copy(currentExe, _targetExePath, true);
+                    if (!string.IsNullOrEmpty(currentExe)) PreparePersistenceBinary(currentExe);
                 }
                 CreateShortcut(_desktopShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
                 CreateShortcut(_startMenuShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
@@ -410,10 +410,15 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            File.Copy(currentExe, _targetExePath, true);
+            ValidateCopyPreconditions(currentExe, _targetExePath);
+            using (var source = new FileStream(currentExe, FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var destination = new FileStream(_targetExePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                source.CopyTo(destination);
+            }
             Logger.Log("PERSISTENCE_STEP=copy status=overwritten", "PERSISTENCE");
         }
-        catch (IOException ex) when (File.Exists(_targetExePath))
+        catch (IOException ex) when (File.Exists(_targetExePath) && IsFileLocked(_targetExePath))
         {
             string expectedPath = Path.Combine(_appDataPath, "SystemOptimizer.exe");
             bool hasExpectedPath = PathsAreEquivalent(_targetExePath, expectedPath);
@@ -431,6 +436,73 @@ public partial class SettingsViewModel : ObservableObject
             throw new IOException(
                 $"Binário de persistência bloqueado e não corresponde ao executável esperado. target='{_targetExePath}', current='{currentExe}'.",
                 ex);
+        }
+    }
+
+
+
+
+
+    private static bool IsFileLocked(string path)
+    {
+        try
+        {
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            return false;
+        }
+        catch (IOException)
+        {
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static void ValidateCopyPreconditions(string sourcePath, string destinationPath)
+    {
+        if (!File.Exists(sourcePath))
+        {
+            throw new FileNotFoundException("Executável de origem não encontrado.", sourcePath);
+        }
+
+        string? destinationDirectory = Path.GetDirectoryName(destinationPath);
+        if (string.IsNullOrWhiteSpace(destinationDirectory))
+        {
+            throw new InvalidOperationException("Diretório de destino inválido para cópia do executável.");
+        }
+
+        Directory.CreateDirectory(destinationDirectory);
+
+        var sourceInfo = new FileInfo(sourcePath);
+        var driveInfo = new DriveInfo(Path.GetPathRoot(destinationDirectory) ?? destinationDirectory);
+        if (driveInfo.AvailableFreeSpace < sourceInfo.Length)
+        {
+            throw new IOException($"Espaço insuficiente para copiar o executável. Necessário={sourceInfo.Length}, Disponível={driveInfo.AvailableFreeSpace}.");
+        }
+
+        try
+        {
+            string permissionProbe = Path.Combine(destinationDirectory, $".write-test-{Guid.NewGuid():N}.tmp");
+            File.WriteAllText(permissionProbe, string.Empty);
+            File.Delete(permissionProbe);
+        }
+        catch (Exception ex)
+        {
+            throw new UnauthorizedAccessException($"Sem permissão de escrita em '{destinationDirectory}'.", ex);
+        }
+
+        if (File.Exists(destinationPath))
+        {
+            try
+            {
+                using var destination = new FileStream(destinationPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException ex)
+            {
+                throw new IOException($"Arquivo de destino bloqueado: '{destinationPath}'.", ex);
+            }
         }
     }
 

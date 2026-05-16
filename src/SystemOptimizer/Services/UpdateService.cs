@@ -6,6 +6,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using SystemOptimizer.Helpers;
 
@@ -118,15 +120,8 @@ public sealed class UpdateService : IUpdateService, IDisposable
 
             if (string.IsNullOrEmpty(currentExe)) throw new Exception("Não foi possível localizar o executável atual.");
 
-            var updaterScriptPath = CreateUpdaterScript(currentExe, newExePath, currentProcess.Id);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                ArgumentList = { "/c", updaterScriptPath },
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = Path.GetDirectoryName(currentExe) ?? Environment.CurrentDirectory
-            });
+            var newExeHash = ComputeSha256(newExePath);
+            Process.Start(CreateUpdaterProcessStartInfo(currentExe, newExePath, currentProcess.Id, newExeHash));
 
             currentProcess.CloseMainWindow();
             Environment.Exit(0);
@@ -166,31 +161,55 @@ public sealed class UpdateService : IUpdateService, IDisposable
         }
     }
 
-    private static string CreateUpdaterScript(string currentExe, string newExePath, int currentProcessId)
+    private static ProcessStartInfo CreateUpdaterProcessStartInfo(string currentExe, string newExePath, int currentProcessId, string expectedSha256)
     {
-        string scriptPath = Path.Combine(Path.GetTempPath(), "SystemOptimizer", "Updates", $"apply-update-{Guid.NewGuid():N}.cmd");
+        string currentDirectory = Path.GetDirectoryName(currentExe) ?? Environment.CurrentDirectory;
         string oldExe = currentExe + ".old";
         string script = $"""
-@echo off
-setlocal
-set "CURRENT_EXE={currentExe}"
-set "NEW_EXE={newExePath}"
-set "OLD_EXE={oldExe}"
-timeout /t 2 /nobreak >nul
-:wait_process
-tasklist /fi "PID eq {currentProcessId}" | find "{currentProcessId}" >nul
-if not errorlevel 1 (
-  timeout /t 1 /nobreak >nul
-  goto wait_process
-)
-if exist "%OLD_EXE%" del /f /q "%OLD_EXE%"
-move /y "%CURRENT_EXE%" "%OLD_EXE%"
-move /y "%NEW_EXE%" "%CURRENT_EXE%"
-start "" "%CURRENT_EXE%"
-del /f /q "%~f0"
+$ErrorActionPreference = 'Stop'
+$currentExe = {ToPowerShellLiteral(currentExe)}
+$newExe = {ToPowerShellLiteral(newExePath)}
+$oldExe = {ToPowerShellLiteral(oldExe)}
+$expectedHash = {ToPowerShellLiteral(expectedSha256)}
+$currentProcessId = {currentProcessId}
+Start-Sleep -Seconds 2
+try {{ Wait-Process -Id $currentProcessId -Timeout 60 -ErrorAction SilentlyContinue }} catch {{ }}
+$actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $newExe).Hash
+if (-not [string]::Equals($actualHash, $expectedHash, [System.StringComparison]::OrdinalIgnoreCase)) {{
+    throw 'Arquivo de atualização foi alterado após a validação inicial.'
+}}
+if (Test-Path -LiteralPath $oldExe) {{ Remove-Item -LiteralPath $oldExe -Force }}
+Move-Item -LiteralPath $currentExe -Destination $oldExe -Force
+Move-Item -LiteralPath $newExe -Destination $currentExe -Force
+Start-Process -FilePath $currentExe -WorkingDirectory {ToPowerShellLiteral(currentDirectory)}
 """;
-        File.WriteAllText(scriptPath, script);
-        return scriptPath;
+
+        string encodedScript = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = currentDirectory
+        };
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-ExecutionPolicy");
+        startInfo.ArgumentList.Add("Bypass");
+        startInfo.ArgumentList.Add("-EncodedCommand");
+        startInfo.ArgumentList.Add(encodedScript);
+        return startInfo;
+    }
+
+    private static string ComputeSha256(string filePath)
+    {
+        using var stream = File.OpenRead(filePath);
+        byte[] hash = SHA256.HashData(stream);
+        return Convert.ToHexString(hash);
+    }
+
+    private static string ToPowerShellLiteral(string value)
+    {
+        return "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
     }
 
     private static void TryDelete(string path)

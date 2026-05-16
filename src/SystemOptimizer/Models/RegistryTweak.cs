@@ -5,6 +5,8 @@ namespace SystemOptimizer.Models;
 
 public class RegistryTweak : TweakBase
 {
+    public static readonly object DeleteValue = new DeleteRegistryValueMarker();
+
     private readonly string _keyPath;
     private readonly string _valueName;
     private readonly object _optimizedValue;
@@ -41,7 +43,7 @@ public class RegistryTweak : TweakBase
             using var baseKey = RegistryKey.OpenBaseKey(_hive, _view);
             using var key = baseKey.CreateSubKey(_keyPath, true);
 
-            if (_optimizedValue.ToString() == "DELETE")
+            if (IsDeleteMarker(_optimizedValue))
             {
                 key.DeleteValue(_valueName, false);
             }
@@ -67,7 +69,7 @@ public class RegistryTweak : TweakBase
             using var key = baseKey.OpenSubKey(_keyPath, true);
             if (key == null) return (true, "Já restaurado.");
 
-            if (_defaultValue == null || _defaultValue.ToString() == "DELETE")
+            if (_defaultValue == null || IsDeleteMarker(_defaultValue))
             {
                 key.DeleteValue(_valueName, false);
             }
@@ -94,14 +96,14 @@ public class RegistryTweak : TweakBase
 
             if (key == null)
             {
-                Status = (_optimizedValue.ToString() == "DELETE") ? TweakStatus.Optimized : TweakStatus.Default;
+                Status = IsDeleteMarker(_optimizedValue) ? TweakStatus.Optimized : TweakStatus.Default;
                 return;
             }
 
             var val = key.GetValue(_valueName);
             if (val == null)
             {
-                Status = (_optimizedValue.ToString() == "DELETE") ? TweakStatus.Optimized : TweakStatus.Default;
+                Status = IsDeleteMarker(_optimizedValue) ? TweakStatus.Optimized : TweakStatus.Default;
             }
             else
             {
@@ -136,4 +138,17 @@ public class RegistryTweak : TweakBase
 
         return string.Equals(actual.ToString(), expected.ToString(), StringComparison.Ordinal);
     }
+
+    private static bool IsDeleteMarker(object? value)
+    {
+        return ReferenceEquals(value, DeleteValue)
+            || value is DeleteRegistryValueMarker
+            || value is string legacy && string.Equals(legacy, "DELETE", StringComparison.Ordinal);
+    }
+
+    private sealed class DeleteRegistryValueMarker
+    {
+        public override string ToString() => nameof(DeleteValue);
+    }
+
 }

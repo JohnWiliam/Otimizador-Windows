@@ -8,6 +8,7 @@ using SystemOptimizer.Helpers;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
+using Microsoft.Win32.SafeHandles;
 using SystemOptimizer.Properties;
 
 namespace SystemOptimizer.Services;
@@ -34,7 +35,12 @@ public class TweakService
     {
         await Task.Run(() =>
         {
-            Parallel.ForEach(Tweaks, tweak =>
+            var options = new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Math.Max(1, Math.Min(Environment.ProcessorCount, 4))
+            };
+
+            Parallel.ForEach(Tweaks, options, tweak =>
             {
                 try { tweak.CheckStatus(); }
                 catch (Exception ex) { Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR"); }
@@ -108,9 +114,9 @@ public class TweakService
                 var user = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", null);
                 return policy is int i1 && i1 == 1 && user is int i2 && i2 == 0;
             }));
-        Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, Resources.P5_Title, Resources.P5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, Resources.P5_Title, Resources.P5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, RegistryTweak.DeleteValue));
         Tweaks.Add(new RegistryTweak("P6", TweakCategory.Privacy, Resources.P6_Title, Resources.P6_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338393Enabled", 0, 1));
-        Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, Resources.P7_Title, Resources.P7_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, "DELETE"));
+        Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, Resources.P7_Title, Resources.P7_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, RegistryTweak.DeleteValue));
     }
 
     private void AddPerformanceTweaks()
@@ -299,18 +305,22 @@ public class TweakService
         ));
 
         Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, Resources.N4_Title, Resources.N4_Desc,
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=disabled"); return true; },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
-            () => { var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLower(); return res.Contains("rss") && (res.Contains("disabled") || res.Contains("desabilitado")); }
+            () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=default"); return true; },
+            () =>
+            {
+                var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLowerInvariant();
+                return res.Contains("rss") && (res.Contains("enabled") || res.Contains("habilitado"));
+            }
         ));
 
-        Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, Resources.N5_Title, Resources.N5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, "DELETE"));
+        Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, Resources.N5_Title, Resources.N5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, RegistryTweak.DeleteValue));
     }
 
     private void AddSecurityTweaks()
     {
         Tweaks.Add(new RegistryTweak("S1", TweakCategory.Security, Resources.S1_Title, Resources.S1_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced", "HideFileExt", 0, 1));
-        Tweaks.Add(new RegistryTweak("S2", TweakCategory.Security, Resources.S2_Title, Resources.S2_Desc, @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDriveTypeAutoRun", 255, "DELETE"));
+        Tweaks.Add(new RegistryTweak("S2", TweakCategory.Security, Resources.S2_Title, Resources.S2_Desc, @"HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer", "NoDriveTypeAutoRun", 255, RegistryTweak.DeleteValue));
     }
 
     private void AddAppearanceTweaks()
@@ -352,8 +362,98 @@ public class TweakService
             () => { try { using var sc = new ServiceController("SysMain"); return sc.StartType == ServiceStartMode.Disabled; } catch { return false; } }
         ));
 
-        // SE2: Prefetch
-        Tweaks.Add(new RegistryTweak("SE2", TweakCategory.Tweaks, Resources.SE2_Title, Resources.SE2_Desc,
-            @"HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, 3));
+        // SE2: Prefetch - só desativa em SSD; em HDD mantém o padrão para não prejudicar boot/aplicações.
+        Tweaks.Add(new CustomTweak("SE2", TweakCategory.Tweaks, Resources.SE2_Title, Resources.SE2_Desc,
+            () =>
+            {
+                if (!IsSystemDriveSsd())
+                {
+                    Logger.Log("SE2 ignorado: unidade do sistema não parece ser SSD; Prefetch preservado.", "WARNING");
+                    return true;
+                }
+
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 0, RegistryValueKind.DWord);
+                return true;
+            },
+            () =>
+            {
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", 3, RegistryValueKind.DWord);
+                return true;
+            },
+            () =>
+            {
+                if (!IsSystemDriveSsd()) return false;
+                var value = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters", "EnablePrefetcher", null);
+                return value is int i && i == 0;
+            }
+        ));
     }
+
+    private static bool IsSystemDriveSsd()
+    {
+        try
+        {
+            string systemRoot = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows)) ?? @"C:\";
+            string volumePath = @"\\.\" + systemRoot.TrimEnd('\\');
+            using var driveRoot = CreateFile(volumePath, 0, FileShare.ReadWrite, IntPtr.Zero, FileMode.Open, 0, IntPtr.Zero);
+            if (driveRoot.IsInvalid)
+            {
+                Logger.Log("Não foi possível abrir a unidade do sistema para detectar SSD.", "WARNING");
+                return false;
+            }
+
+            var query = new StoragePropertyQuery
+            {
+                PropertyId = StorageDeviceSeekPenaltyProperty,
+                QueryType = PropertyStandardQuery
+            };
+
+            var descriptor = new DeviceSeekPenaltyDescriptor();
+            int bytesReturned;
+            bool ok = DeviceIoControl(
+                driveRoot,
+                IoctlStorageQueryProperty,
+                ref query,
+                System.Runtime.InteropServices.Marshal.SizeOf<StoragePropertyQuery>(),
+                ref descriptor,
+                System.Runtime.InteropServices.Marshal.SizeOf<DeviceSeekPenaltyDescriptor>(),
+                out bytesReturned,
+                IntPtr.Zero);
+
+            return ok && descriptor.IncursSeekPenalty == false;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao detectar tipo da unidade do sistema: {ex.Message}", "WARNING");
+            return false;
+        }
+    }
+
+    private const uint IoctlStorageQueryProperty = 0x002D1400;
+    private const int StorageDeviceSeekPenaltyProperty = 7;
+    private const int PropertyStandardQuery = 0;
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct StoragePropertyQuery
+    {
+        public int PropertyId;
+        public int QueryType;
+        public byte AdditionalParameters;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct DeviceSeekPenaltyDescriptor
+    {
+        public uint Version;
+        public uint Size;
+        [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        public bool IncursSeekPenalty;
+    }
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern SafeFileHandle CreateFile(string fileName, uint desiredAccess, FileShare shareMode, IntPtr securityAttributes, FileMode creationDisposition, uint flagsAndAttributes, IntPtr templateFile);
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool DeviceIoControl(SafeFileHandle device, uint ioControlCode, ref StoragePropertyQuery inBuffer, int inBufferSize, ref DeviceSeekPenaltyDescriptor outBuffer, int outBufferSize, out int bytesReturned, IntPtr overlapped);
+
 }
