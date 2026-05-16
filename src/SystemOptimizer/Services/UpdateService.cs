@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using SystemOptimizer.Helpers;
 
@@ -118,15 +119,8 @@ public sealed class UpdateService : IUpdateService, IDisposable
 
             if (string.IsNullOrEmpty(currentExe)) throw new Exception("Não foi possível localizar o executável atual.");
 
-            var updaterScriptPath = CreateUpdaterScript(currentExe, newExePath, currentProcess.Id);
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "cmd.exe",
-                ArgumentList = { "/c", updaterScriptPath },
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = Path.GetDirectoryName(currentExe) ?? Environment.CurrentDirectory
-            });
+            var updaterProcessInfo = CreateUpdaterProcessInfo(currentExe, newExePath, currentProcess.Id);
+            Process.Start(updaterProcessInfo);
 
             currentProcess.CloseMainWindow();
             Environment.Exit(0);
@@ -166,31 +160,48 @@ public sealed class UpdateService : IUpdateService, IDisposable
         }
     }
 
-    private static string CreateUpdaterScript(string currentExe, string newExePath, int currentProcessId)
+    private static ProcessStartInfo CreateUpdaterProcessInfo(string currentExe, string newExePath, int currentProcessId)
     {
-        string scriptPath = Path.Combine(Path.GetTempPath(), "SystemOptimizer", "Updates", $"apply-update-{Guid.NewGuid():N}.cmd");
+        string currentDirectory = Path.GetDirectoryName(currentExe) ?? Environment.CurrentDirectory;
         string oldExe = currentExe + ".old";
-        string script = $"""
-@echo off
-setlocal
-set "CURRENT_EXE={currentExe}"
-set "NEW_EXE={newExePath}"
-set "OLD_EXE={oldExe}"
-timeout /t 2 /nobreak >nul
-:wait_process
-tasklist /fi "PID eq {currentProcessId}" | find "{currentProcessId}" >nul
-if not errorlevel 1 (
-  timeout /t 1 /nobreak >nul
-  goto wait_process
-)
-if exist "%OLD_EXE%" del /f /q "%OLD_EXE%"
-move /y "%CURRENT_EXE%" "%OLD_EXE%"
-move /y "%NEW_EXE%" "%CURRENT_EXE%"
-start "" "%CURRENT_EXE%"
-del /f /q "%~f0"
+        string script = $$"""
+$ErrorActionPreference = 'Stop'
+Start-Sleep -Seconds 2
+try {
+    Wait-Process -Id {{currentProcessId}} -Timeout 60 -ErrorAction SilentlyContinue
+} catch { }
+$oldExe = {{ToPowerShellLiteral(oldExe)}}
+$currentExe = {{ToPowerShellLiteral(currentExe)}}
+$newExe = {{ToPowerShellLiteral(newExePath)}}
+if (Test-Path -LiteralPath $oldExe) {
+    Remove-Item -LiteralPath $oldExe -Force
+}
+Move-Item -LiteralPath $currentExe -Destination $oldExe -Force
+Move-Item -LiteralPath $newExe -Destination $currentExe -Force
+Start-Process -FilePath $currentExe -WorkingDirectory {{ToPowerShellLiteral(currentDirectory)}}
 """;
-        File.WriteAllText(scriptPath, script);
-        return scriptPath;
+
+        string encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+        return new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            ArgumentList =
+            {
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-EncodedCommand",
+                encodedCommand
+            },
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = currentDirectory
+        };
+    }
+
+    private static string ToPowerShellLiteral(string value)
+    {
+        return "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
     }
 
     private static void TryDelete(string path)

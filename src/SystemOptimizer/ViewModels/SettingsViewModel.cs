@@ -195,7 +195,7 @@ public partial class SettingsViewModel : ObservableObject
                 if (!File.Exists(_targetExePath))
                 {
                     string currentExe = Process.GetCurrentProcess().MainModule?.FileName ?? string.Empty;
-                    if (!string.IsNullOrEmpty(currentExe)) File.Copy(currentExe, _targetExePath, true);
+                    if (!string.IsNullOrEmpty(currentExe)) CopyExecutableSafely(currentExe, _targetExePath);
                 }
                 CreateShortcut(_desktopShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
                 CreateShortcut(_startMenuShortcutPath, _targetExePath, "Otimizador do Sistema Windows");
@@ -410,7 +410,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            File.Copy(currentExe, _targetExePath, true);
+            CopyExecutableSafely(currentExe, _targetExePath);
             Logger.Log("PERSISTENCE_STEP=copy status=overwritten", "PERSISTENCE");
         }
         catch (IOException ex) when (File.Exists(_targetExePath))
@@ -431,6 +431,79 @@ public partial class SettingsViewModel : ObservableObject
             throw new IOException(
                 $"Binário de persistência bloqueado e não corresponde ao executável esperado. target='{_targetExePath}', current='{currentExe}'.",
                 ex);
+        }
+    }
+
+    private static void CopyExecutableSafely(string sourcePath, string destinationPath)
+    {
+        if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+        {
+            throw new FileNotFoundException("Executável de origem não encontrado para cópia segura.", sourcePath);
+        }
+
+        string? destinationDirectory = Path.GetDirectoryName(destinationPath);
+        if (string.IsNullOrWhiteSpace(destinationDirectory))
+        {
+            throw new InvalidOperationException("Diretório de destino inválido para cópia do executável.");
+        }
+
+        Directory.CreateDirectory(destinationDirectory);
+        EnsureDestinationHasSpace(sourcePath, destinationDirectory);
+        EnsureFileIsReadable(sourcePath);
+        EnsureDestinationWritable(destinationPath);
+
+        string tempPath = Path.Combine(destinationDirectory, $"{Path.GetFileName(destinationPath)}.{Guid.NewGuid():N}.tmp");
+        try
+        {
+            File.Copy(sourcePath, tempPath, overwrite: false);
+            File.Move(tempPath, destinationPath, overwrite: true);
+        }
+        finally
+        {
+            TryDeleteFile(tempPath);
+        }
+    }
+
+    private static void EnsureDestinationHasSpace(string sourcePath, string destinationDirectory)
+    {
+        var sourceInfo = new FileInfo(sourcePath);
+        string root = Path.GetPathRoot(Path.GetFullPath(destinationDirectory))
+            ?? throw new InvalidOperationException("Não foi possível determinar o volume de destino.");
+        var driveInfo = new DriveInfo(root);
+        long requiredBytes = sourceInfo.Length + (1024 * 1024);
+        if (driveInfo.AvailableFreeSpace < requiredBytes)
+        {
+            throw new IOException($"Espaço insuficiente para copiar o executável. Necessário: {requiredBytes} bytes; disponível: {driveInfo.AvailableFreeSpace} bytes.");
+        }
+    }
+
+    private static void EnsureFileIsReadable(string sourcePath)
+    {
+        using var sourceStream = new FileStream(sourcePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+    }
+
+    private static void EnsureDestinationWritable(string destinationPath)
+    {
+        if (!File.Exists(destinationPath))
+        {
+            return;
+        }
+
+        using var destinationStream = new FileStream(destinationPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch
+        {
+            // Arquivo temporário bloqueado será limpo pelo sistema posteriormente.
         }
     }
 
