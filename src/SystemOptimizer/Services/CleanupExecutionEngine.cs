@@ -27,13 +27,13 @@ public class CleanupExecutionEngine
         switch (target.Strategy)
         {
             case CleanupExecutionStrategy.DeleteDirectoryContents:
-                CleanupDirectory(target.Path, result);
+                await Task.Run(() => CleanupDirectory(target.Path, result));
                 break;
             case CleanupExecutionStrategy.ExecuteCommand:
-                ExecuteCommand(target, result);
+                await Task.Run(() => ExecuteCommand(target, result));
                 break;
             case CleanupExecutionStrategy.EmptyRecycleBin:
-                EmptyRecycleBin(result);
+                await Task.Run(() => EmptyRecycleBin(result));
                 break;
             case CleanupExecutionStrategy.CleanupWindowsUpdate:
                 await CleanupWindowsUpdateAsync(target.Path, result);
@@ -102,11 +102,17 @@ public class CleanupExecutionEngine
                 {
                     long size = file.Length;
                     file.Delete();
-                    if (!file.Exists)
+                    file.Refresh();
+                    if (file.Exists)
                     {
-                        result.BytesRemoved += size;
-                        result.ItemsRemoved++;
+                        result.ItemsIgnored++;
+                        result.Failures++;
+                        Logger.Log($"Arquivo ainda existe após tentativa de remoção '{file.FullName}'.", "WARNING");
+                        continue;
                     }
+
+                    result.BytesRemoved += size;
+                    result.ItemsRemoved++;
                 }
                 catch (Exception ex)
                 {
@@ -134,6 +140,15 @@ public class CleanupExecutionEngine
                 try
                 {
                     dir.Delete(true);
+                    dir.Refresh();
+                    if (dir.Exists)
+                    {
+                        result.ItemsIgnored++;
+                        result.Failures++;
+                        Logger.Log($"Diretório ainda existe após tentativa de remoção '{dir.FullName}'.", "WARNING");
+                        continue;
+                    }
+
                     result.ItemsRemoved++;
                 }
                 catch (Exception ex)

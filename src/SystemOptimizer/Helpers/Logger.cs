@@ -1,47 +1,70 @@
 using System;
 using System.IO;
+using System.Text;
 
 namespace SystemOptimizer.Helpers;
 
 public static class Logger
 {
-    // Define o caminho fixo: C:\ProgramData\SystemOptimizer\system_optimizer_log.txt
-    private static readonly string LogFolder = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), 
-        "SystemOptimizer");
-    
-    private static readonly string LogFile = Path.Combine(LogFolder, "system_optimizer_log.txt");
+    private const long MaxLogBytes = 1024 * 1024;
+    private const long TrimmedLogBytes = 512 * 1024;
+    private static readonly object LockObj = new();
 
-    // Construtor estático para garantir que a pasta existe antes de qualquer log
-    static Logger()
+    private static readonly string LogFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "SystemOptimizer",
+        "app.log");
+
+    public static void Log(string message, string level = "INFO")
     {
         try
         {
-            if (!Directory.Exists(LogFolder))
+            lock (LockObj)
             {
-                Directory.CreateDirectory(LogFolder);
+                var dir = Path.GetDirectoryName(LogFilePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                RotateIfNeeded();
+                File.AppendAllText(LogFilePath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level}] {message}{Environment.NewLine}", Encoding.UTF8);
             }
         }
         catch
         {
-            // Se falhar ao criar a pasta (ex: falta de permissão), 
-            // falharemos silenciosamente para não travar o app no início.
+            // Logging nunca deve derrubar o app.
         }
     }
 
-    public static void Log(string message, string type = "INFO")
+    private static void RotateIfNeeded()
     {
+        var file = new FileInfo(LogFilePath);
+        if (!file.Exists || file.Length < MaxLogBytes)
+        {
+            return;
+        }
+
+        string archivePath = LogFilePath + ".1";
         try
         {
-            string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            string logEntry = $"[{timestamp}] [{type}] {message}{Environment.NewLine}";
+            if (File.Exists(archivePath)) File.Delete(archivePath);
 
-            // Adiciona o texto ao final do arquivo (Append)
-            File.AppendAllText(LogFile, logEntry);
+            if (file.Length <= TrimmedLogBytes)
+            {
+                File.Move(LogFilePath, archivePath);
+                return;
+            }
+
+            using var input = new FileStream(LogFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            input.Seek(-TrimmedLogBytes, SeekOrigin.End);
+            using var archive = new FileStream(archivePath, FileMode.CreateNew, FileAccess.Write, FileShare.None);
+            input.CopyTo(archive);
+            File.WriteAllText(LogFilePath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [INFO] Log rotacionado; últimas entradas preservadas em app.log.1{Environment.NewLine}", Encoding.UTF8);
         }
         catch
         {
-            // Ignora erros de gravação de log (ex: arquivo em uso)
+            File.WriteAllText(LogFilePath, string.Empty, Encoding.UTF8);
         }
     }
 }

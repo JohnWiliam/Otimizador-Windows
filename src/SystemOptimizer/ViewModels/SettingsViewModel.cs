@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using SystemOptimizer.Helpers;
@@ -221,29 +222,43 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             string psScript = $@"
-                $WshShell = New-Object -comObject WScript.Shell;
-                $Shortcut = $WshShell.CreateShortcut('{shortcutPath}');
-                $Shortcut.TargetPath = '{targetPath}';
-                $Shortcut.Description = '{description}';
-                $Shortcut.WorkingDirectory = '{Path.GetDirectoryName(targetPath)}';
+                $ErrorActionPreference = 'Stop'
+                $WshShell = New-Object -ComObject WScript.Shell
+                $Shortcut = $WshShell.CreateShortcut({ToPowerShellLiteral(shortcutPath)})
+                $Shortcut.TargetPath = {ToPowerShellLiteral(targetPath)}
+                $Shortcut.Description = {ToPowerShellLiteral(description)}
+                $Shortcut.WorkingDirectory = {ToPowerShellLiteral(Path.GetDirectoryName(targetPath) ?? string.Empty)}
                 $Shortcut.Save()";
 
             var psi = new ProcessStartInfo
             {
                 FileName = "powershell.exe",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{psScript}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+            psi.ArgumentList.Add("-NoProfile");
+            psi.ArgumentList.Add("-ExecutionPolicy");
+            psi.ArgumentList.Add("Bypass");
+            psi.ArgumentList.Add("-EncodedCommand");
+            psi.ArgumentList.Add(Convert.ToBase64String(Encoding.Unicode.GetBytes(psScript)));
 
             using var process = Process.Start(psi);
             process?.WaitForExit();
+            if (process?.ExitCode != 0)
+            {
+                throw new InvalidOperationException($"PowerShell retornou ExitCode={process?.ExitCode} ao criar atalho.");
+            }
         }
         catch (Exception ex)
         {
             Logger.Log($"Falha ao criar atalho via PowerShell: {ex.Message}", "ERROR");
             throw;
         }
+    }
+
+    private static string ToPowerShellLiteral(string value)
+    {
+        return "'" + value.Replace("'", "''") + "'";
     }
 
     private void CheckPersistenceStatus()
@@ -263,8 +278,9 @@ public partial class SettingsViewModel : ObservableObject
             Write-Output ('RUNLEVEL=' + $runLevel)
         ";
 
-        var escapedScript = script.Replace("\"", "\\\"").Replace("\r", " ").Replace("\n", "; ");
-        var res = CommandHelper.RunCommand("powershell.exe", $"-NoProfile -Command \"{escapedScript}\"");
+        var res = CommandHelper.RunCommand(
+            "powershell.exe",
+            ["-NoProfile", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script))]);
 
         if (string.IsNullOrWhiteSpace(res) ||
             res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) ||
@@ -358,8 +374,8 @@ public partial class SettingsViewModel : ObservableObject
 
             // (d) Criar/atualizar tarefa (etapa final obrigatória)
             Logger.Log($"PERSISTENCE_STEP=task_create task='{TaskName}'", "PERSISTENCE");
-            string cmd = $"/create /tn \"{TaskName}\" /tr \"\\\"{_targetExePath}\\\" --silent\" /sc onlogon /rl HIGHEST /f";
-            var result = CommandHelper.RunCommandDetailed("schtasks", cmd);
+            string taskRun = $"\"{_targetExePath}\" --silent";
+            var result = CommandHelper.RunCommandDetailed("schtasks", ["/create", "/tn", TaskName, "/tr", taskRun, "/sc", "onlogon", "/rl", "HIGHEST", "/f"]);
 
             Logger.Log($"PERSISTENCE_STEP=task_create result Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
 
@@ -415,7 +431,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            var result = CommandHelper.RunCommandDetailed("schtasks", $"/delete /tn \"{TaskName}\" /f");
+            var result = CommandHelper.RunCommandDetailed("schtasks", ["/delete", "/tn", TaskName, "/f"]);
             Logger.Log($"Resultado schtasks/delete -> Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
             Logger.Log("Persistência desativada.");
         }

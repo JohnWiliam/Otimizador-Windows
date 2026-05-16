@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SystemOptimizer.Helpers;
@@ -14,8 +16,34 @@ public static class CommandHelper
 
     public static string RunCommand(string fileName, string arguments, int timeoutMs = 5000)
     {
-        var result = RunCommandDetailed(fileName, arguments, timeoutMs);
+        return FormatOutput(RunCommandDetailed(fileName, arguments, timeoutMs));
+    }
 
+    public static string RunCommand(string fileName, IReadOnlyList<string> arguments, int timeoutMs = 5000)
+    {
+        return FormatOutput(RunCommandDetailed(fileName, arguments, timeoutMs));
+    }
+
+    public static CommandResult RunCommandDetailed(string fileName, string arguments, int timeoutMs = 5000)
+    {
+        var psi = CreateStartInfo(fileName);
+        psi.Arguments = arguments;
+        return RunProcess(psi, timeoutMs, $"{fileName} {arguments}");
+    }
+
+    public static CommandResult RunCommandDetailed(string fileName, IReadOnlyList<string> arguments, int timeoutMs = 5000)
+    {
+        var psi = CreateStartInfo(fileName);
+        foreach (string argument in arguments)
+        {
+            psi.ArgumentList.Add(argument);
+        }
+
+        return RunProcess(psi, timeoutMs, $"{fileName} {string.Join(' ', arguments)}");
+    }
+
+    private static string FormatOutput(CommandResult result)
+    {
         if (!result.Started)
         {
             return string.Empty;
@@ -40,69 +68,75 @@ public static class CommandHelper
         return result.StdOut;
     }
 
-    public static CommandResult RunCommandDetailed(string fileName, string arguments, int timeoutMs = 5000)
+    private static ProcessStartInfo CreateStartInfo(string fileName)
     {
-        Logger.Log($"Executing command: {fileName} {arguments}", "CMD_START");
+        return new ProcessStartInfo
+        {
+            FileName = fileName,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            StandardOutputEncoding = Encoding.UTF8,
+            StandardErrorEncoding = Encoding.UTF8
+        };
+    }
+
+    private static CommandResult RunProcess(ProcessStartInfo psi, int timeoutMs, string displayCommand)
+    {
+        Logger.Log($"Executing command: {displayCommand}", "CMD_START");
         try
         {
-            var psi = new ProcessStartInfo
-            {
-                FileName = fileName,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                // Garante que caracteres especiais (acentos) sejam lidos corretamente
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8
-            };
-
             using var process = Process.Start(psi);
             if (process == null)
             {
-                Logger.Log($"Failed to start process: {fileName}", "CMD_ERROR");
+                Logger.Log($"Failed to start process: {psi.FileName}", "CMD_ERROR");
                 return new CommandResult(false, false, null, string.Empty, string.Empty);
             }
 
-            // Leitura assíncrona para evitar Deadlocks
-            var outputTask = process.StandardOutput.ReadToEndAsync();
-            var errorTask = process.StandardError.ReadToEndAsync();
-
-            // Aguarda a saída do processo com timeout
-            if (!process.WaitForExit(timeoutMs))
+            using var cts = new CancellationTokenSource(timeoutMs);
+            try
             {
-                Logger.Log($"Command timed out ({timeoutMs}ms): {fileName} {arguments}", "CMD_TIMEOUT");
-                try
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync(cts.Token);
+                Task<string> errorTask = process.StandardError.ReadToEndAsync(cts.Token);
+                process.WaitForExitAsync(cts.Token).GetAwaiter().GetResult();
+
+                string output = outputTask.GetAwaiter().GetResult();
+                string error = errorTask.GetAwaiter().GetResult();
+
+                Logger.Log($"Command finished. ExitCode: {process.ExitCode}. OutputLen: {output.Length}. ErrorLen: {error.Length}", "CMD_END");
+                if (!string.IsNullOrWhiteSpace(error))
                 {
-                    process.Kill();
+                    Logger.Log($"Command stderr: {error}", "CMD_STDERR");
                 }
-                catch (Exception kEx)
-                {
-                    Logger.Log($"Failed to kill timed out process: {kEx.Message}", "CMD_ERROR");
-                }
-                string timeoutStdOut = outputTask.IsCompletedSuccessfully ? outputTask.Result : string.Empty;
-                string timeoutStdErr = errorTask.IsCompletedSuccessfully ? errorTask.Result : string.Empty;
-                return new CommandResult(true, true, null, timeoutStdOut, timeoutStdErr);
+                return new CommandResult(true, false, process.ExitCode, output, error);
             }
-
-            // Se o processo terminou, aguardamos as tarefas de leitura terminarem
-            Task.WaitAll(outputTask, errorTask);
-
-            string output = outputTask.Result;
-            string error = errorTask.Result;
-
-            Logger.Log($"Command finished. ExitCode: {process.ExitCode}. OutputLen: {output.Length}. ErrorLen: {error.Length}", "CMD_END");
-            if (!string.IsNullOrWhiteSpace(error))
+            catch (OperationCanceledException)
             {
-                Logger.Log($"Command stderr: {error}", "CMD_STDERR");
+                Logger.Log($"Command timed out ({timeoutMs}ms): {displayCommand}", "CMD_TIMEOUT");
+                TryKillProcess(process);
+                return new CommandResult(true, true, null, string.Empty, string.Empty);
             }
-            return new CommandResult(true, false, process.ExitCode, output, error);
         }
         catch (Exception ex)
         {
-            Logger.Log($"Exception running command {fileName}: {ex.Message}", "CMD_EXCEPTION");
+            Logger.Log($"Exception running command {psi.FileName}: {ex.Message}", "CMD_EXCEPTION");
             return new CommandResult(false, false, null, string.Empty, ex.Message);
+        }
+    }
+
+    private static void TryKillProcess(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Failed to kill timed out process: {ex.Message}", "CMD_ERROR");
         }
     }
 

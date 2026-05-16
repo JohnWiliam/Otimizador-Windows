@@ -44,10 +44,56 @@ public class TweakService
 
     private void AddPrivacyTweaks()
     {
-         Tweaks.Add(new RegistryTweak("P1", TweakCategory.Privacy, Resources.P1_Title, Resources.P1_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", 0, "DELETE"));
+         Tweaks.Add(new CustomTweak("P1", TweakCategory.Privacy, Resources.P1_Title, Resources.P1_Desc + " Observação: no Windows Home a telemetria mínima pode permanecer em nível Security; também limita a coleta de logs diagnósticos.",
+            () => {
+                using var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection", true);
+                key.SetValue("AllowTelemetry", 0, RegistryValueKind.DWord);
+                key.SetValue("LimitDiagnosticLogCollection", 1, RegistryValueKind.DWord);
+                return true;
+            },
+            () => {
+                using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DataCollection", true);
+                key?.DeleteValue("AllowTelemetry", false);
+                key?.DeleteValue("LimitDiagnosticLogCollection", false);
+                return true;
+            },
+            () => {
+                var telemetry = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "AllowTelemetry", null);
+                var limitLogs = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DataCollection", "LimitDiagnosticLogCollection", null);
+                return telemetry is int t && t == 0 && limitLogs is int l && l == 1;
+            }));
         Tweaks.Add(new RegistryTweak("P2", TweakCategory.Privacy, Resources.P2_Title, Resources.P2_Desc, @"HKLM\SYSTEM\CurrentControlSet\Services\DiagTrack", "Start", 4, 2));
-        Tweaks.Add(new RegistryTweak("P3", TweakCategory.Privacy, Resources.P3_Title, Resources.P3_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0, "DELETE"));
-        Tweaks.Add(new RegistryTweak("P4", TweakCategory.Privacy, Resources.P4_Title, Resources.P4_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, "DELETE"));
+        Tweaks.Add(new CustomTweak("P3", TweakCategory.Privacy, Resources.P3_Title, Resources.P3_Desc + " Observação: Cortana foi removida em builds recentes do Windows 11; nesses sistemas o tweak é tratado como já obsoleto.",
+            () => {
+                if (Environment.OSVersion.Version.Build >= 25967) return true;
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", 0, RegistryValueKind.DWord);
+                return true;
+            },
+            () => {
+                try { using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\Windows Search", true); key?.DeleteValue("AllowCortana", false); } catch { }
+                return true;
+            },
+            () => {
+                if (Environment.OSVersion.Version.Build >= 25967) return true;
+                var value = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Windows Search", "AllowCortana", null);
+                return value is int i && i == 0;
+            }));
+        Tweaks.Add(new CustomTweak("P4", TweakCategory.Privacy, Resources.P4_Title, Resources.P4_Desc,
+            () => {
+                Registry.SetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", 1, RegistryValueKind.DWord);
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 0, RegistryValueKind.DWord);
+                return true;
+            },
+            () => {
+                try { using var machineKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", true); machineKey?.DeleteValue("DisabledByGroupPolicy", false); } catch { }
+                Registry.SetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", 1, RegistryValueKind.DWord);
+                return true;
+            },
+            () => {
+                var policy = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo", "DisabledByGroupPolicy", null);
+                var user = Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo", "Enabled", null);
+                return policy is int p && p == 1 && user is int u && u == 0;
+            }));
         Tweaks.Add(new RegistryTweak("P5", TweakCategory.Privacy, Resources.P5_Title, Resources.P5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\LocationAndSensors", "DisableLocation", 1, "DELETE"));
         Tweaks.Add(new RegistryTweak("P6", TweakCategory.Privacy, Resources.P6_Title, Resources.P6_Desc, @"HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager", "SubscribedContent-338393Enabled", 0, 1));
         Tweaks.Add(new RegistryTweak("P7", TweakCategory.Privacy, Resources.P7_Title, Resources.P7_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\OOBE", "DisablePrivacyExperience", 1, "DELETE"));
@@ -89,7 +135,9 @@ public class TweakService
             () => {
                 var v1 = Registry.GetValue(@"HKEY_CURRENT_USER\System\GameConfigStore", "GameDVR_Enabled", null);
                 var v2 = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR", "AllowGameDVR", null);
-                return (v1 is int i1 && i1 == 0) && (v2 is int i2 && i2 == 0);
+                bool userDisabled = v1 is int i1 && i1 == 0;
+                bool policyDisabled = v2 is int i2 && i2 == 0;
+                return policyDisabled || (userDisabled && v2 is null);
             }
         ));
 
@@ -116,10 +164,10 @@ public class TweakService
             }
         ));
 
-        Tweaks.Add(new RegistryTweak("PF5", TweakCategory.Performance, Resources.PF5_Title, Resources.PF5_Desc,
+        Tweaks.Add(new RegistryTweak("PF5", TweakCategory.Performance, Resources.PF5_Title, Resources.PF5_Desc + " Observação: prioriza programas em primeiro plano e pode prejudicar workloads/serviços em background.",
             @"HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl", "Win32PrioritySeparation", 38, 2));
         Tweaks.Add(new RegistryTweak("PF6", TweakCategory.Performance, Resources.PF6_Title, Resources.PF6_Desc,
-            @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", "NetworkThrottlingIndex", -1, 10));
+            @"HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile", "NetworkThrottlingIndex", unchecked((int)0xFFFFFFFF), 10, RegistryValueKind.DWord));
         Tweaks.Add(new RegistryTweak("PF7", TweakCategory.Performance, Resources.PF7_Title, Resources.PF7_Desc,
             @"HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers", "HwSchMode", 2, 1));
 
@@ -135,6 +183,7 @@ public class TweakService
                 using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true))
                 {
                     key.SetValue("Enabled", 0, RegistryValueKind.DWord);
+                    key.SetValue("HypervisorEnforcedCodeIntegrity", 0, RegistryValueKind.DWord);
                 }
 
                 using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", true))
@@ -156,6 +205,7 @@ public class TweakService
                 using (var key = Registry.LocalMachine.CreateSubKey(@"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", true))
                 {
                     key.SetValue("Enabled", 1, RegistryValueKind.DWord);
+                    key.SetValue("HypervisorEnforcedCodeIntegrity", 1, RegistryValueKind.DWord);
                 }
 
                 using (var key = Registry.LocalMachine.CreateSubKey(@"SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", true))
@@ -171,15 +221,18 @@ public class TweakService
                 var systemVbs = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard", "EnableVirtualizationBasedSecurity", -1);
                 var systemPlatform = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard", "RequirePlatformSecurityFeatures", -1);
                 var hvci = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "Enabled", -1);
+                var scenarioHvci = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity", "HypervisorEnforcedCodeIntegrity", -1);
                 var policyVbs = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", "EnableVirtualizationBasedSecurity", -1);
                 var policyHvci = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard", "HypervisorEnforcedCodeIntegrity", -1);
 
                 return (systemVbs is int i1 && i1 == 0)
                     && (systemPlatform is int i2 && i2 == 0)
                     && (hvci is int i3 && i3 == 0)
-                    && (policyVbs is int i4 && i4 == 0)
-                    && (policyHvci is int i5 && i5 == 0);
-            }
+                    && (scenarioHvci is int i4 && i4 == 0)
+                    && (policyVbs is int i5 && i5 == 0)
+                    && (policyHvci is int i6 && i6 == 0);
+            },
+            TweakStatus.PendingReboot
         ));
 
         Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, Resources.PF9_Title, Resources.PF9_Desc,
@@ -222,13 +275,16 @@ public class TweakService
             }
         ));
 
-        Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, Resources.N3_Title, Resources.N3_Desc,
+        Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, Resources.N3_Title, Resources.N3_Desc + " Aviso: ECN pode causar incompatibilidade em algumas redes residenciais, jogos e serviços online; use apenas se sua rede/roteador oferecer suporte adequado.",
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
             () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("netsh", "int tcp show global");
-                return res.Contains("enabled") || res.Contains("habilitado");
+                var lines = CommandHelper.RunCommand("netsh", "int tcp show global")
+                    .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+                return lines.Any(line => line.Contains("ECN", StringComparison.OrdinalIgnoreCase)
+                    && (line.Contains("enabled", StringComparison.OrdinalIgnoreCase)
+                        || line.Contains("habilitado", StringComparison.OrdinalIgnoreCase)));
             }
         ));
 

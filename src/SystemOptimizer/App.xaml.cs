@@ -13,9 +13,6 @@ using SystemOptimizer.Views.Pages;
 using SystemOptimizer.Properties;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions; 
-using System.Net.Http;
-using CommunityToolkit.WinUI.Notifications;
-using SystemOptimizer.Models;
 
 namespace SystemOptimizer;
 
@@ -23,6 +20,7 @@ public partial class App : Application
 {
     private readonly IHost _host;
     private bool _isSilentMode;
+    private bool _hostDisposed;
 
     public App()
     {
@@ -81,9 +79,14 @@ public partial class App : Application
         SystemOptimizer.Properties.Resources.Culture = culture;
 
         await _host.StartAsync();
-        await RunSilentModeAsync();
-        await _host.StopAsync();
-        _host.Dispose();
+        try
+        {
+            await RunSilentModeAsync();
+        }
+        finally
+        {
+            await StopHostAsync();
+        }
     }
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -98,27 +101,35 @@ public partial class App : Application
 
         this.DispatcherUnhandledException += OnDispatcherUnhandledException;
 
-        await _host.StartAsync();
-
-        if (_isSilentMode)
+        try
         {
-            try
+            await _host.StartAsync();
+
+            if (_isSilentMode)
             {
-                await RunSilentModeAsync();
-                Shutdown();
+                try
+                {
+                    await RunSilentModeAsync();
+                    Shutdown();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Falha ao iniciar modo silencioso: {ex}", "ERROR");
+                    Shutdown(1);
+                }
             }
-            catch (Exception ex)
+            else
             {
-                Logger.Log($"Falha ao iniciar modo silencioso: {ex}", "ERROR");
-                Shutdown(1);
+                var startupTasks = _host.Services.GetRequiredService<StartupTasksService>();
+                startupTasks.Initialize(e.Args);
+                var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+                mainWindow.Show();
             }
         }
-        else
+        catch (Exception ex)
         {
-            var startupTasks = _host.Services.GetRequiredService<StartupTasksService>();
-            startupTasks.Initialize(e.Args);
-            var mainWindow = _host.Services.GetRequiredService<MainWindow>();
-            mainWindow.Show();
+            Logger.Log($"Falha no startup: {ex}", "ERROR");
+            Shutdown(1);
         }
 
         base.OnStartup(e);
@@ -126,9 +137,34 @@ public partial class App : Application
 
     protected override async void OnExit(ExitEventArgs e)
     {
-        await _host.StopAsync();
-        _host.Dispose();
-        base.OnExit(e);
+        try
+        {
+            await StopHostAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao parar host: {ex}", "ERROR");
+        }
+        finally
+        {
+            base.OnExit(e);
+        }
+    }
+
+    private async Task StopHostAsync()
+    {
+        if (_hostDisposed) return;
+
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            await _host.StopAsync(cts.Token);
+        }
+        finally
+        {
+            _host.Dispose();
+            _hostDisposed = true;
+        }
     }
 
     private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)

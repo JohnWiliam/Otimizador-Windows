@@ -9,12 +9,14 @@ public class CustomTweak(
     string description,
     Func<bool> apply,
     Func<bool> revert,
-    Func<bool> check)
+    Func<bool> check,
+    TweakStatus? statusAfterApply = null)
     : TweakBase(id, category, title, description)
 {
     private readonly Func<bool> _applyAction = apply;
     private readonly Func<bool> _revertAction = revert;
     private readonly Func<bool> _checkAction = check;
+    private readonly TweakStatus? _statusAfterApply = statusAfterApply;
 
     public override (bool Success, string Message) Apply()
     {
@@ -22,6 +24,14 @@ public class CustomTweak(
         {
             bool res = _applyAction();
             if (!res) return (false, "Ação retornou falha.");
+
+            if (_statusAfterApply.HasValue)
+            {
+                Status = _statusAfterApply.Value;
+                return (true, Status == TweakStatus.PendingReboot
+                    ? "Tweak aplicado. Reinicie o Windows para confirmar o status final."
+                    : "Tweak aplicado com sucesso.");
+            }
 
             CheckStatus();
             if (IsOptimized) return (true, "Tweak aplicado com sucesso.");
