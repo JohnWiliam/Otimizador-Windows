@@ -12,16 +12,18 @@ using System.Diagnostics;
 using System.Threading;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Properties;
+using System.Windows.Threading;
 using Wpf.Ui;
 using Wpf.Ui.Appearance;
 
 namespace SystemOptimizer.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly TweakService _tweakService;
     private readonly CleanupService _cleanupService;
     private readonly IDialogService _dialogService;
+    private IReadOnlyList<TweakViewModel> _allTweakViewModels = [];
 
     [ObservableProperty]
     private string _applicationTitle = Resources.App_Title;
@@ -57,20 +59,31 @@ public partial class MainViewModel : ObservableObject
         _cleanupService = cleanupService;
         _dialogService = dialogService;
 
-        _cleanupService.OnLogItem += (item) =>
-        {
-            Application.Current.Dispatcher.Invoke(() => CleanupLogs.Add(item));
-        };
+        _cleanupService.OnLogItem += HandleCleanupLogItem;
+        _cleanupService.OnProgress += HandleCleanupProgress;
+    }
 
-        _cleanupService.OnProgress += (progress) =>
+    private void HandleCleanupLogItem(CleanupLogItem item)
+    {
+        Application.Current.Dispatcher.InvokeAsync(
+            () => CleanupLogs.Add(item),
+            DispatcherPriority.Background);
+    }
+
+    private void HandleCleanupProgress(CleanupProgressInfo progress)
+    {
+        Application.Current.Dispatcher.InvokeAsync(() =>
         {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                CleanupProgressPercentage = progress.Percentage;
-                CleanupProgressCategory = progress.CurrentCategory;
-                CleanupProcessedItems = progress.ProcessedItems;
-            });
-        };
+            CleanupProgressPercentage = progress.Percentage;
+            CleanupProgressCategory = progress.CurrentCategory;
+            CleanupProcessedItems = progress.ProcessedItems;
+        }, DispatcherPriority.Background);
+    }
+
+    public void Dispose()
+    {
+        _cleanupService.OnLogItem -= HandleCleanupLogItem;
+        _cleanupService.OnProgress -= HandleCleanupProgress;
     }
 
     public Task<IReadOnlyList<CleanupCategoryResult>> RunCleanupScanAsync(CleanupOptions options, CancellationToken cancellationToken)
@@ -100,10 +113,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private IEnumerable<TweakViewModel> GetAllTweakViewModels()
-    {
-        return [..PrivacyTweaks, ..PerformanceTweaks, ..NetworkTweaks, ..SecurityTweaks, ..AppearanceTweaks, ..SearchTweaks, ..TweaksPageItems];
-    }
+    private IReadOnlyList<TweakViewModel> GetAllTweakViewModels() => _allTweakViewModels;
 
     private void PopulateCategories()
     {
@@ -115,9 +125,11 @@ public partial class MainViewModel : ObservableObject
         SearchTweaks.Clear();
         TweaksPageItems.Clear();
 
+        var allTweaks = new List<TweakViewModel>(_tweakService.Tweaks.Count);
         foreach (var tweak in _tweakService.Tweaks)
         {
             var vm = new TweakViewModel(tweak);
+            allTweaks.Add(vm);
             switch (tweak.Category)
             {
                 case TweakCategory.Privacy: PrivacyTweaks.Add(vm); break;
@@ -129,6 +141,8 @@ public partial class MainViewModel : ObservableObject
                 case TweakCategory.Tweaks: TweaksPageItems.Add(vm); break;
             }
         }
+
+        _allTweakViewModels = allTweaks;
     }
 
     private bool IsRebootRequired(string tweakId)
@@ -190,7 +204,7 @@ public partial class MainViewModel : ObservableObject
         if (IsBusy) return;
         var vm = GetAllTweakViewModels().FirstOrDefault(x => x.Id == tweakId);
         if (vm == null) return;
-        vm.IsSelected = true; 
+        vm.IsSelected = true;
         IsBusy = true;
         await ProcessTweaks(new[] { vm }, true);
     }
@@ -211,12 +225,26 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            foreach (var process in Process.GetProcessesByName("explorer"))
+            await Task.Run(() =>
             {
-                try { process.Kill(); } catch { }
-            }
-            Thread.Sleep(500);
-            Process.Start("explorer.exe");
+                foreach (var process in Process.GetProcessesByName("explorer"))
+                {
+                    using (process)
+                    {
+                        try
+                        {
+                            if (!process.HasExited)
+                            {
+                                process.Kill();
+                            }
+                        }
+                        catch { }
+                    }
+                }
+            });
+
+            await Task.Delay(500);
+            Process.Start("explorer.exe")?.Dispose();
         }
         catch (Exception ex)
         {

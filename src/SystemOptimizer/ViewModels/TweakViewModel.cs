@@ -58,7 +58,7 @@ public partial class TweakViewModel : ObservableObject
                 // Se estivermos numa thread secundária, usamos o Dispatcher
                 if (app != null && !app.Dispatcher.CheckAccess())
                 {
-                    app.Dispatcher.Invoke(UpdateStatusUI);
+                    app.Dispatcher.InvokeAsync(UpdateStatusUI);
                 }
                 else
                 {
@@ -99,7 +99,7 @@ public partial class TweakViewModel : ObservableObject
                     StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Laranja
                     break;
                 case TweakStatus.PendingReboot:
-                    StatusText = AppSettings.Current.Language == "en-US" ? "Pending reboot" : "Reinicialização pendente";
+                    StatusText = Resources.Status_PendingReboot;
                     StatusIcon = SymbolRegular.ArrowClockwise24;
                     StatusColor = new SolidColorBrush(Color.FromRgb(202, 80, 16)); // Laranja
                     break;

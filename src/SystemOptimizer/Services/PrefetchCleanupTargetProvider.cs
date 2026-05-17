@@ -6,6 +6,8 @@ namespace SystemOptimizer.Services;
 
 public sealed class PrefetchCleanupTargetProvider : ICleanupTargetProvider
 {
+    public string CategoryKey => "prefetch";
+
     public IEnumerable<CleanupTarget> GetTargets()
     {
         yield return new CleanupTarget

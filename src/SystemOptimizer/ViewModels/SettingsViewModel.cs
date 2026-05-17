@@ -1,10 +1,12 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input; 
+using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -22,8 +24,8 @@ public partial class SettingsViewModel : ObservableObject
 {
     // --- Dependências ---
     private readonly TweakService _tweakService;
-    private readonly IUpdateService _updateService; 
-    private readonly IDialogService _dialogService; 
+    private readonly IUpdateService _updateService;
+    private readonly IDialogService _dialogService;
 
     // --- Constantes para Persistência ---
     private const string TaskName = "SystemOptimizer_AutoRun";
@@ -37,7 +39,7 @@ public partial class SettingsViewModel : ObservableObject
 
     public ObservableCollection<string> Languages { get; } = ["Português", "English"];
 
-    public ObservableCollection<ThemeOption> ThemeOptions { get; } = 
+    public ObservableCollection<ThemeOption> ThemeOptions { get; } =
     [
         new(Resources.Theme_System, ApplicationTheme.Unknown),
         new(Resources.Theme_Light, ApplicationTheme.Light),
@@ -66,7 +68,7 @@ public partial class SettingsViewModel : ObservableObject
 
         _currentLanguage = AppSettings.Current.Language == "en-US" ? "English" : "Português";
         _targetExePath = Path.Combine(_appDataPath, "SystemOptimizer.exe");
-        
+
         string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
         string startMenu = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu);
         _desktopShortcutPath = Path.Combine(desktop, "System Optimizer.lnk");
@@ -74,7 +76,7 @@ public partial class SettingsViewModel : ObservableObject
 
         _currentThemeOption = ThemeOptions.First(x => x.Theme == ApplicationTheme.Unknown);
         UpdateTheme(_currentThemeOption.Theme);
-        CheckPersistenceStatus();
+        _ = CheckPersistenceStatusAsync();
         CheckKeepInstalledStatus();
     }
 
@@ -98,7 +100,7 @@ public partial class SettingsViewModel : ObservableObject
                     return;
                 }
 
-                Process.Start(currentExe);
+                Process.Start(currentExe)?.Dispose();
                 Application.Current.Shutdown();
             }
         }
@@ -111,7 +113,14 @@ public partial class SettingsViewModel : ObservableObject
 
     partial void OnIsPersistenceEnabledChanged(bool value)
     {
-        if (value) EnablePersistence(); else DisablePersistence();
+        if (value)
+        {
+            _ = EnablePersistenceAsync();
+        }
+        else
+        {
+            _ = DisablePersistenceAsync();
+        }
     }
 
     partial void OnIsKeepInstalledEnabledChanged(bool value)
@@ -146,9 +155,9 @@ public partial class SettingsViewModel : ObservableObject
                 }
 
                 await _dialogService.ShowUpdateDialogAsync(
-                    version, 
-                    releaseNotes, 
-                    async (progress) => 
+                    version,
+                    releaseNotes,
+                    async (progress) =>
                     {
                         // Aqui downloadUrl já foi verificado como não nulo/vazio
                         await _updateService.DownloadAndInstallAsync(downloadUrl, progress);
@@ -217,125 +226,106 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private void CreateShortcut(string shortcutPath, string targetPath, string description)
+    private static void CreateShortcut(string shortcutPath, string targetPath, string description)
     {
+        IShellLinkW? shellLink = null;
         try
         {
-            string psScript = $@"
-                $ErrorActionPreference = 'Stop'
-                $WshShell = New-Object -ComObject WScript.Shell
-                $Shortcut = $WshShell.CreateShortcut({ToPowerShellLiteral(shortcutPath)})
-                $Shortcut.TargetPath = {ToPowerShellLiteral(targetPath)}
-                $Shortcut.Description = {ToPowerShellLiteral(description)}
-                $Shortcut.WorkingDirectory = {ToPowerShellLiteral(Path.GetDirectoryName(targetPath) ?? string.Empty)}
-                $Shortcut.Save()";
+            Directory.CreateDirectory(Path.GetDirectoryName(shortcutPath) ?? string.Empty);
+            shellLink = (IShellLinkW)new ShellLink();
+            shellLink.SetPath(targetPath);
+            shellLink.SetDescription(description);
+            shellLink.SetWorkingDirectory(Path.GetDirectoryName(targetPath) ?? string.Empty);
 
-            var result = RunPowerShellScript(psScript);
-            if (!result.IsSuccess)
-            {
-                throw new InvalidOperationException($"PowerShell retornou ExitCode={result.ExitCode}. {result.StdErr}");
-            }
+            var persistFile = (IPersistFile)shellLink;
+            persistFile.Save(shortcutPath, true);
         }
         catch (Exception ex)
         {
-            Logger.Log($"Falha ao criar atalho via PowerShell: {ex.Message}", "ERROR");
+            Logger.Log($"Falha ao criar atalho via COM nativo: {ex.Message}", "ERROR");
             throw;
         }
-    }
-
-    private void CheckPersistenceStatus()
-    {
-        var script = $@"
-            $ErrorActionPreference = 'Stop'
-            $task = Get-ScheduledTask -TaskName {ToPowerShellLiteral(TaskName)}
-            $action = $task.Actions | Select-Object -First 1
-            $hasOnLogonTrigger = $task.Triggers | Where-Object {{ $_.TriggerType -eq 'Logon' }}
-            $actionExecute = if ($null -ne $action.Execute) {{ $action.Execute }} else {{ '' }}
-            $actionArguments = if ($null -ne $action.Arguments) {{ $action.Arguments }} else {{ '' }}
-            $runLevel = if ($null -ne $task.Principal.RunLevel) {{ $task.Principal.RunLevel }} else {{ '' }}
-
-            Write-Output ('EXE=' + $actionExecute)
-            Write-Output ('ARGS=' + $actionArguments)
-            Write-Output ('HAS_ONLOGON=' + ([bool]$hasOnLogonTrigger))
-            Write-Output ('RUNLEVEL=' + $runLevel)
-        ";
-
-        var commandResult = RunPowerShellScript(script);
-        var res = commandResult.StdOut;
-
-        if (!commandResult.IsSuccess && string.IsNullOrWhiteSpace(res))
+        finally
         {
-            res = commandResult.StdErr;
+            if (shellLink != null)
+            {
+                Marshal.FinalReleaseComObject(shellLink);
+            }
         }
+    }
 
-        if (string.IsNullOrWhiteSpace(res) ||
-            res.Contains("ERRO", StringComparison.OrdinalIgnoreCase) ||
-            res.Contains("ERROR", StringComparison.OrdinalIgnoreCase) ||
-            res.Contains("não pode ser encontrado", StringComparison.OrdinalIgnoreCase))
+    private async Task CheckPersistenceStatusAsync()
+    {
+        bool isValid = await Task.Run(CheckPersistenceStatusCore);
+
+        await Application.Current.Dispatcher.InvokeAsync(() =>
         {
-            Logger.Log("Persistência inválida: tarefa agendada não encontrada ou inacessível.", "WARNING");
 #pragma warning disable MVVMTK0034
-            SetProperty(ref _isPersistenceEnabled, false, nameof(IsPersistenceEnabled));
+            SetProperty(ref _isPersistenceEnabled, isValid, nameof(IsPersistenceEnabled));
 #pragma warning restore MVVMTK0034
-            return;
+        });
+    }
+
+    private bool CheckPersistenceStatusCore()
+    {
+        dynamic? scheduleService = null;
+        dynamic? task = null;
+        try
+        {
+            scheduleService = Activator.CreateInstance(Type.GetTypeFromProgID("Schedule.Service")
+                ?? throw new InvalidOperationException("COM Schedule.Service indisponível."));
+            scheduleService.Connect();
+            dynamic rootFolder = scheduleService.GetFolder("\\");
+            task = rootFolder.GetTask(TaskName);
+
+            dynamic definition = task.Definition;
+            dynamic action = definition.Actions.Count > 0 ? definition.Actions.Item(1) : null;
+            if (action == null)
+            {
+                Logger.Log("Persistência inválida: tarefa sem ação configurada.", "WARNING");
+                return false;
+            }
+
+            string exe = action.Path ?? string.Empty;
+            string args = action.Arguments ?? string.Empty;
+            bool hasOnLogonTrigger = false;
+            foreach (dynamic trigger in definition.Triggers)
+            {
+                if ((int)trigger.Type == 9)
+                {
+                    hasOnLogonTrigger = true;
+                    break;
+                }
+            }
+
+            int runLevel = (int)definition.Principal.RunLevel;
+            bool isExeValid = PathsAreEquivalent(exe, _targetExePath);
+            if (!isExeValid)
+                Logger.Log($"Persistência inválida: executável divergente. Esperado '{_targetExePath}', encontrado '{exe}'.", "WARNING");
+
+            bool hasSilentArgument = args.Contains("--silent", StringComparison.OrdinalIgnoreCase);
+            if (!hasSilentArgument)
+                Logger.Log($"Persistência inválida: argumento '--silent' ausente. Argumentos atuais: '{args}'.", "WARNING");
+
+            if (!hasOnLogonTrigger)
+                Logger.Log("Persistência inválida: gatilho de logon (onlogon) ausente.", "WARNING");
+
+            bool isHighestRunLevel = runLevel == 1;
+            if (!isHighestRunLevel)
+                Logger.Log($"Persistência inválida: nível de execução divergente. Esperado 'Highest', encontrado '{runLevel}'.", "WARNING");
+
+            return isExeValid && hasSilentArgument && hasOnLogonTrigger && isHighestRunLevel;
         }
-
-        var lines = res
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
-            .Select(line => line.Trim())
-            .ToArray();
-
-        string exe = GetTaskInfoValue(lines, "EXE");
-        string args = GetTaskInfoValue(lines, "ARGS");
-        string hasOnLogon = GetTaskInfoValue(lines, "HAS_ONLOGON");
-        string runLevel = GetTaskInfoValue(lines, "RUNLEVEL");
-
-        bool isExeValid = PathsAreEquivalent(exe, _targetExePath);
-        if (!isExeValid)
-            Logger.Log($"Persistência inválida: executável divergente. Esperado '{_targetExePath}', encontrado '{exe}'.", "WARNING");
-
-        bool hasSilentArgument = args.Contains("--silent", StringComparison.OrdinalIgnoreCase);
-        if (!hasSilentArgument)
-            Logger.Log($"Persistência inválida: argumento '--silent' ausente. Argumentos atuais: '{args}'.", "WARNING");
-
-        bool isOnLogonTrigger = bool.TryParse(hasOnLogon, out bool hasTrigger) && hasTrigger;
-        if (!isOnLogonTrigger)
-            Logger.Log("Persistência inválida: gatilho de logon (onlogon) ausente.", "WARNING");
-
-        bool isHighestRunLevel = string.Equals(runLevel, "Highest", StringComparison.OrdinalIgnoreCase);
-        if (!isHighestRunLevel)
-            Logger.Log($"Persistência inválida: nível de execução divergente. Esperado 'Highest', encontrado '{runLevel}'.", "WARNING");
-
-        bool isValid = isExeValid && hasSilentArgument && isOnLogonTrigger && isHighestRunLevel;
-        
-#pragma warning disable MVVMTK0034
-        SetProperty(ref _isPersistenceEnabled, isValid, nameof(IsPersistenceEnabled));
-#pragma warning restore MVVMTK0034
-    }
-
-    private static CommandHelper.CommandResult RunPowerShellScript(string script)
-    {
-        string encodedScript = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
-        return CommandHelper.RunCommandDetailed("powershell.exe",
-        [
-            "-NoProfile",
-            "-ExecutionPolicy",
-            "Bypass",
-            "-EncodedCommand",
-            encodedScript
-        ]);
-    }
-
-    private static string ToPowerShellLiteral(string value)
-    {
-        return "'" + value.Replace("'", "''") + "'";
-    }
-
-    private static string GetTaskInfoValue(string[] lines, string key)
-    {
-        string prefix = key + "=";
-        var line = lines.FirstOrDefault(l => l.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
-        return line?[prefix.Length..].Trim() ?? string.Empty;
+        catch (Exception ex)
+        {
+            Logger.Log($"Persistência inválida: tarefa agendada não encontrada ou inacessível. {ex.Message}", "WARNING");
+            return false;
+        }
+        finally
+        {
+            ReleaseComObject(task);
+            ReleaseComObject(scheduleService);
+        }
     }
 
     private static bool PathsAreEquivalent(string left, string right)
@@ -354,7 +344,7 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private async void EnablePersistence()
+    private async Task EnablePersistenceAsync()
     {
         try
         {
@@ -379,7 +369,7 @@ public partial class SettingsViewModel : ObservableObject
             // (d) Criar/atualizar tarefa (etapa final obrigatória)
             Logger.Log($"PERSISTENCE_STEP=task_create task='{TaskName}'", "PERSISTENCE");
             string taskRun = $"\"{_targetExePath}\" --silent";
-            var result = CommandHelper.RunCommandDetailed("schtasks",
+            var result = await CommandHelper.RunCommandDetailedAsync("schtasks",
             [
                 "/create", "/tn", TaskName, "/tr", taskRun, "/sc", "onlogon", "/rl", "HIGHEST", "/f"
             ]);
@@ -507,11 +497,11 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
-    private void DisablePersistence()
+    private async Task DisablePersistenceAsync()
     {
         try
         {
-            var result = CommandHelper.RunCommandDetailed("schtasks", ["/delete", "/tn", TaskName, "/f"]);
+            var result = await CommandHelper.RunCommandDetailedAsync("schtasks", ["/delete", "/tn", TaskName, "/f"]);
             Logger.Log($"Resultado schtasks/delete -> Started={result.Started}, TimedOut={result.TimedOut}, ExitCode={result.ExitCode}, StdOut='{result.StdOut}', StdErr='{result.StdErr}'", "PERSISTENCE");
             Logger.Log("Persistência desativada.");
         }
@@ -519,5 +509,44 @@ public partial class SettingsViewModel : ObservableObject
         {
             Logger.Log($"Erro ao desabilitar persistência: {ex.Message}", "ERROR");
         }
+    }
+
+    private static void ReleaseComObject(object? comObject)
+    {
+        if (comObject != null && Marshal.IsComObject(comObject))
+        {
+            Marshal.FinalReleaseComObject(comObject);
+        }
+    }
+
+    [ComImport]
+    [Guid("00021401-0000-0000-C000-000000000046")]
+    private class ShellLink
+    {
+    }
+
+    [ComImport]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [Guid("000214F9-0000-0000-C000-000000000046")]
+    private interface IShellLinkW
+    {
+        void GetPath([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile, int cchMaxPath, IntPtr pfd, uint fFlags);
+        void GetIDList(out IntPtr ppidl);
+        void SetIDList(IntPtr pidl);
+        void GetDescription([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszName, int cchMaxName);
+        void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string pszName);
+        void GetWorkingDirectory([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir, int cchMaxPath);
+        void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string pszDir);
+        void GetArguments([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs, int cchMaxPath);
+        void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string pszArgs);
+        void GetHotkey(out short pwHotkey);
+        void SetHotkey(short wHotkey);
+        void GetShowCmd(out int piShowCmd);
+        void SetShowCmd(int iShowCmd);
+        void GetIconLocation([Out, MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszIconPath, int cchIconPath, out int piIcon);
+        void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string pszIconPath, int iIcon);
+        void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string pszPathRel, uint dwReserved);
+        void Resolve(IntPtr hwnd, uint fFlags);
+        void SetPath([MarshalAs(UnmanagedType.LPWStr)] string pszFile);
     }
 }

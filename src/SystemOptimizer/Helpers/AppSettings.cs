@@ -17,6 +17,8 @@ public static class AppSettings
         "SystemOptimizer",
         "app_settings.json");
 
+    private static readonly object SaveLock = new();
+
     public static AppConfig Current { get; private set; } = new AppConfig();
 
     public static void Load()
@@ -67,8 +69,11 @@ public static class AppSettings
                 Directory.CreateDirectory(dir);
             }
 
-            string json = JsonSerializer.Serialize(Current, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_configPath, json);
+            lock (SaveLock)
+            {
+                string json = JsonSerializer.Serialize(Current, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(_configPath, json);
+            }
         }
         catch (Exception)
         {

@@ -12,7 +12,7 @@ using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
 using SystemOptimizer.Properties;
 using Wpf.Ui;
-using Wpf.Ui.Abstractions; 
+using Wpf.Ui.Abstractions;
 using System.Net.Http;
 using CommunityToolkit.WinUI.Notifications;
 using SystemOptimizer.Models;
@@ -65,7 +65,7 @@ public partial class App : Application
                 services.AddTransient<PrivacyPage>();
                 services.AddTransient<NetworkPage>();
                 services.AddTransient<SecurityPage>();
-                services.AddTransient<SearchPage>(); 
+                services.AddTransient<SearchPage>();
                 services.AddTransient<CleanupPage>();
                 services.AddTransient<AppearancePage>();
                 services.AddTransient<SettingsPage>();
@@ -233,17 +233,32 @@ public partial class App : Application
             else
             {
                 int appliedCount = 0;
-                foreach (var id in savedTweakIds)
+                var tweaksToApply = tweakService.Tweaks
+                    .Where(tweak => savedTweakIds.Contains(tweak.Id) && !tweak.IsOptimized)
+                    .ToList();
+
+                await Task.Run(() =>
                 {
-                    var tweak = tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
-                    if (tweak != null && !tweak.IsOptimized)
+                    var options = new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 2, 4)
+                    };
+
+                    Parallel.ForEach(tweaksToApply, options, tweak =>
                     {
                         Logger.Log($"Reaplicando tweak persistente: {tweak.Title} ({tweak.Id})");
                         var result = tweak.Apply();
-                        if (result.Success) appliedCount++;
-                        else Logger.Log($"Falha ao aplicar {tweak.Id}: {result.Message}", "ERROR");
-                    }
-                }
+                        if (result.Success)
+                        {
+                            Interlocked.Increment(ref appliedCount);
+                        }
+                        else
+                        {
+                            Logger.Log($"Falha ao aplicar {tweak.Id}: {result.Message}", "ERROR");
+                        }
+                    });
+                });
+
                 Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
             }
 
