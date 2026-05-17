@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.ServiceProcess;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using SystemOptimizer.Models;
 using SystemOptimizer.Helpers;
 using Microsoft.Win32;
+using System.Management;
 using System.Diagnostics;
 using System.IO;
 using SystemOptimizer.Properties;
@@ -32,19 +34,27 @@ public class TweakService
 
     public async Task RefreshStatusesAsync()
     {
-        await Task.Run(() =>
-        {
-            var options = new ParallelOptions
-            {
-                MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 2, 4)
-            };
+        int maxConcurrency = Math.Clamp(Environment.ProcessorCount, 2, 4);
+        using var throttler = new SemaphoreSlim(maxConcurrency);
 
-            Parallel.ForEach(Tweaks, options, tweak =>
+        var statusTasks = Tweaks.Select(async tweak =>
+        {
+            await throttler.WaitAsync();
+            try
             {
-                try { tweak.CheckStatus(); }
-                catch (Exception ex) { Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR"); }
-            });
+                await Task.Run(tweak.CheckStatus);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR");
+            }
+            finally
+            {
+                throttler.Release();
+            }
         });
+
+        await Task.WhenAll(statusTasks);
     }
 
     private void AddPrivacyTweaks()
@@ -283,9 +293,10 @@ public class TweakService
             () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("powershell",
-                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).CongestionProvider\"").Trim().ToUpper();
-                return res == "CUBIC" || res == "CTCP";
+                var res = CommandHelper.RunCommand("netsh", "int tcp show supplemental")
+                    .ToUpperInvariant();
+                return res.Contains("CUBIC", StringComparison.OrdinalIgnoreCase)
+                    || res.Contains("CTCP", StringComparison.OrdinalIgnoreCase);
             }
         ));
 
@@ -388,16 +399,52 @@ public class TweakService
         try
         {
             string systemDrive = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows))?.TrimEnd('\\') ?? "C:";
-            string script = $"$partition = Get-Partition -DriveLetter '{systemDrive[0]}' -ErrorAction Stop; $disk = Get-Disk -Number $partition.DiskNumber -ErrorAction Stop; $disk.MediaType";
-            string mediaType = CommandHelper.RunCommand("powershell", $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"").Trim();
-            return mediaType.Equals("HDD", StringComparison.OrdinalIgnoreCase)
-                || mediaType.Equals("Unspecified", StringComparison.OrdinalIgnoreCase);
+            string driveLetter = systemDrive[..1];
+
+            using var partitionSearcher = new ManagementObjectSearcher(
+                "root\\CIMV2",
+                $"ASSOCIATORS OF {{Win32_LogicalDisk.DeviceID='{driveLetter}:'}} WHERE AssocClass=Win32_LogicalDiskToPartition");
+
+            using var partitions = partitionSearcher.Get();
+            foreach (ManagementObject partition in partitions.Cast<ManagementObject>())
+            {
+                using (partition)
+                {
+                    string partitionDeviceId = (partition["DeviceID"] as string)?.Replace("\\", "\\\\") ?? string.Empty;
+                    if (string.IsNullOrWhiteSpace(partitionDeviceId)) continue;
+
+                    using var diskSearcher = new ManagementObjectSearcher(
+                        "root\\CIMV2",
+                        $"ASSOCIATORS OF {{Win32_DiskPartition.DeviceID='{partitionDeviceId}'}} WHERE AssocClass=Win32_DiskDriveToDiskPartition");
+
+                    using var disks = diskSearcher.Get();
+                    foreach (ManagementObject disk in disks.Cast<ManagementObject>())
+                    {
+                        using (disk)
+                        {
+                            string mediaType = disk["MediaType"]?.ToString() ?? string.Empty;
+                            string model = disk["Model"]?.ToString() ?? string.Empty;
+
+                            if (mediaType.Contains("SSD", StringComparison.OrdinalIgnoreCase) ||
+                                model.Contains("SSD", StringComparison.OrdinalIgnoreCase) ||
+                                model.Contains("NVMe", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return false;
+                            }
+
+                            return mediaType.Contains("HDD", StringComparison.OrdinalIgnoreCase) ||
+                                   mediaType.Contains("Fixed hard disk", StringComparison.OrdinalIgnoreCase) ||
+                                   string.IsNullOrWhiteSpace(mediaType);
+                        }
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
-            Logger.Log($"Falha ao detectar tipo do disco do sistema para SE2: {ex.Message}", "WARNING");
-            return false;
+            Logger.Log($"Falha ao detectar tipo do disco do sistema para SE2 via WMI: {ex.Message}", "WARNING");
         }
-    }
 
+        return false;
+    }
 }

@@ -120,7 +120,7 @@ public sealed class UpdateService : IUpdateService, IDisposable
             if (string.IsNullOrEmpty(currentExe)) throw new Exception("Não foi possível localizar o executável atual.");
 
             var updaterProcessInfo = CreateUpdaterProcessInfo(currentExe, newExePath, currentProcess.Id);
-            Process.Start(updaterProcessInfo);
+            Process.Start(updaterProcessInfo)?.Dispose();
 
             currentProcess.CloseMainWindow();
             Environment.Exit(0);
