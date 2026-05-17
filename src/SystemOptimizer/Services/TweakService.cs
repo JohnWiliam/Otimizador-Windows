@@ -8,6 +8,8 @@ using SystemOptimizer.Helpers;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading;
 using SystemOptimizer.Properties;
 
 namespace SystemOptimizer.Services;
@@ -32,19 +34,27 @@ public class TweakService
 
     public async Task RefreshStatusesAsync()
     {
-        await Task.Run(() =>
-        {
-            var options = new ParallelOptions
-            {
-                MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 2, 4)
-            };
+        int maxConcurrency = Math.Clamp(Environment.ProcessorCount, 2, 4);
+        using var semaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
 
-            Parallel.ForEach(Tweaks, options, tweak =>
+        var tasks = Tweaks.Select(async tweak =>
+        {
+            await semaphore.WaitAsync().ConfigureAwait(false);
+            try
             {
-                try { tweak.CheckStatus(); }
-                catch (Exception ex) { Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR"); }
-            });
+                await Task.Run(tweak.CheckStatus).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR");
+            }
+            finally
+            {
+                semaphore.Release();
+            }
         });
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
     private void AddPrivacyTweaks()
@@ -283,9 +293,8 @@ public class TweakService
             () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("powershell",
-                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).CongestionProvider\"").Trim().ToUpper();
-                return res == "CUBIC" || res == "CTCP";
+                var res = CommandHelper.RunCommand("netsh", "int tcp show supplemental template=internet").ToUpperInvariant();
+                return res.Contains("CUBIC") || res.Contains("CTCP");
             }
         ));
 
@@ -387,17 +396,107 @@ public class TweakService
     {
         try
         {
-            string systemDrive = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows))?.TrimEnd('\\') ?? "C:";
-            string script = $"$partition = Get-Partition -DriveLetter '{systemDrive[0]}' -ErrorAction Stop; $disk = Get-Disk -Number $partition.DiskNumber -ErrorAction Stop; $disk.MediaType";
-            string mediaType = CommandHelper.RunCommand("powershell", $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"").Trim();
-            return mediaType.Equals("HDD", StringComparison.OrdinalIgnoreCase)
-                || mediaType.Equals("Unspecified", StringComparison.OrdinalIgnoreCase);
+            string? root = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                return false;
+            }
+
+            string volumePath = "\\\\.\\" + root.TrimEnd('\\');
+            using var volumeHandle = CreateFile(
+                volumePath,
+                0,
+                FileShare.ReadWrite,
+                IntPtr.Zero,
+                FileMode.Open,
+                0,
+                IntPtr.Zero);
+
+            if (volumeHandle.IsInvalid)
+            {
+                Logger.Log($"Unable to open system volume '{volumePath}' for seek-penalty query. Win32={Marshal.GetLastWin32Error()}", "WARNING");
+                return false;
+            }
+
+            var query = new StoragePropertyQuery
+            {
+                PropertyId = StoragePropertyId.StorageDeviceSeekPenaltyProperty,
+                QueryType = StorageQueryType.PropertyStandardQuery
+            };
+
+            bool ok = DeviceIoControl(
+                volumeHandle,
+                IOCTL_STORAGE_QUERY_PROPERTY,
+                ref query,
+                Marshal.SizeOf<StoragePropertyQuery>(),
+                out DeviceSeekPenaltyDescriptor descriptor,
+                Marshal.SizeOf<DeviceSeekPenaltyDescriptor>(),
+                out _,
+                IntPtr.Zero);
+
+            if (!ok)
+            {
+                Logger.Log($"DeviceIoControl seek-penalty query failed. Win32={Marshal.GetLastWin32Error()}", "WARNING");
+                return false;
+            }
+
+            return descriptor.IncursSeekPenalty;
         }
         catch (Exception ex)
         {
-            Logger.Log($"Falha ao detectar tipo do disco do sistema para SE2: {ex.Message}", "WARNING");
+            Logger.Log($"Failed to determine system drive media type natively: {ex.Message}", "WARNING");
             return false;
         }
     }
+
+    private const uint IOCTL_STORAGE_QUERY_PROPERTY = 0x002D1400;
+
+    private enum StoragePropertyId
+    {
+        StorageDeviceSeekPenaltyProperty = 7
+    }
+
+    private enum StorageQueryType
+    {
+        PropertyStandardQuery = 0
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct StoragePropertyQuery
+    {
+        public StoragePropertyId PropertyId;
+        public StorageQueryType QueryType;
+        public byte AdditionalParameters;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct DeviceSeekPenaltyDescriptor
+    {
+        public uint Version;
+        public uint Size;
+        [MarshalAs(UnmanagedType.Bool)]
+        public bool IncursSeekPenalty;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFile(
+        string lpFileName,
+        uint dwDesiredAccess,
+        FileShare dwShareMode,
+        IntPtr lpSecurityAttributes,
+        FileMode dwCreationDisposition,
+        uint dwFlagsAndAttributes,
+        IntPtr hTemplateFile);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern bool DeviceIoControl(
+        Microsoft.Win32.SafeHandles.SafeFileHandle hDevice,
+        uint dwIoControlCode,
+        ref StoragePropertyQuery lpInBuffer,
+        int nInBufferSize,
+        out DeviceSeekPenaltyDescriptor lpOutBuffer,
+        int nOutBufferSize,
+        out uint lpBytesReturned,
+        IntPtr lpOverlapped);
 
 }

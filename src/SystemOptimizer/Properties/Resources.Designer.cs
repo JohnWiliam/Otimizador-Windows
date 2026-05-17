@@ -985,13 +985,19 @@ namespace SystemOptimizer.Properties {
                 return ResourceManager.GetString("Status_Optimized", resourceCulture);
             }
         }
-        
+
+        public static string Status_PendingReboot {
+            get {
+                return ResourceManager.GetString("Status_PendingReboot", resourceCulture);
+            }
+        }
+
         public static string Status_Undefined {
             get {
                 return ResourceManager.GetString("Status_Undefined", resourceCulture);
             }
         }
-        
+
         public static string Status_Unknown {
             get {
                 return ResourceManager.GetString("Status_Unknown", resourceCulture);

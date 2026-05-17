@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 using System.Windows;
 using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
 using SystemOptimizer.Helpers;
@@ -15,6 +16,7 @@ public sealed class StartupTasksService
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
     private readonly StartupActivationState _activationState;
+    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly object _openSettingsLock = new();
     private DateTime _lastOpenSettingsRequestUtc = DateTime.MinValue;
     private bool _toastActivationRegistered;
@@ -22,11 +24,13 @@ public sealed class StartupTasksService
     public StartupTasksService(
         IUpdateService updateService,
         INavigationService navigationService,
-        StartupActivationState activationState)
+        StartupActivationState activationState,
+        IHostApplicationLifetime applicationLifetime)
     {
         _updateService = updateService;
         _navigationService = navigationService;
         _activationState = activationState;
+        _applicationLifetime = applicationLifetime;
     }
 
     public void Initialize(string[] args)
@@ -131,21 +135,29 @@ public sealed class StartupTasksService
 
     private void RunUpdateCheckInBackground()
     {
+        var shutdownToken = _applicationLifetime.ApplicationStopping;
         _ = Task.Run(async () =>
         {
             try
             {
+                shutdownToken.ThrowIfCancellationRequested();
                 var updateInfo = await _updateService.CheckForUpdatesAsync();
+                shutdownToken.ThrowIfCancellationRequested();
+
                 if (updateInfo.IsAvailable)
                 {
                     ShowUpdateToast(updateInfo);
                 }
             }
+            catch (OperationCanceledException) when (shutdownToken.IsCancellationRequested)
+            {
+                Logger.Log("Verificação de atualização em background cancelada durante encerramento.", "INFO");
+            }
             catch (Exception ex)
             {
                 Logger.Log($"Erro ao verificar atualizações em background: {ex.Message}", "ERROR");
             }
-        });
+        }, shutdownToken);
     }
 
     private static void ShowUpdateToast(UpdateInfo updateInfo)

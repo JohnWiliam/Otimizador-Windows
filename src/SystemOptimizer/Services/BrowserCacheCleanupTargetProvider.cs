@@ -6,6 +6,8 @@ namespace SystemOptimizer.Services;
 
 public sealed class BrowserCacheCleanupTargetProvider : ICleanupTargetProvider
 {
+    public string CategoryKey => "browser-cache";
+
     public IEnumerable<CleanupTarget> GetTargets()
     {
         yield return new CleanupTarget

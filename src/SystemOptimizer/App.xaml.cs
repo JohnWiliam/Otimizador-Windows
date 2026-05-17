@@ -233,17 +233,28 @@ public partial class App : Application
             else
             {
                 int appliedCount = 0;
-                foreach (var id in savedTweakIds)
+                var tweaksToApply = savedTweakIds
+                    .Select(id => tweakService.Tweaks.FirstOrDefault(t => t.Id == id))
+                    .Where(tweak => tweak != null && !tweak.IsOptimized)
+                    .Cast<ITweak>()
+                    .ToList();
+
+                await Task.Run(() =>
                 {
-                    var tweak = tweakService.Tweaks.FirstOrDefault(t => t.Id == id);
-                    if (tweak != null && !tweak.IsOptimized)
+                    var options = new ParallelOptions
+                    {
+                        MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 2, 4)
+                    };
+
+                    Parallel.ForEach(tweaksToApply, options, tweak =>
                     {
                         Logger.Log($"Reaplicando tweak persistente: {tweak.Title} ({tweak.Id})");
                         var result = tweak.Apply();
-                        if (result.Success) appliedCount++;
+                        if (result.Success) Interlocked.Increment(ref appliedCount);
                         else Logger.Log($"Falha ao aplicar {tweak.Id}: {result.Message}", "ERROR");
-                    }
-                }
+                    });
+                });
+
                 Logger.Log($"Persistência concluída. {appliedCount} tweaks reaplicados.");
             }
 

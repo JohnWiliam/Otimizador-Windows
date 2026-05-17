@@ -12,8 +12,8 @@ namespace SystemOptimizer.Services;
 
 public class CleanupExecutionEngine
 {
-    [DllImport("shell32.dll")]
-    static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint dwFlags);
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+    private static extern int SHEmptyRecycleBin(IntPtr hwnd, string? rootPath, uint dwFlags);
 
     const uint SHERB_NOCONFIRMATION = 0x00000001;
     const uint SHERB_NOPROGRESSUI = 0x00000002;
@@ -82,7 +82,14 @@ public class CleanupExecutionEngine
     {
         try
         {
-            SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
+            int hr = SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
+            if (hr != 0)
+            {
+                result.Failures++;
+                Logger.Log($"Falha ao esvaziar lixeira (HRESULT={hr}, Win32={Marshal.GetLastWin32Error()}).", "ERROR");
+                return;
+            }
+
             result.ItemsRemoved = 1;
         }
         catch (Exception ex)
@@ -327,9 +334,11 @@ public class CleanupExecutionEngine
     {
         foreach (var processName in processNames)
         {
+            Process[] processes = [];
             try
             {
-                if (Process.GetProcessesByName(processName).Length > 0)
+                processes = Process.GetProcessesByName(processName);
+                if (processes.Length > 0)
                 {
                     return true;
                 }
@@ -338,6 +347,13 @@ public class CleanupExecutionEngine
             {
                 Logger.Log($"Falha ao verificar processo '{processName}': {ex.Message}", "WARNING");
                 return true;
+            }
+            finally
+            {
+                foreach (var process in processes)
+                {
+                    process.Dispose();
+                }
             }
         }
 

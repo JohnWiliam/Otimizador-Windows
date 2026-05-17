@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Windows.Threading;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Properties;
 using Wpf.Ui;
@@ -17,11 +18,12 @@ using Wpf.Ui.Appearance;
 
 namespace SystemOptimizer.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly TweakService _tweakService;
     private readonly CleanupService _cleanupService;
     private readonly IDialogService _dialogService;
+    private IReadOnlyList<TweakViewModel> _allTweakViewModels = [];
 
     [ObservableProperty]
     private string _applicationTitle = Resources.App_Title;
@@ -57,20 +59,8 @@ public partial class MainViewModel : ObservableObject
         _cleanupService = cleanupService;
         _dialogService = dialogService;
 
-        _cleanupService.OnLogItem += (item) =>
-        {
-            Application.Current.Dispatcher.Invoke(() => CleanupLogs.Add(item));
-        };
-
-        _cleanupService.OnProgress += (progress) =>
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                CleanupProgressPercentage = progress.Percentage;
-                CleanupProgressCategory = progress.CurrentCategory;
-                CleanupProcessedItems = progress.ProcessedItems;
-            });
-        };
+        _cleanupService.OnLogItem += CleanupService_OnLogItem;
+        _cleanupService.OnProgress += CleanupService_OnProgress;
     }
 
     public Task<IReadOnlyList<CleanupCategoryResult>> RunCleanupScanAsync(CleanupOptions options, CancellationToken cancellationToken)
@@ -100,9 +90,25 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private IEnumerable<TweakViewModel> GetAllTweakViewModels()
+    private IReadOnlyList<TweakViewModel> GetAllTweakViewModels() => _allTweakViewModels;
+
+    private void CleanupService_OnLogItem(CleanupLogItem item)
     {
-        return [..PrivacyTweaks, ..PerformanceTweaks, ..NetworkTweaks, ..SecurityTweaks, ..AppearanceTweaks, ..SearchTweaks, ..TweaksPageItems];
+        Application.Current.Dispatcher.InvokeAsync(
+            () => CleanupLogs.Add(item),
+            DispatcherPriority.Background);
+    }
+
+    private void CleanupService_OnProgress(CleanupProgressInfo progress)
+    {
+        Application.Current.Dispatcher.InvokeAsync(
+            () =>
+            {
+                CleanupProgressPercentage = progress.Percentage;
+                CleanupProgressCategory = progress.CurrentCategory;
+                CleanupProcessedItems = progress.ProcessedItems;
+            },
+            DispatcherPriority.Background);
     }
 
     private void PopulateCategories()
@@ -115,9 +121,12 @@ public partial class MainViewModel : ObservableObject
         SearchTweaks.Clear();
         TweaksPageItems.Clear();
 
+        var allTweaks = new List<TweakViewModel>(_tweakService.Tweaks.Count);
+
         foreach (var tweak in _tweakService.Tweaks)
         {
             var vm = new TweakViewModel(tweak);
+            allTweaks.Add(vm);
             switch (tweak.Category)
             {
                 case TweakCategory.Privacy: PrivacyTweaks.Add(vm); break;
@@ -129,6 +138,8 @@ public partial class MainViewModel : ObservableObject
                 case TweakCategory.Tweaks: TweaksPageItems.Add(vm); break;
             }
         }
+
+        _allTweakViewModels = allTweaks;
     }
 
     private bool IsRebootRequired(string tweakId)
@@ -211,12 +222,19 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            foreach (var process in Process.GetProcessesByName("explorer"))
+            await Task.Run(() =>
             {
-                try { process.Kill(); } catch { }
-            }
-            Thread.Sleep(500);
-            Process.Start("explorer.exe");
+                foreach (var process in Process.GetProcessesByName("explorer"))
+                {
+                    using (process)
+                    {
+                        try { process.Kill(); } catch { }
+                    }
+                }
+            });
+
+            await Task.Delay(500);
+            Process.Start("explorer.exe")?.Dispose();
         }
         catch (Exception ex)
         {
@@ -272,6 +290,12 @@ public partial class MainViewModel : ObservableObject
 
             await _dialogService.ShowMessageAsync(Resources.Msg_SuccessTitle, msg, DialogType.Success);
         }
+    }
+
+    public void Dispose()
+    {
+        _cleanupService.OnLogItem -= CleanupService_OnLogItem;
+        _cleanupService.OnProgress -= CleanupService_OnProgress;
     }
 
     [RelayCommand]
