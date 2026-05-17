@@ -127,7 +127,8 @@ public class CleanupService
             var aggregate = new CleanupResult { CategoryName = category.DisplayName };
             foreach (var target in category.Targets)
             {
-                var targetResult = await _executionEngine.ExecuteAsync(target);
+                cancellationToken.ThrowIfCancellationRequested();
+                var targetResult = await _executionEngine.ExecuteAsync(target, cancellationToken);
                 aggregate.BytesRemoved += targetResult.BytesRemoved;
                 aggregate.ItemsRemoved += targetResult.ItemsRemoved;
                 aggregate.ItemsIgnored += targetResult.ItemsIgnored;
@@ -280,7 +281,7 @@ public class CleanupService
     {
         return Task.Run(() =>
         {
-            if (!Directory.Exists(path))
+            if (!Directory.Exists(path) || IsReparsePoint(path))
                 return new ScanResult(0, 0);
 
             long bytes = 0;
@@ -334,9 +335,20 @@ public class CleanupService
 
                     foreach (var subDirectory in subDirectories)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (IsReparsePoint(subDirectory))
+                        {
+                            Logger.Log($"Diretório reparse point ignorado durante análise: '{subDirectory}'", "WARNING");
+                            continue;
+                        }
+
                         pendingDirectories.Push(subDirectory);
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -345,6 +357,19 @@ public class CleanupService
 
             return new ScanResult(bytes, items);
         }, cancellationToken);
+    }
+
+
+    private static bool IsReparsePoint(string path)
+    {
+        try
+        {
+            return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
+        }
+        catch
+        {
+            return true;
+        }
     }
 
     private void ReportProgress(int percentage, string currentCategory, int processedItems, int totalSteps)

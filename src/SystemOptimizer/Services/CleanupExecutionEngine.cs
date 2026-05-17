@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
+using System.Threading;
 using System.Threading.Tasks;
 using SystemOptimizer.Helpers;
 
@@ -19,27 +20,29 @@ public class CleanupExecutionEngine
     const uint SHERB_NOPROGRESSUI = 0x00000002;
     const uint SHERB_NOSOUND = 0x00000004;
 
-    public async Task<CleanupResult> ExecuteAsync(CleanupTarget target)
+    public async Task<CleanupResult> ExecuteAsync(CleanupTarget target, CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
         var result = new CleanupResult { CategoryName = target.CategoryName };
 
+        cancellationToken.ThrowIfCancellationRequested();
+
         switch (target.Strategy)
         {
             case CleanupExecutionStrategy.DeleteDirectoryContents:
-                CleanupDirectory(target.Path, result);
+                CleanupDirectory(target.Path, result, cancellationToken);
                 break;
             case CleanupExecutionStrategy.ExecuteCommand:
-                await ExecuteCommandAsync(target, result);
+                await ExecuteCommandAsync(target, result, cancellationToken);
                 break;
             case CleanupExecutionStrategy.EmptyRecycleBin:
-                EmptyRecycleBin(result);
+                EmptyRecycleBin(result, cancellationToken);
                 break;
             case CleanupExecutionStrategy.CleanupWindowsUpdate:
-                await CleanupWindowsUpdateAsync(target.Path, result);
+                await CleanupWindowsUpdateAsync(target.Path, result, cancellationToken);
                 break;
             case CleanupExecutionStrategy.CleanupBrowserCache:
-                CleanupBrowserCache(result);
+                CleanupBrowserCache(result, cancellationToken);
                 break;
             default:
                 result.Failures++;
@@ -51,17 +54,19 @@ public class CleanupExecutionEngine
         return result;
     }
 
-    private static async Task ExecuteCommandAsync(CleanupTarget target, CleanupResult result)
+    private static async Task ExecuteCommandAsync(CleanupTarget target, CleanupResult result, CancellationToken cancellationToken)
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (string.IsNullOrWhiteSpace(target.Command))
             {
                 result.Failures++;
                 return;
             }
 
-            var commandResult = await CommandHelper.RunCommandDetailedAsync(target.Command, target.Arguments ?? string.Empty);
+            var commandResult = await CommandHelper.RunCommandDetailedAsync(target.Command, target.Arguments ?? string.Empty, cancellationToken);
             if (!commandResult.IsSuccess)
             {
                 result.Failures++;
@@ -71,6 +76,10 @@ public class CleanupExecutionEngine
 
             result.ItemsRemoved = 1;
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             result.Failures++;
@@ -78,10 +87,12 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static void EmptyRecycleBin(CleanupResult result)
+    private static void EmptyRecycleBin(CleanupResult result, CancellationToken cancellationToken)
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             int hr = SHEmptyRecycleBin(IntPtr.Zero, null, SHERB_NOCONFIRMATION | SHERB_NOPROGRESSUI | SHERB_NOSOUND);
             if (hr != 0)
             {
@@ -92,6 +103,10 @@ public class CleanupExecutionEngine
 
             result.ItemsRemoved = 1;
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             result.Failures++;
@@ -99,14 +114,16 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static void CleanupDirectory(string path, CleanupResult result)
+    private static void CleanupDirectory(string path, CleanupResult result, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(path) || IsReparsePoint(path))
         {
             return;
         }
 
-        foreach (var filePath in EnumerateFilesWithoutFollowingReparsePoints(path, result))
+        cancellationToken.ThrowIfCancellationRequested();
+
+        foreach (var filePath in EnumerateFilesWithoutFollowingReparsePoints(path, result, cancellationToken))
         {
             try
             {
@@ -130,7 +147,7 @@ public class CleanupExecutionEngine
             }
         }
 
-        foreach (var directoryPath in EnumerateDirectoriesWithoutFollowingReparsePoints(path, result).OrderByDescending(d => d.Length))
+        foreach (var directoryPath in EnumerateDirectoriesWithoutFollowingReparsePoints(path, result, cancellationToken).OrderByDescending(d => d.Length))
         {
             try
             {
@@ -152,13 +169,14 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static IEnumerable<string> EnumerateFilesWithoutFollowingReparsePoints(string rootPath, CleanupResult result)
+    private static IEnumerable<string> EnumerateFilesWithoutFollowingReparsePoints(string rootPath, CleanupResult result, CancellationToken cancellationToken)
     {
         var pending = new Stack<string>();
         pending.Push(rootPath);
 
         while (pending.Count > 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string currentDirectory = pending.Pop();
             IEnumerable<string> files;
             try
@@ -174,6 +192,7 @@ public class CleanupExecutionEngine
 
             foreach (var file in files)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 yield return file;
             }
 
@@ -203,13 +222,14 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static IEnumerable<string> EnumerateDirectoriesWithoutFollowingReparsePoints(string rootPath, CleanupResult result)
+    private static IEnumerable<string> EnumerateDirectoriesWithoutFollowingReparsePoints(string rootPath, CleanupResult result, CancellationToken cancellationToken)
     {
         var pending = new Stack<string>();
         pending.Push(rootPath);
 
         while (pending.Count > 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string currentDirectory = pending.Pop();
             IEnumerable<string> directories;
             try
@@ -250,13 +270,15 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static void CleanupBrowserCache(CleanupResult result)
+    private static void CleanupBrowserCache(CleanupResult result, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "Google", "Chrome", "User Data"), result, ["chrome"]);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "Microsoft", "Edge", "User Data"), result, ["msedge"]);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data"), result, ["brave"]);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "Opera Software", "Opera Stable"), result, ["opera"]);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Google", "Chrome", "User Data"), result, ["chrome"], cancellationToken);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Microsoft", "Edge", "User Data"), result, ["msedge"], cancellationToken);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data"), result, ["brave"], cancellationToken);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Opera Software", "Opera Stable"), result, ["opera"], cancellationToken);
 
         string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
         if (IsAnyProcessRunning(["firefox"]))
@@ -276,8 +298,12 @@ public class CleanupExecutionEngine
             foreach (var dir in Directory.GetDirectories(firefoxPath))
             {
                 string cachePath = Path.Combine(dir, "cache2", "entries");
-                CleanupDirectory(cachePath, result);
+                CleanupDirectory(cachePath, result, cancellationToken);
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -286,8 +312,10 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static void CleanupChromiumBrowser(string userDataPath, CleanupResult result, string[] processNames)
+    private static void CleanupChromiumBrowser(string userDataPath, CleanupResult result, string[] processNames, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (IsAnyProcessRunning(processNames))
         {
             result.ItemsIgnored++;
@@ -318,10 +346,14 @@ public class CleanupExecutionEngine
                     foreach (var relativePath in cacheRelativePaths)
                     {
                         string cachePath = Path.Combine(dir, relativePath);
-                        CleanupDirectory(cachePath, result);
+                        CleanupDirectory(cachePath, result, cancellationToken);
                     }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -362,12 +394,14 @@ public class CleanupExecutionEngine
         return false;
     }
 
-    private static async Task CleanupWindowsUpdateAsync(string wuPath, CleanupResult result)
+    private static async Task CleanupWindowsUpdateAsync(string wuPath, CleanupResult result, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(wuPath))
         {
             return;
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         string[] services = ["wuauserv", "bits", "cryptsvc"];
         bool stopped = await ToggleServicesAsync(services, false);
@@ -379,7 +413,7 @@ public class CleanupExecutionEngine
 
         try
         {
-            CleanupDirectory(wuPath, result);
+            CleanupDirectory(wuPath, result, cancellationToken);
         }
         finally
         {

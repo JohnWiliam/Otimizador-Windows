@@ -49,12 +49,17 @@ public static class CommandHelper
 
     public static Task<CommandResult> RunCommandDetailedAsync(string fileName, string arguments, int timeoutMs = 5000)
     {
-        return RunCommandDetailedAsync(fileName, arguments, null, timeoutMs);
+        return RunCommandDetailedAsync(fileName, arguments, null, timeoutMs, CancellationToken.None);
+    }
+
+    public static Task<CommandResult> RunCommandDetailedAsync(string fileName, string arguments, CancellationToken cancellationToken, int timeoutMs = 5000)
+    {
+        return RunCommandDetailedAsync(fileName, arguments, null, timeoutMs, cancellationToken);
     }
 
     public static Task<CommandResult> RunCommandDetailedAsync(string fileName, IEnumerable<string> argumentList, int timeoutMs = 5000)
     {
-        return RunCommandDetailedAsync(fileName, null, argumentList, timeoutMs);
+        return RunCommandDetailedAsync(fileName, null, argumentList, timeoutMs, CancellationToken.None);
     }
 
     public static CommandResult RunCommandDetailed(string fileName, IEnumerable<string> argumentList, int timeoutMs = 5000)
@@ -62,7 +67,7 @@ public static class CommandHelper
         return Task.Run(() => RunCommandDetailedAsync(fileName, argumentList, timeoutMs)).GetAwaiter().GetResult();
     }
 
-    private static async Task<CommandResult> RunCommandDetailedAsync(string fileName, string? arguments, IEnumerable<string>? argumentList, int timeoutMs)
+    private static async Task<CommandResult> RunCommandDetailedAsync(string fileName, string? arguments, IEnumerable<string>? argumentList, int timeoutMs, CancellationToken cancellationToken)
     {
         Logger.Log($"Executing command: {fileName} {FormatArguments(arguments, argumentList)}", "CMD_START");
         try
@@ -101,25 +106,22 @@ public static class CommandHelper
             var outputTask = process.StandardOutput.ReadToEndAsync();
             var errorTask = process.StandardError.ReadToEndAsync();
 
-            using var cts = new CancellationTokenSource(timeoutMs);
+            using var timeoutCts = new CancellationTokenSource(timeoutMs);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(timeoutCts.Token, cancellationToken);
             try
             {
-                await process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
+                await process.WaitForExitAsync(linkedCts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                Logger.Log($"Command canceled: {fileName} {arguments}", "CMD_CANCELED");
+                TryKillProcessTree(process);
+                throw;
             }
             catch (OperationCanceledException)
             {
                 Logger.Log($"Command timed out ({timeoutMs}ms): {fileName} {arguments}", "CMD_TIMEOUT");
-                try
-                {
-                    if (!process.HasExited)
-                    {
-                        process.Kill(entireProcessTree: true);
-                    }
-                }
-                catch (Exception kEx)
-                {
-                    Logger.Log($"Failed to kill timed out process: {kEx.Message}", "CMD_ERROR");
-                }
+                TryKillProcessTree(process);
 
                 string timeoutStdOut = outputTask.IsCompletedSuccessfully ? await outputTask.ConfigureAwait(false) : string.Empty;
                 string timeoutStdErr = errorTask.IsCompletedSuccessfully ? await errorTask.ConfigureAwait(false) : string.Empty;
@@ -136,10 +138,29 @@ public static class CommandHelper
             }
             return new CommandResult(true, false, process.ExitCode, output, error);
         }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             Logger.Log($"Exception running command {fileName}: {ex.Message}", "CMD_EXCEPTION");
             return new CommandResult(false, false, null, string.Empty, ex.Message);
+        }
+    }
+
+    private static void TryKillProcessTree(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch (Exception kEx)
+        {
+            Logger.Log($"Failed to kill canceled process: {kEx.Message}", "CMD_ERROR");
         }
     }
 
