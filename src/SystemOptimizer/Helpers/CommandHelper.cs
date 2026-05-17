@@ -44,7 +44,7 @@ public static class CommandHelper
 
     public static CommandResult RunCommandDetailed(string fileName, string arguments, int timeoutMs = 5000)
     {
-        return RunCommandDetailedAsync(fileName, arguments, timeoutMs).GetAwaiter().GetResult();
+        return Task.Run(() => RunCommandDetailedAsync(fileName, arguments, timeoutMs)).GetAwaiter().GetResult();
     }
 
     public static Task<CommandResult> RunCommandDetailedAsync(string fileName, string arguments, int timeoutMs = 5000)
@@ -59,7 +59,7 @@ public static class CommandHelper
 
     public static CommandResult RunCommandDetailed(string fileName, IEnumerable<string> argumentList, int timeoutMs = 5000)
     {
-        return RunCommandDetailedAsync(fileName, argumentList, timeoutMs).GetAwaiter().GetResult();
+        return Task.Run(() => RunCommandDetailedAsync(fileName, argumentList, timeoutMs)).GetAwaiter().GetResult();
     }
 
     private static async Task<CommandResult> RunCommandDetailedAsync(string fileName, string? arguments, IEnumerable<string>? argumentList, int timeoutMs)
@@ -104,27 +104,30 @@ public static class CommandHelper
             using var cts = new CancellationTokenSource(timeoutMs);
             try
             {
-                await process.WaitForExitAsync(cts.Token);
+                await process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
                 Logger.Log($"Command timed out ({timeoutMs}ms): {fileName} {arguments}", "CMD_TIMEOUT");
                 try
                 {
-                    process.Kill(entireProcessTree: true);
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
                 }
                 catch (Exception kEx)
                 {
                     Logger.Log($"Failed to kill timed out process: {kEx.Message}", "CMD_ERROR");
                 }
 
-                string timeoutStdOut = outputTask.IsCompletedSuccessfully ? await outputTask : string.Empty;
-                string timeoutStdErr = errorTask.IsCompletedSuccessfully ? await errorTask : string.Empty;
+                string timeoutStdOut = outputTask.IsCompletedSuccessfully ? await outputTask.ConfigureAwait(false) : string.Empty;
+                string timeoutStdErr = errorTask.IsCompletedSuccessfully ? await errorTask.ConfigureAwait(false) : string.Empty;
                 return new CommandResult(true, true, null, timeoutStdOut, timeoutStdErr);
             }
 
-            string output = await outputTask;
-            string error = await errorTask;
+            string output = await outputTask.ConfigureAwait(false);
+            string error = await errorTask.ConfigureAwait(false);
 
             Logger.Log($"Command finished. ExitCode: {process.ExitCode}. OutputLen: {output.Length}. ErrorLen: {error.Length}", "CMD_END");
             if (!string.IsNullOrWhiteSpace(error))

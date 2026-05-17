@@ -6,6 +6,8 @@ namespace SystemOptimizer.Services;
 
 public sealed class WindowsUpdateCleanupTargetProvider : ICleanupTargetProvider
 {
+    public string CategoryKey => "windows-update";
+
     public IEnumerable<CleanupTarget> GetTargets()
     {
         yield return new CleanupTarget

@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
+using Microsoft.Extensions.Hosting;
+using System.Threading;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
 using Wpf.Ui;
@@ -15,6 +17,7 @@ public sealed class StartupTasksService
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
     private readonly StartupActivationState _activationState;
+    private readonly IHostApplicationLifetime _applicationLifetime;
     private readonly object _openSettingsLock = new();
     private DateTime _lastOpenSettingsRequestUtc = DateTime.MinValue;
     private bool _toastActivationRegistered;
@@ -22,11 +25,13 @@ public sealed class StartupTasksService
     public StartupTasksService(
         IUpdateService updateService,
         INavigationService navigationService,
-        StartupActivationState activationState)
+        StartupActivationState activationState,
+        IHostApplicationLifetime applicationLifetime)
     {
         _updateService = updateService;
         _navigationService = navigationService;
         _activationState = activationState;
+        _applicationLifetime = applicationLifetime;
     }
 
     public void Initialize(string[] args)
@@ -56,7 +61,7 @@ public sealed class StartupTasksService
         ToastCompatHelper.RegisterActivationHandler(argument =>
         {
             // Precisamos despachar para a UI Thread pois isso vem de um thread background
-            Application.Current.Dispatcher.Invoke(() =>
+            Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 HandleToastArguments(argument);
             });
@@ -131,21 +136,29 @@ public sealed class StartupTasksService
 
     private void RunUpdateCheckInBackground()
     {
+        CancellationToken shutdownToken = _applicationLifetime.ApplicationStopping;
+
         _ = Task.Run(async () =>
         {
             try
             {
+                if (shutdownToken.IsCancellationRequested) return;
+
                 var updateInfo = await _updateService.CheckForUpdatesAsync();
-                if (updateInfo.IsAvailable)
+                if (!shutdownToken.IsCancellationRequested && updateInfo.IsAvailable)
                 {
                     ShowUpdateToast(updateInfo);
                 }
+            }
+            catch (OperationCanceledException) when (shutdownToken.IsCancellationRequested)
+            {
+                Logger.Log("Verificação de atualizações cancelada durante o encerramento da aplicação.");
             }
             catch (Exception ex)
             {
                 Logger.Log($"Erro ao verificar atualizações em background: {ex.Message}", "ERROR");
             }
-        });
+        }, shutdownToken);
     }
 
     private static void ShowUpdateToast(UpdateInfo updateInfo)

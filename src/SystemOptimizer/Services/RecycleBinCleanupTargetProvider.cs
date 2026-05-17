@@ -4,6 +4,8 @@ namespace SystemOptimizer.Services;
 
 public sealed class RecycleBinCleanupTargetProvider : ICleanupTargetProvider
 {
+    public string CategoryKey => "recycle-bin";
+
     public IEnumerable<CleanupTarget> GetTargets()
     {
         yield return new CleanupTarget

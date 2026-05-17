@@ -7,6 +7,8 @@ namespace SystemOptimizer.Services;
 
 public sealed class UserTempCleanupTargetProvider : ICleanupTargetProvider
 {
+    public string CategoryKey => "user-temp";
+
     public IEnumerable<CleanupTarget> GetTargets()
     {
         yield return new CleanupTarget
