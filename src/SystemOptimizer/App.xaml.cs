@@ -24,6 +24,7 @@ public partial class App : Application
     private readonly IHost _host;
     private bool _isSilentMode;
     private bool _hostDisposed;
+    private int _hostStarted;
 
     public App()
     {
@@ -81,7 +82,7 @@ public partial class App : Application
         Thread.CurrentThread.CurrentUICulture = culture;
         SystemOptimizer.Properties.Resources.Culture = culture;
 
-        await _host.StartAsync();
+        await EnsureHostStartedAsync();
         try
         {
             await RunSilentModeAsync();
@@ -117,7 +118,7 @@ public partial class App : Application
 
         this.DispatcherUnhandledException += OnDispatcherUnhandledException;
 
-        await _host.StartAsync();
+        await EnsureHostStartedAsync();
 
         if (_isSilentMode)
         {
@@ -149,14 +150,36 @@ public partial class App : Application
         base.OnExit(e);
     }
 
+    private async Task EnsureHostStartedAsync()
+    {
+        if (Interlocked.Exchange(ref _hostStarted, 1) == 1)
+        {
+            Logger.Log("Inicialização duplicada do host ignorada.", "WARNING");
+            return;
+        }
+
+        try
+        {
+            await _host.StartAsync();
+        }
+        catch
+        {
+            Volatile.Write(ref _hostStarted, 0);
+            throw;
+        }
+    }
+
     private async Task StopHostAsync()
     {
         if (_hostDisposed) return;
 
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            await _host.StopAsync(cts.Token);
+            if (Volatile.Read(ref _hostStarted) == 1)
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                await _host.StopAsync(cts.Token);
+            }
         }
         catch (Exception ex)
         {

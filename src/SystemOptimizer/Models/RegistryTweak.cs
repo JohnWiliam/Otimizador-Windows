@@ -5,6 +5,7 @@ namespace SystemOptimizer.Models;
 
 public class RegistryTweak : TweakBase
 {
+    public static readonly object DeleteValue = new DeleteRegistryValueSentinel();
     private readonly string _keyPath;
     private readonly string _valueName;
     private readonly object _optimizedValue;
@@ -41,7 +42,7 @@ public class RegistryTweak : TweakBase
             using var baseKey = RegistryKey.OpenBaseKey(_hive, _view);
             using var key = baseKey.CreateSubKey(_keyPath, true);
 
-            if (_optimizedValue.ToString() == "DELETE")
+            if (IsDeleteSentinel(_optimizedValue))
             {
                 key.DeleteValue(_valueName, false);
             }
@@ -67,7 +68,7 @@ public class RegistryTweak : TweakBase
             using var key = baseKey.OpenSubKey(_keyPath, true);
             if (key == null) return (true, "Já restaurado.");
 
-            if (_defaultValue == null || _defaultValue.ToString() == "DELETE")
+            if (_defaultValue == null || IsDeleteSentinel(_defaultValue))
             {
                 key.DeleteValue(_valueName, false);
             }
@@ -94,14 +95,14 @@ public class RegistryTweak : TweakBase
 
             if (key == null)
             {
-                Status = (_optimizedValue.ToString() == "DELETE") ? TweakStatus.Optimized : TweakStatus.Default;
+                Status = IsDeleteSentinel(_optimizedValue) ? TweakStatus.Optimized : TweakStatus.Default;
                 return;
             }
 
             var val = key.GetValue(_valueName);
             if (val == null)
             {
-                Status = (_optimizedValue.ToString() == "DELETE") ? TweakStatus.Optimized : TweakStatus.Default;
+                Status = IsDeleteSentinel(_optimizedValue) ? TweakStatus.Optimized : TweakStatus.Default;
             }
             else
             {
@@ -115,6 +116,16 @@ public class RegistryTweak : TweakBase
         {
             Status = TweakStatus.Unknown;
         }
+    }
+
+    private static bool IsDeleteSentinel(object value)
+    {
+        return ReferenceEquals(value, DeleteValue);
+    }
+
+    private sealed class DeleteRegistryValueSentinel
+    {
+        public override string ToString() => nameof(DeleteValue);
     }
 
     private static bool RegistryValuesEqual(object actual, object expected)

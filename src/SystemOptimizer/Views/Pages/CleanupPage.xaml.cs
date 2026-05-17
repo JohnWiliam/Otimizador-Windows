@@ -67,7 +67,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
         InitializeComponent();
         _viewModel = viewModel;
-        DataContext = viewModel;
+        DataContext = this;
 
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -122,18 +122,19 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
     public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
     public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
+    public string CleanupProgressCategory => _viewModel.CleanupProgressCategory;
 
     private async Task AnalyzeAsync()
     {
         if (IsBusyLocal)
             return;
 
+        var operationCts = BeginCleanupOperation();
         try
         {
             IsBusyLocal = true;
             IsOptionsExpanded = false;
             HasScanResults = false;
-            _cleanupCts = new CancellationTokenSource();
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -142,7 +143,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             });
 
             var options = BuildCleanupOptions();
-            var results = await _viewModel.RunCleanupScanAsync(options, _cleanupCts.Token);
+            var results = await _viewModel.RunCleanupScanAsync(options, operationCts.Token);
 
             foreach (var result in results)
                 ScanResults.Add(CreateSummaryItem(result));
@@ -173,8 +174,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         finally
         {
-            _cleanupCts?.Dispose();
-            _cleanupCts = null;
+            EndCleanupOperation(operationCts);
+            operationCts.Dispose();
             IsBusyLocal = false;
         }
     }
@@ -184,10 +185,10 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         if (IsBusyLocal || !HasScanResults)
             return;
 
+        var operationCts = BeginCleanupOperation();
         try
         {
             IsBusyLocal = true;
-            _cleanupCts = new CancellationTokenSource();
 
             var selected = ScanResults.Where(x => x.IsSelected).Select(x => x.Key).ToHashSet();
             var options = BuildCleanupOptions(selected);
@@ -200,7 +201,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
             SmoothScrollToLogsCard();
 
-            await _viewModel.RunSelectedCleanupAsync(options, _cleanupCts.Token);
+            await _viewModel.RunSelectedCleanupAsync(options, operationCts.Token);
             ScanResults.Clear();
             HasScanResults = false;
         }
@@ -214,15 +215,40 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         }
         finally
         {
-            _cleanupCts?.Dispose();
-            _cleanupCts = null;
+            EndCleanupOperation(operationCts);
+            operationCts.Dispose();
             IsBusyLocal = false;
         }
     }
 
+    private CancellationTokenSource BeginCleanupOperation()
+    {
+        var cts = new CancellationTokenSource();
+        var previousCts = Interlocked.Exchange(ref _cleanupCts, cts);
+        previousCts?.Dispose();
+        return cts;
+    }
+
+    private void EndCleanupOperation(CancellationTokenSource operationCts)
+    {
+        Interlocked.CompareExchange(ref _cleanupCts, null, operationCts);
+    }
+
     private void CancelCurrentOperation()
     {
-        _cleanupCts?.Cancel();
+        var cts = Volatile.Read(ref _cleanupCts);
+        if (cts == null)
+        {
+            return;
+        }
+
+        try
+        {
+            cts.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+        }
     }
 
     private CleanupOptions BuildCleanupOptions(ISet<string>? selectedCategories = null)
@@ -274,6 +300,10 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         if (e.PropertyName == nameof(MainViewModel.CleanupProcessedItems))
         {
             OnPropertyChanged(nameof(CleanupProcessedItemsLabel));
+        }
+        else if (e.PropertyName == nameof(MainViewModel.CleanupProgressCategory))
+        {
+            OnPropertyChanged(nameof(CleanupProgressCategory));
         }
     }
 

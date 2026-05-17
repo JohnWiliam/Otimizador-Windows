@@ -1,4 +1,5 @@
 using System;
+using SystemOptimizer.Helpers;
 using System.Windows;
 using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
 
@@ -19,7 +20,7 @@ namespace SystemOptimizer
             }
             catch (Exception ex)
             {
-                // Fallback simples de log caso o app falhe na inicialização
+                Logger.Log($"Fatal Error before MessageBox: {ex}", "ERROR");
                 MessageBox.Show($"Fatal Error: {ex.Message}", "SystemOptimizer Critical Error");
             }
         }

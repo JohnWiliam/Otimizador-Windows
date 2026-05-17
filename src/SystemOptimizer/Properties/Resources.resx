@@ -94,8 +94,8 @@
   <data name="N2_Desc" xml:space="preserve"><value>Gestão moderna de congestionamento para alta velocidade.</value></data>
   <data name="N3_Title" xml:space="preserve"><value>Ativar ECN</value></data>
   <data name="N3_Desc" xml:space="preserve"><value>Notificação Explícita de Congestionamento (Menos Perda).</value></data>
-  <data name="N4_Title" xml:space="preserve"><value>Desativar RSS</value></data>
-  <data name="N4_Desc" xml:space="preserve"><value>Receive Side Scaling (Teste de estabilidade/driver).</value></data>
+  <data name="N4_Title" xml:space="preserve"><value>Ativar RSS</value></data>
+  <data name="N4_Desc" xml:space="preserve"><value>Receive Side Scaling deve permanecer ativo em hardware moderno; este ajuste restaura/garante RSS habilitado.</value></data>
   <data name="N5_Title" xml:space="preserve"><value>Desativar QoS Limit</value></data>
   <data name="N5_Desc" xml:space="preserve"><value>Remove reserva de banda (Packet Scheduler).</value></data>
   <data name="S1_Title" xml:space="preserve"><value>Mostrar Extensões</value></data>
