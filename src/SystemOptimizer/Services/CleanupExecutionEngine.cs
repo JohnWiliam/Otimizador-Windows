@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
+using System.Threading;
 using System.Threading.Tasks;
 using SystemOptimizer.Helpers;
 
@@ -19,27 +20,28 @@ public class CleanupExecutionEngine
     const uint SHERB_NOPROGRESSUI = 0x00000002;
     const uint SHERB_NOSOUND = 0x00000004;
 
-    public async Task<CleanupResult> ExecuteAsync(CleanupTarget target)
+    public async Task<CleanupResult> ExecuteAsync(CleanupTarget target, CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
         var result = new CleanupResult { CategoryName = target.CategoryName };
 
+        cancellationToken.ThrowIfCancellationRequested();
         switch (target.Strategy)
         {
             case CleanupExecutionStrategy.DeleteDirectoryContents:
-                CleanupDirectory(target.Path, result);
+                CleanupDirectory(target.Path, result, cancellationToken);
                 break;
             case CleanupExecutionStrategy.ExecuteCommand:
-                await ExecuteCommandAsync(target, result);
+                await ExecuteCommandAsync(target, result, cancellationToken);
                 break;
             case CleanupExecutionStrategy.EmptyRecycleBin:
                 EmptyRecycleBin(result);
                 break;
             case CleanupExecutionStrategy.CleanupWindowsUpdate:
-                await CleanupWindowsUpdateAsync(target.Path, result);
+                await CleanupWindowsUpdateAsync(target.Path, result, cancellationToken);
                 break;
             case CleanupExecutionStrategy.CleanupBrowserCache:
-                CleanupBrowserCache(result);
+                CleanupBrowserCache(result, cancellationToken);
                 break;
             default:
                 result.Failures++;
@@ -51,7 +53,7 @@ public class CleanupExecutionEngine
         return result;
     }
 
-    private static async Task ExecuteCommandAsync(CleanupTarget target, CleanupResult result)
+    private static async Task ExecuteCommandAsync(CleanupTarget target, CleanupResult result, CancellationToken cancellationToken)
     {
         try
         {
@@ -61,7 +63,9 @@ public class CleanupExecutionEngine
                 return;
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             var commandResult = await CommandHelper.RunCommandDetailedAsync(target.Command, target.Arguments ?? string.Empty);
+            cancellationToken.ThrowIfCancellationRequested();
             if (!commandResult.IsSuccess)
             {
                 result.Failures++;
@@ -70,6 +74,10 @@ public class CleanupExecutionEngine
             }
 
             result.ItemsRemoved = 1;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -99,15 +107,16 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static void CleanupDirectory(string path, CleanupResult result)
+    private static void CleanupDirectory(string path, CleanupResult result, CancellationToken cancellationToken = default)
     {
         if (!Directory.Exists(path) || IsReparsePoint(path))
         {
             return;
         }
 
-        foreach (var filePath in EnumerateFilesWithoutFollowingReparsePoints(path, result))
+        foreach (var filePath in EnumerateFilesWithoutFollowingReparsePoints(path, result, cancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 var fileInfo = new FileInfo(filePath);
@@ -130,8 +139,9 @@ public class CleanupExecutionEngine
             }
         }
 
-        foreach (var directoryPath in EnumerateDirectoriesWithoutFollowingReparsePoints(path, result).OrderByDescending(d => d.Length))
+        foreach (var directoryPath in EnumerateDirectoriesWithoutFollowingReparsePoints(path, result, cancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 if (IsReparsePoint(directoryPath))
@@ -152,44 +162,23 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static IEnumerable<string> EnumerateFilesWithoutFollowingReparsePoints(string rootPath, CleanupResult result)
+    private static IEnumerable<string> EnumerateFilesWithoutFollowingReparsePoints(string rootPath, CleanupResult result, CancellationToken cancellationToken)
     {
         var pending = new Stack<string>();
         pending.Push(rootPath);
 
         while (pending.Count > 0)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string currentDirectory = pending.Pop();
-            IEnumerable<string> files;
-            try
-            {
-                files = Directory.EnumerateFiles(currentDirectory).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Failures++;
-                Logger.Log($"Erro ao enumerar arquivos em '{currentDirectory}': {ex.Message}", "ERROR");
-                continue;
-            }
 
-            foreach (var file in files)
+            foreach (var file in SafeEnumerateFiles(currentDirectory, result, "ERROR"))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 yield return file;
             }
 
-            IEnumerable<string> directories;
-            try
-            {
-                directories = Directory.EnumerateDirectories(currentDirectory).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Failures++;
-                Logger.Log($"Erro ao enumerar diretórios em '{currentDirectory}': {ex.Message}", "ERROR");
-                continue;
-            }
-
-            foreach (var directory in directories)
+            foreach (var directory in SafeEnumerateDirectories(currentDirectory, result, "ERROR"))
             {
                 if (IsReparsePoint(directory))
                 {
@@ -203,28 +192,30 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static IEnumerable<string> EnumerateDirectoriesWithoutFollowingReparsePoints(string rootPath, CleanupResult result)
+    private static IEnumerable<string> EnumerateDirectoriesWithoutFollowingReparsePoints(string rootPath, CleanupResult result, CancellationToken cancellationToken)
     {
-        var pending = new Stack<string>();
-        pending.Push(rootPath);
+        var pending = new Stack<(string Path, bool Expanded)>();
+        pending.Push((rootPath, false));
 
         while (pending.Count > 0)
         {
-            string currentDirectory = pending.Pop();
-            IEnumerable<string> directories;
-            try
+            cancellationToken.ThrowIfCancellationRequested();
+            var (currentDirectory, expanded) = pending.Pop();
+
+            if (expanded)
             {
-                directories = Directory.EnumerateDirectories(currentDirectory).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Failures++;
-                Logger.Log($"Erro ao enumerar diretórios em '{currentDirectory}': {ex.Message}", "ERROR");
+                if (!string.Equals(currentDirectory, rootPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    yield return currentDirectory;
+                }
+
                 continue;
             }
 
-            foreach (var directory in directories)
+            pending.Push((currentDirectory, true));
+            foreach (var directory in SafeEnumerateDirectories(currentDirectory, result, "ERROR"))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (IsReparsePoint(directory))
                 {
                     result.ItemsIgnored++;
@@ -232,8 +223,58 @@ public class CleanupExecutionEngine
                     continue;
                 }
 
-                yield return directory;
-                pending.Push(directory);
+                pending.Push((directory, false));
+            }
+        }
+    }
+
+
+    private static IEnumerable<string> SafeEnumerateFiles(string path, CleanupResult result, string logLevel)
+    {
+        return SafeEnumerate(path, result, logLevel, Directory.EnumerateFiles, "arquivos");
+    }
+
+    private static IEnumerable<string> SafeEnumerateDirectories(string path, CleanupResult result, string logLevel)
+    {
+        return SafeEnumerate(path, result, logLevel, Directory.EnumerateDirectories, "diretórios");
+    }
+
+    private static IEnumerable<string> SafeEnumerate(string path, CleanupResult result, string logLevel, Func<string, IEnumerable<string>> enumerate, string itemLabel)
+    {
+        IEnumerator<string>? enumerator = null;
+        try
+        {
+            enumerator = enumerate(path).GetEnumerator();
+        }
+        catch (Exception ex)
+        {
+            result.Failures++;
+            Logger.Log($"Erro ao enumerar {itemLabel} em '{path}': {ex.Message}", logLevel);
+            yield break;
+        }
+
+        using (enumerator)
+        {
+            while (true)
+            {
+                string current;
+                try
+                {
+                    if (!enumerator.MoveNext())
+                    {
+                        yield break;
+                    }
+
+                    current = enumerator.Current;
+                }
+                catch (Exception ex)
+                {
+                    result.Failures++;
+                    Logger.Log($"Erro ao enumerar {itemLabel} em '{path}': {ex.Message}", logLevel);
+                    yield break;
+                }
+
+                yield return current;
             }
         }
     }
@@ -250,13 +291,13 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static void CleanupBrowserCache(CleanupResult result)
+    private static void CleanupBrowserCache(CleanupResult result, CancellationToken cancellationToken)
     {
         string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "Google", "Chrome", "User Data"), result, ["chrome"]);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "Microsoft", "Edge", "User Data"), result, ["msedge"]);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data"), result, ["brave"]);
-        CleanupChromiumBrowser(Path.Combine(localAppData, "Opera Software", "Opera Stable"), result, ["opera"]);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Google", "Chrome", "User Data"), result, ["chrome"], cancellationToken);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Microsoft", "Edge", "User Data"), result, ["msedge"], cancellationToken);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "BraveSoftware", "Brave-Browser", "User Data"), result, ["brave"], cancellationToken);
+        CleanupChromiumBrowser(Path.Combine(localAppData, "Opera Software", "Opera Stable"), result, ["opera"], cancellationToken);
 
         string firefoxPath = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
         if (IsAnyProcessRunning(["firefox"]))
@@ -273,11 +314,16 @@ public class CleanupExecutionEngine
 
         try
         {
-            foreach (var dir in Directory.GetDirectories(firefoxPath))
+            foreach (var dir in SafeEnumerateDirectories(firefoxPath, result, "ERROR"))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 string cachePath = Path.Combine(dir, "cache2", "entries");
-                CleanupDirectory(cachePath, result);
+                CleanupDirectory(cachePath, result, cancellationToken);
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -286,7 +332,7 @@ public class CleanupExecutionEngine
         }
     }
 
-    private static void CleanupChromiumBrowser(string userDataPath, CleanupResult result, string[] processNames)
+    private static void CleanupChromiumBrowser(string userDataPath, CleanupResult result, string[] processNames, CancellationToken cancellationToken = default)
     {
         if (IsAnyProcessRunning(processNames))
         {
@@ -311,17 +357,22 @@ public class CleanupExecutionEngine
 
         try
         {
-            foreach (var dir in Directory.GetDirectories(userDataPath))
+            foreach (var dir in SafeEnumerateDirectories(userDataPath, result, "ERROR"))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (File.Exists(Path.Combine(dir, "Preferences")) || dir.EndsWith("Default") || dir.Contains("Profile"))
                 {
                     foreach (var relativePath in cacheRelativePaths)
                     {
                         string cachePath = Path.Combine(dir, relativePath);
-                        CleanupDirectory(cachePath, result);
+                        CleanupDirectory(cachePath, result, cancellationToken);
                     }
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -362,7 +413,7 @@ public class CleanupExecutionEngine
         return false;
     }
 
-    private static async Task CleanupWindowsUpdateAsync(string wuPath, CleanupResult result)
+    private static async Task CleanupWindowsUpdateAsync(string wuPath, CleanupResult result, CancellationToken cancellationToken)
     {
         if (!Directory.Exists(wuPath))
         {
@@ -370,28 +421,90 @@ public class CleanupExecutionEngine
         }
 
         string[] services = ["wuauserv", "bits", "cryptsvc"];
-        bool stopped = await ToggleServicesAsync(services, false);
-        if (!stopped)
-        {
-            result.Failures++;
-            return;
-        }
+        var serviceStates = CaptureServiceStates(services);
+        var shouldRestoreServices = serviceStates.Count > 0;
 
         try
         {
-            CleanupDirectory(wuPath, result);
+            bool stopped = await ToggleServicesAsync(services, start: false, cancellationToken);
+            if (!stopped)
+            {
+                result.Failures++;
+                return;
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            CleanupDirectory(wuPath, result, cancellationToken);
         }
         finally
         {
-            bool started = await ToggleServicesAsync(services, true);
-            if (!started)
+            if (shouldRestoreServices)
             {
-                result.Failures++;
+                bool started = await RestoreServicesAsync(serviceStates);
+                if (!started)
+                {
+                    result.Failures++;
+                }
             }
         }
     }
 
-    private static async Task<bool> ToggleServicesAsync(string[] services, bool start)
+
+    private static Dictionary<string, ServiceControllerStatus> CaptureServiceStates(string[] services)
+    {
+        var states = new Dictionary<string, ServiceControllerStatus>(StringComparer.OrdinalIgnoreCase);
+        foreach (var serviceName in services)
+        {
+            try
+            {
+                using var sc = new ServiceController(serviceName);
+                sc.Refresh();
+                states[serviceName] = sc.Status;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Falha ao capturar estado do serviço '{serviceName}': {ex.Message}", "WARNING");
+            }
+        }
+
+        return states;
+    }
+
+    private static async Task<bool> RestoreServicesAsync(IReadOnlyDictionary<string, ServiceControllerStatus> originalStates)
+    {
+        return await Task.Run(() =>
+        {
+            var restored = true;
+            foreach (var (serviceName, originalStatus) in originalStates)
+            {
+                try
+                {
+                    if (originalStatus is not (ServiceControllerStatus.Running or ServiceControllerStatus.StartPending))
+                    {
+                        continue;
+                    }
+
+                    using var sc = new ServiceController(serviceName);
+                    sc.Refresh();
+                    if (sc.Status != ServiceControllerStatus.Running && sc.Status != ServiceControllerStatus.StartPending)
+                    {
+                        sc.Start();
+                    }
+
+                    sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(10));
+                }
+                catch (Exception ex)
+                {
+                    restored = false;
+                    Logger.Log($"Falha ao restaurar serviço '{serviceName}' após limpeza: {ex.Message}", "ERROR");
+                }
+            }
+
+            return restored;
+        });
+    }
+
+    private static async Task<bool> ToggleServicesAsync(string[] services, bool start, CancellationToken cancellationToken = default)
     {
         return await Task.Run(() =>
         {
@@ -399,6 +512,7 @@ public class CleanupExecutionEngine
             {
                 foreach (var s in services)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     using var sc = new ServiceController(s);
                     sc.Refresh();
                     if (start)
@@ -419,6 +533,10 @@ public class CleanupExecutionEngine
                     }
                 }
                 return true;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {

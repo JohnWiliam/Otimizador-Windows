@@ -127,7 +127,7 @@ public class CleanupService
             var aggregate = new CleanupResult { CategoryName = category.DisplayName };
             foreach (var target in category.Targets)
             {
-                var targetResult = await _executionEngine.ExecuteAsync(target);
+                var targetResult = await _executionEngine.ExecuteAsync(target, cancellationToken);
                 aggregate.BytesRemoved += targetResult.BytesRemoved;
                 aggregate.ItemsRemoved += targetResult.ItemsRemoved;
                 aggregate.ItemsIgnored += targetResult.ItemsIgnored;
@@ -239,7 +239,7 @@ public class CleanupService
             if (!Directory.Exists(root))
                 continue;
 
-            foreach (var profileDir in Directory.GetDirectories(root))
+            foreach (var profileDir in SafeEnumerateDirectories(root))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!IsChromiumProfileDirectory(profileDir))
@@ -257,7 +257,7 @@ public class CleanupService
         var firefoxProfiles = Path.Combine(localAppData, "Mozilla", "Firefox", "Profiles");
         if (Directory.Exists(firefoxProfiles))
         {
-            foreach (var profile in Directory.GetDirectories(firefoxProfiles))
+            foreach (var profile in SafeEnumerateDirectories(firefoxProfiles))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var scan = await ScanDirectoryAsync(Path.Combine(profile, "cache2", "entries"), cancellationToken);
@@ -280,7 +280,7 @@ public class CleanupService
     {
         return Task.Run(() =>
         {
-            if (!Directory.Exists(path))
+            if (!Directory.Exists(path) || IsReparsePoint(path))
                 return new ScanResult(0, 0);
 
             long bytes = 0;
@@ -295,18 +295,7 @@ public class CleanupService
                     cancellationToken.ThrowIfCancellationRequested();
                     var current = pendingDirectories.Pop();
 
-                    IEnumerable<string> files;
-                    try
-                    {
-                        files = Directory.EnumerateFiles(current);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"Erro ao enumerar arquivos em '{current}': {ex.Message}", "WARNING");
-                        continue;
-                    }
-
-                    foreach (var file in files)
+                    foreach (var file in SafeEnumerateFiles(current))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         try
@@ -321,22 +310,22 @@ public class CleanupService
                         }
                     }
 
-                    IEnumerable<string> subDirectories;
-                    try
+                    foreach (var subDirectory in SafeEnumerateDirectories(current))
                     {
-                        subDirectories = Directory.EnumerateDirectories(current);
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Log($"Erro ao enumerar subdiretórios em '{current}': {ex.Message}", "WARNING");
-                        continue;
-                    }
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (IsReparsePoint(subDirectory))
+                        {
+                            Logger.Log($"Subdiretório reparse point ignorado durante análise: '{subDirectory}'", "WARNING");
+                            continue;
+                        }
 
-                    foreach (var subDirectory in subDirectories)
-                    {
                         pendingDirectories.Push(subDirectory);
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -345,6 +334,67 @@ public class CleanupService
 
             return new ScanResult(bytes, items);
         }, cancellationToken);
+    }
+
+
+    private static IEnumerable<string> SafeEnumerateFiles(string path)
+    {
+        return SafeEnumerate(path, Directory.EnumerateFiles, "arquivos");
+    }
+
+    private static IEnumerable<string> SafeEnumerateDirectories(string path)
+    {
+        return SafeEnumerate(path, Directory.EnumerateDirectories, "subdiretórios");
+    }
+
+    private static IEnumerable<string> SafeEnumerate(string path, Func<string, IEnumerable<string>> enumerate, string itemLabel)
+    {
+        IEnumerator<string>? enumerator = null;
+        try
+        {
+            enumerator = enumerate(path).GetEnumerator();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Erro ao enumerar {itemLabel} em '{path}': {ex.Message}", "WARNING");
+            yield break;
+        }
+
+        using (enumerator)
+        {
+            while (true)
+            {
+                string current;
+                try
+                {
+                    if (!enumerator.MoveNext())
+                    {
+                        yield break;
+                    }
+
+                    current = enumerator.Current;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Erro ao enumerar {itemLabel} em '{path}': {ex.Message}", "WARNING");
+                    yield break;
+                }
+
+                yield return current;
+            }
+        }
+    }
+
+    private static bool IsReparsePoint(string path)
+    {
+        try
+        {
+            return File.GetAttributes(path).HasFlag(FileAttributes.ReparsePoint);
+        }
+        catch
+        {
+            return true;
+        }
     }
 
     private void ReportProgress(int percentage, string currentCategory, int processedItems, int totalSteps)

@@ -72,6 +72,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         Loaded += CleanupPage_Loaded;
+        Unloaded += CleanupPage_Unloaded;
     }
 
     public bool IsOptionsExpanded
@@ -123,6 +124,9 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
     public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
     public string CleanupProgressCategory => _viewModel.CleanupProgressCategory;
+    public int CleanupProgressPercentage => _viewModel.CleanupProgressPercentage;
+    public string SelectedScanCountLabel => $"{ScanResults.Count(result => result.IsSelected)} categoria(s) selecionada(s)";
+    public string SelectedScanSizeLabel => $"{Math.Round(ScanResults.Where(result => result.IsSelected && result.ShouldDisplaySize).Sum(result => result.Bytes) / 1024d / 1024d, 2)} MB";
 
     private async Task AnalyzeAsync()
     {
@@ -139,15 +143,20 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             Application.Current.Dispatcher.Invoke(() =>
             {
                 _viewModel.CleanupLogs.Clear();
-                ScanResults.Clear();
+                ClearScanResults();
             });
 
             var options = BuildCleanupOptions();
             var results = await _viewModel.RunCleanupScanAsync(options, operationCts.Token);
 
             foreach (var result in results)
-                ScanResults.Add(CreateSummaryItem(result));
+            {
+                var summaryItem = CreateSummaryItem(result);
+                summaryItem.PropertyChanged += ScanResult_PropertyChanged;
+                ScanResults.Add(summaryItem);
+            }
 
+            RefreshScanTotals();
             HasScanResults = ScanResults.Any(result => result.Items > 0);
 
             if (HasScanResults)
@@ -202,7 +211,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             SmoothScrollToLogsCard();
 
             await _viewModel.RunSelectedCleanupAsync(options, operationCts.Token);
-            ScanResults.Clear();
+            ClearScanResults();
             HasScanResults = false;
         }
         catch (OperationCanceledException)
@@ -305,6 +314,35 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         {
             OnPropertyChanged(nameof(CleanupProgressCategory));
         }
+        else if (e.PropertyName == nameof(MainViewModel.CleanupProgressPercentage))
+        {
+            OnPropertyChanged(nameof(CleanupProgressPercentage));
+        }
+    }
+
+    private void ScanResult_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CleanupCategorySummaryItem.IsSelected))
+        {
+            RefreshScanTotals();
+        }
+    }
+
+    private void RefreshScanTotals()
+    {
+        OnPropertyChanged(nameof(SelectedScanCountLabel));
+        OnPropertyChanged(nameof(SelectedScanSizeLabel));
+    }
+
+    private void ClearScanResults()
+    {
+        foreach (var item in ScanResults)
+        {
+            item.PropertyChanged -= ScanResult_PropertyChanged;
+        }
+
+        ScanResults.Clear();
+        RefreshScanTotals();
     }
 
     private void CleanupLogs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -513,9 +551,25 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     private void CleanupPage_Loaded(object sender, RoutedEventArgs e)
     {
-        AnimateCardOnLoad(OptionsCard, fromY: -10, durationMs: 220);
         AnimateCardOnLoad(SummaryCard, fromY: 10, durationMs: 260);
         AnimateCardOnLoad(LogsCard, fromY: 14, durationMs: 300);
+    }
+
+    private void CleanupPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        CancelCurrentOperation();
+        _viewModel.CleanupLogs.CollectionChanged -= CleanupLogs_CollectionChanged;
+        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        Loaded -= CleanupPage_Loaded;
+        Unloaded -= CleanupPage_Unloaded;
+        _logRenderCts?.Cancel();
+        _logRenderCts?.Dispose();
+        _logRenderCts = null;
+        ClearScanResults();
+        lock (_pendingLogsLock)
+        {
+            _pendingLogs.Clear();
+        }
     }
 
     private static void AnimateCardOnLoad(UIElement target, double fromY, int durationMs)
