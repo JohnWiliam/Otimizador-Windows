@@ -50,6 +50,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private CancellationTokenSource? _cleanupCts;
     private CancellationTokenSource? _logRenderCts;
     private Task? _logRenderTask;
+    private bool _isSubscribedToViewModel;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -69,9 +70,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         _viewModel = viewModel;
         DataContext = this;
 
-        _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
-        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         Loaded += CleanupPage_Loaded;
+        Unloaded += CleanupPage_Unloaded;
     }
 
     public bool IsOptionsExpanded
@@ -104,6 +104,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanCleanup));
             OnPropertyChanged(nameof(ShouldShowSummaryCard));
+            OnPropertyChanged(nameof(ScanResultCountLabel));
             RefreshCommands();
         }
     }
@@ -122,7 +123,12 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
     public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
     public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
-    public string CleanupProgressCategory => _viewModel.CleanupProgressCategory;
+    public string CleanupProgressCategory => string.IsNullOrWhiteSpace(_viewModel.CleanupProgressCategory) ? "Pronto para analisar" : _viewModel.CleanupProgressCategory;
+    public int CleanupProgressPercentage => _viewModel.CleanupProgressPercentage;
+    public string TotalPotentialSizeLabel => FormatBytes(ScanResults.Sum(result => result.Bytes));
+    public string ScanResultCountLabel => HasScanResults
+        ? $"{ScanResults.Count(result => result.Items > 0)} categoria(s) com itens encontrados"
+        : "Aguardando análise para estimar o potencial";
 
     private async Task AnalyzeAsync()
     {
@@ -139,15 +145,20 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             Application.Current.Dispatcher.Invoke(() =>
             {
                 _viewModel.CleanupLogs.Clear();
-                ScanResults.Clear();
+                ClearScanResults();
             });
 
             var options = BuildCleanupOptions();
             var results = await _viewModel.RunCleanupScanAsync(options, operationCts.Token);
 
             foreach (var result in results)
-                ScanResults.Add(CreateSummaryItem(result));
+            {
+                var item = CreateSummaryItem(result);
+                item.PropertyChanged += ScanResult_PropertyChanged;
+                ScanResults.Add(item);
+            }
 
+            NotifyScanSummaryChanged();
             HasScanResults = ScanResults.Any(result => result.Items > 0);
 
             if (HasScanResults)
@@ -202,7 +213,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             SmoothScrollToLogsCard();
 
             await _viewModel.RunSelectedCleanupAsync(options, operationCts.Token);
-            ScanResults.Clear();
+            ClearScanResults();
             HasScanResults = false;
         }
         catch (OperationCanceledException)
@@ -305,6 +316,35 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         {
             OnPropertyChanged(nameof(CleanupProgressCategory));
         }
+        else if (e.PropertyName == nameof(MainViewModel.CleanupProgressPercentage))
+        {
+            OnPropertyChanged(nameof(CleanupProgressPercentage));
+        }
+    }
+
+    private void ScanResult_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CleanupCategorySummaryItem.IsSelected))
+        {
+            NotifyScanSummaryChanged();
+        }
+    }
+
+    private void NotifyScanSummaryChanged()
+    {
+        OnPropertyChanged(nameof(TotalPotentialSizeLabel));
+        OnPropertyChanged(nameof(ScanResultCountLabel));
+    }
+
+    private void ClearScanResults()
+    {
+        foreach (var result in ScanResults)
+        {
+            result.PropertyChanged -= ScanResult_PropertyChanged;
+        }
+
+        ScanResults.Clear();
+        NotifyScanSummaryChanged();
     }
 
     private void CleanupLogs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -513,9 +553,70 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     private void CleanupPage_Loaded(object sender, RoutedEventArgs e)
     {
-        AnimateCardOnLoad(OptionsCard, fromY: -10, durationMs: 220);
-        AnimateCardOnLoad(SummaryCard, fromY: 10, durationMs: 260);
-        AnimateCardOnLoad(LogsCard, fromY: 14, durationMs: 300);
+        SubscribeToViewModel();
+        AnimateCardOnLoad(HeroPanel, fromY: -14, durationMs: 360);
+        AnimateCardOnLoad(OptionsCard, fromY: 14, durationMs: 420);
+        AnimateCardOnLoad(SummaryCard, fromY: 18, durationMs: 460);
+        AnimateCardOnLoad(LogsCard, fromY: 22, durationMs: 500);
+    }
+
+    private void CleanupPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        CancelCurrentOperation();
+        UnsubscribeFromViewModel();
+        var logRenderCts = Interlocked.Exchange(ref _logRenderCts, null);
+        if (logRenderCts != null)
+        {
+            logRenderCts.Cancel();
+            var renderTask = _logRenderTask ?? Task.CompletedTask;
+            _ = renderTask.ContinueWith(_ => logRenderCts.Dispose(), TaskScheduler.Default);
+        }
+
+        ClearScanResults();
+    }
+
+    private void SubscribeToViewModel()
+    {
+        if (_isSubscribedToViewModel)
+        {
+            return;
+        }
+
+        _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
+        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        _isSubscribedToViewModel = true;
+    }
+
+    private void UnsubscribeFromViewModel()
+    {
+        if (!_isSubscribedToViewModel)
+        {
+            return;
+        }
+
+        _viewModel.CleanupLogs.CollectionChanged -= CleanupLogs_CollectionChanged;
+        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        _isSubscribedToViewModel = false;
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes <= 0)
+        {
+            return "0 MB";
+        }
+
+        double size = bytes;
+        string[] units = ["B", "KB", "MB", "GB", "TB"];
+        var unitIndex = 0;
+
+        while (size >= 1024 && unitIndex < units.Length - 1)
+        {
+            size /= 1024;
+            unitIndex++;
+        }
+
+        return $"{Math.Round(size, unitIndex == 0 ? 0 : 2)} {units[unitIndex]}";
     }
 
     private static void AnimateCardOnLoad(UIElement target, double fromY, int durationMs)
