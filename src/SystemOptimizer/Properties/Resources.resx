@@ -142,6 +142,7 @@
   <data name="Btn_RunCleanup" xml:space="preserve"><value>Executar Limpeza</value></data>
   <data name="Status_Optimized" xml:space="preserve"><value>Otimizado</value></data>
   <data name="Status_Default" xml:space="preserve"><value>Não Otimizado</value></data>
+  <data name="Status_PendingReboot" xml:space="preserve"><value>Reinicialização pendente</value></data>
   <data name="Status_Modified" xml:space="preserve"><value>Modificado</value></data>
   <data name="Status_Unknown" xml:space="preserve"><value>Desconhecido</value></data>
   <data name="Status_Undefined" xml:space="preserve"><value>INDEFINIDO</value></data>

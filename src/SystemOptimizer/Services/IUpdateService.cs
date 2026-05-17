@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SystemOptimizer.Services;
@@ -8,6 +9,6 @@ public record UpdateInfo(bool IsAvailable, string? Version, string? ReleaseNotes
 
 public interface IUpdateService
 {
-    Task<UpdateInfo> CheckForUpdatesAsync();
+    Task<UpdateInfo> CheckForUpdatesAsync(CancellationToken cancellationToken = default);
     Task DownloadAndInstallAsync(string downloadUrl, IProgress<double> progress);
 }

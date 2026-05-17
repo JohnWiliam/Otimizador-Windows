@@ -12,6 +12,8 @@ public class AppConfig
 
 public static class AppSettings
 {
+    private static readonly object SaveLock = new();
+
     private static readonly string _configPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "SystemOptimizer",
@@ -60,19 +62,22 @@ public static class AppSettings
 
     public static void Save()
     {
-        try
+        lock (SaveLock)
         {
-            if (Path.GetDirectoryName(_configPath) is string dir && !Directory.Exists(dir))
+            try
             {
-                Directory.CreateDirectory(dir);
-            }
+                if (Path.GetDirectoryName(_configPath) is string dir && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
 
-            string json = JsonSerializer.Serialize(Current, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_configPath, json);
-        }
-        catch (Exception)
-        {
-            // Ignore errors
+                string json = JsonSerializer.Serialize(Current, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(_configPath, json);
+            }
+            catch (Exception)
+            {
+                // Ignore errors
+            }
         }
     }
 }

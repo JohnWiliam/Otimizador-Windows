@@ -31,17 +31,27 @@ public class CleanupService
     {
         _executionEngine = executionEngine;
 
+        var targetsByCategory = targetProviders
+            .GroupBy(provider => provider.CategoryKey, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                group => group.Key,
+                group => group.SelectMany(provider => provider.GetTargets()).ToList(),
+                StringComparer.OrdinalIgnoreCase);
+
         _categoryMap = new(StringComparer.OrdinalIgnoreCase)
         {
-            [UserTempKey] = new(UserTempKey, Resources.Label_TempFiles ?? "User Temp", targetProviders.OfType<UserTempCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [SystemTempKey] = new(SystemTempKey, Resources.Label_SystemTemp ?? "System Temp", targetProviders.OfType<SystemTempCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [PrefetchKey] = new(PrefetchKey, "Prefetch", targetProviders.OfType<PrefetchCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [BrowserCacheKey] = new(BrowserCacheKey, Resources.Label_BrowserCache ?? "Browser Cache", targetProviders.OfType<BrowserCacheCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [DnsKey] = new(DnsKey, "DNS Cache", targetProviders.OfType<DnsCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [WindowsUpdateKey] = new(WindowsUpdateKey, "Windows Update", targetProviders.OfType<WindowsUpdateCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList()),
-            [RecycleBinKey] = new(RecycleBinKey, "Lixeira", targetProviders.OfType<RecycleBinCleanupTargetProvider>().SelectMany(p => p.GetTargets()).ToList())
+            [UserTempKey] = new(UserTempKey, Resources.Label_TempFiles ?? "User Temp", GetTargets(targetsByCategory, UserTempKey)),
+            [SystemTempKey] = new(SystemTempKey, Resources.Label_SystemTemp ?? "System Temp", GetTargets(targetsByCategory, SystemTempKey)),
+            [PrefetchKey] = new(PrefetchKey, "Prefetch", GetTargets(targetsByCategory, PrefetchKey)),
+            [BrowserCacheKey] = new(BrowserCacheKey, Resources.Label_BrowserCache ?? "Browser Cache", GetTargets(targetsByCategory, BrowserCacheKey)),
+            [DnsKey] = new(DnsKey, "DNS Cache", GetTargets(targetsByCategory, DnsKey)),
+            [WindowsUpdateKey] = new(WindowsUpdateKey, "Windows Update", GetTargets(targetsByCategory, WindowsUpdateKey)),
+            [RecycleBinKey] = new(RecycleBinKey, "Lixeira", GetTargets(targetsByCategory, RecycleBinKey))
         };
     }
+
+    private static List<CleanupTarget> GetTargets(IReadOnlyDictionary<string, List<CleanupTarget>> targetsByCategory, string categoryKey)
+        => targetsByCategory.TryGetValue(categoryKey, out var targets) ? targets : [];
 
     public Task RunCleanupAsync() => RunCleanupAsync(CleanupOptions.CreateDefault(), CancellationToken.None);
 

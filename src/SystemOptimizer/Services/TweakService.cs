@@ -9,6 +9,8 @@ using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 using SystemOptimizer.Properties;
+using System.Management;
+using System.Threading;
 
 namespace SystemOptimizer.Services;
 
@@ -32,19 +34,27 @@ public class TweakService
 
     public async Task RefreshStatusesAsync()
     {
-        await Task.Run(() =>
-        {
-            var options = new ParallelOptions
-            {
-                MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 2, 4)
-            };
+        int maxConcurrency = Math.Clamp(Environment.ProcessorCount, 2, 4);
+        using var semaphore = new SemaphoreSlim(maxConcurrency);
 
-            Parallel.ForEach(Tweaks, options, tweak =>
+        var tasks = Tweaks.Select(async tweak =>
+        {
+            await semaphore.WaitAsync().ConfigureAwait(false);
+            try
             {
-                try { tweak.CheckStatus(); }
-                catch (Exception ex) { Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR"); }
-            });
+                await Task.Run(tweak.CheckStatus).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error checking status {tweak.Id}: {ex.Message}", "ERROR");
+            }
+            finally
+            {
+                semaphore.Release();
+            }
         });
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 
     private void AddPrivacyTweaks()
@@ -283,9 +293,9 @@ public class TweakService
             () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("powershell",
-                    "-NoProfile -Command \"(Get-NetTCPSetting -SettingName Internet).CongestionProvider\"").Trim().ToUpper();
-                return res == "CUBIC" || res == "CTCP";
+                var res = CommandHelper.RunCommand("netsh", "int tcp show supplemental");
+                return res.Contains("cubic", StringComparison.OrdinalIgnoreCase)
+                    || res.Contains("ctcp", StringComparison.OrdinalIgnoreCase);
             }
         ));
 
@@ -387,15 +397,69 @@ public class TweakService
     {
         try
         {
-            string systemDrive = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows))?.TrimEnd('\\') ?? "C:";
-            string script = $"$partition = Get-Partition -DriveLetter '{systemDrive[0]}' -ErrorAction Stop; $disk = Get-Disk -Number $partition.DiskNumber -ErrorAction Stop; $disk.MediaType";
-            string mediaType = CommandHelper.RunCommand("powershell", $"-NoProfile -ExecutionPolicy Bypass -Command \"{script}\"").Trim();
-            return mediaType.Equals("HDD", StringComparison.OrdinalIgnoreCase)
-                || mediaType.Equals("Unspecified", StringComparison.OrdinalIgnoreCase);
+            char driveLetter = (Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.Windows)) ?? "C:\\")[0];
+            string partitionQuery = $"ASSOCIATORS OF {{Win32_LogicalDisk.DeviceID='{driveLetter}:'}} WHERE AssocClass=Win32_LogicalDiskToPartition";
+
+            using var partitionSearcher = new ManagementObjectSearcher(partitionQuery);
+            using var partitions = partitionSearcher.Get();
+            var partition = partitions.Cast<ManagementObject>().FirstOrDefault();
+            if (partition == null) return false;
+
+            using (partition)
+            {
+                string partitionDeviceId = Convert.ToString(partition["DeviceID"])?.Replace("'", "''") ?? string.Empty;
+                string diskQuery = $"ASSOCIATORS OF {{Win32_DiskPartition.DeviceID='{partitionDeviceId}'}} WHERE AssocClass=Win32_DiskDriveToDiskPartition";
+                using var diskSearcher = new ManagementObjectSearcher(diskQuery);
+                using var disks = diskSearcher.Get();
+                var disk = disks.Cast<ManagementObject>().FirstOrDefault();
+                if (disk == null) return false;
+
+                using (disk)
+                {
+                    uint diskIndex = Convert.ToUInt32(disk["Index"]);
+                    if (TryGetPhysicalDiskMediaType(diskIndex, out ushort storageMediaType))
+                    {
+                        const ushort unspecified = 0;
+                        const ushort hdd = 3;
+                        return storageMediaType == hdd || storageMediaType == unspecified;
+                    }
+
+                    string mediaType = Convert.ToString(disk["MediaType"]) ?? string.Empty;
+                    string model = Convert.ToString(disk["Model"]) ?? string.Empty;
+
+                    return mediaType.Contains("HDD", StringComparison.OrdinalIgnoreCase)
+                        || model.Contains("HDD", StringComparison.OrdinalIgnoreCase);
+                }
+            }
         }
         catch (Exception ex)
         {
-            Logger.Log($"Falha ao detectar tipo do disco do sistema para SE2: {ex.Message}", "WARNING");
+            Logger.Log($"Falha ao detectar tipo do disco do sistema para SE2 via WMI: {ex.Message}", "WARNING");
+            return false;
+        }
+    }
+
+    private static bool TryGetPhysicalDiskMediaType(uint diskIndex, out ushort mediaType)
+    {
+        mediaType = 0;
+        try
+        {
+            using var searcher = new ManagementObjectSearcher(
+                "root\\Microsoft\\Windows\\Storage",
+                $"SELECT MediaType FROM MSFT_PhysicalDisk WHERE DeviceId = '{diskIndex}'");
+            using var results = searcher.Get();
+            var physicalDisk = results.Cast<ManagementObject>().FirstOrDefault();
+            if (physicalDisk == null) return false;
+
+            using (physicalDisk)
+            {
+                mediaType = Convert.ToUInt16(physicalDisk["MediaType"]);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Falha ao consultar MSFT_PhysicalDisk para disco {diskIndex}: {ex.Message}", "WARNING");
             return false;
         }
     }

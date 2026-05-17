@@ -111,7 +111,14 @@ public static class CommandHelper
                 Logger.Log($"Command timed out ({timeoutMs}ms): {fileName} {arguments}", "CMD_TIMEOUT");
                 try
                 {
-                    process.Kill(entireProcessTree: true);
+                    if (!process.HasExited)
+                    {
+                        process.Kill(entireProcessTree: true);
+                    }
+                }
+                catch (Exception kEx) when (kEx is InvalidOperationException || kEx is System.ComponentModel.Win32Exception)
+                {
+                    Logger.Log($"Timed out process already exited or could not be killed: {kEx.Message}", "CMD_WARNING");
                 }
                 catch (Exception kEx)
                 {

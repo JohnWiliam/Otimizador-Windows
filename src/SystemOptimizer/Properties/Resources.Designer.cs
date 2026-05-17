@@ -986,6 +986,12 @@ namespace SystemOptimizer.Properties {
             }
         }
         
+        public static string Status_PendingReboot {
+            get {
+                return ResourceManager.GetString("Status_PendingReboot", resourceCulture);
+            }
+        }
+
         public static string Status_Undefined {
             get {
                 return ResourceManager.GetString("Status_Undefined", resourceCulture);

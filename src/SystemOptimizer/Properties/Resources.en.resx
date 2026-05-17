@@ -144,6 +144,7 @@
   <data name="Btn_RestartExplorer" xml:space="preserve"><value>Restart Explorer</value></data>
   <data name="Status_Optimized" xml:space="preserve"><value>Optimized</value></data>
   <data name="Status_Default" xml:space="preserve"><value>Not Optimized</value></data>
+  <data name="Status_PendingReboot" xml:space="preserve"><value>Pending reboot</value></data>
   <data name="Status_Modified" xml:space="preserve"><value>Modified</value></data>
   <data name="Status_Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Status_Undefined" xml:space="preserve"><value>UNDEFINED</value></data>

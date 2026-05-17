@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using SystemOptimizer.Helpers;
 
@@ -34,11 +35,11 @@ public sealed class UpdateService : IUpdateService, IDisposable
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("OtimizadorWindows-Updater");
     }
 
-    public async Task<UpdateInfo> CheckForUpdatesAsync()
+    public async Task<UpdateInfo> CheckForUpdatesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            var release = await _httpClient.GetFromJsonAsync<GitHubRelease>(GitHubApiLatestReleaseUri);
+            var release = await _httpClient.GetFromJsonAsync<GitHubRelease>(GitHubApiLatestReleaseUri, cancellationToken);
 
             if (release == null) return new UpdateInfo(false, null, null, null);
 
@@ -62,6 +63,10 @@ public sealed class UpdateService : IUpdateService, IDisposable
                     Logger.Log("Atualização ignorada: asset ausente ou URL de download não confiável.", "WARNING");
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {

@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace SystemOptimizer.Helpers;
 
@@ -8,7 +10,11 @@ public static class Logger
 {
     private const long MaxLogBytes = 2 * 1024 * 1024;
     private const int RetainedLogFiles = 3;
-    private static readonly object SyncRoot = new();
+    private static readonly Channel<string> LogChannel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
+    {
+        SingleReader = true,
+        SingleWriter = false
+    });
 
     // Define o caminho fixo: C:\ProgramData\SystemOptimizer\system_optimizer_log.txt
     private static readonly string LogFolder = Path.Combine(
@@ -32,6 +38,8 @@ public static class Logger
             // Se falhar ao criar a pasta (ex: falta de permissão),
             // falharemos silenciosamente para não travar o app no início.
         }
+
+        _ = Task.Run(ProcessLogQueueAsync);
     }
 
     public static void Log(string message, string type = "INFO")
@@ -40,16 +48,27 @@ public static class Logger
         {
             string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             string logEntry = $"[{timestamp}] [{type}] {message}{Environment.NewLine}";
-
-            lock (SyncRoot)
-            {
-                RotateIfNeeded(Encoding.UTF8.GetByteCount(logEntry));
-                File.AppendAllText(LogFile, logEntry, Encoding.UTF8);
-            }
+            LogChannel.Writer.TryWrite(logEntry);
         }
         catch
         {
             // Ignora erros de gravação de log (ex: arquivo em uso)
+        }
+    }
+
+    private static async Task ProcessLogQueueAsync()
+    {
+        await foreach (var logEntry in LogChannel.Reader.ReadAllAsync())
+        {
+            try
+            {
+                RotateIfNeeded(Encoding.UTF8.GetByteCount(logEntry));
+                await File.AppendAllTextAsync(LogFile, logEntry, Encoding.UTF8).ConfigureAwait(false);
+            }
+            catch
+            {
+                // Ignora erros de gravação de log (ex: arquivo em uso)
+            }
         }
     }
 

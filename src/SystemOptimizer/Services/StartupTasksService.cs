@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using CommunityToolkit.WinUI.Notifications; // CORRIGIDO
@@ -7,6 +8,7 @@ using SystemOptimizer.Helpers;
 using SystemOptimizer.Views.Pages;
 using Wpf.Ui;
 using Wpf.Ui.Abstractions;
+using Microsoft.Extensions.Hosting;
 
 namespace SystemOptimizer.Services;
 
@@ -15,6 +17,7 @@ public sealed class StartupTasksService
     private readonly IUpdateService _updateService;
     private readonly INavigationService _navigationService;
     private readonly StartupActivationState _activationState;
+    private readonly IHostApplicationLifetime _hostApplicationLifetime;
     private readonly object _openSettingsLock = new();
     private DateTime _lastOpenSettingsRequestUtc = DateTime.MinValue;
     private bool _toastActivationRegistered;
@@ -22,11 +25,13 @@ public sealed class StartupTasksService
     public StartupTasksService(
         IUpdateService updateService,
         INavigationService navigationService,
-        StartupActivationState activationState)
+        StartupActivationState activationState,
+        IHostApplicationLifetime hostApplicationLifetime)
     {
         _updateService = updateService;
         _navigationService = navigationService;
         _activationState = activationState;
+        _hostApplicationLifetime = hostApplicationLifetime;
     }
 
     public void Initialize(string[] args)
@@ -135,11 +140,16 @@ public sealed class StartupTasksService
         {
             try
             {
-                var updateInfo = await _updateService.CheckForUpdatesAsync();
+                var cancellationToken = _hostApplicationLifetime.ApplicationStopping;
+                var updateInfo = await _updateService.CheckForUpdatesAsync(cancellationToken);
                 if (updateInfo.IsAvailable)
                 {
                     ShowUpdateToast(updateInfo);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Log("Verificação de atualizações em background cancelada pelo encerramento do aplicativo.", "INFO");
             }
             catch (Exception ex)
             {
