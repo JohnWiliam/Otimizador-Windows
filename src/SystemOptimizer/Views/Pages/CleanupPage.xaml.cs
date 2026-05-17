@@ -30,6 +30,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     private bool _isOptionsExpanded = true;
     private bool _isBusyLocal;
     private bool _hasScanResults;
+    private bool _eventsAttached;
 
     private bool _cleanTemp = true;
     private bool _cleanSystemTemp = true;
@@ -61,17 +62,44 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     public CleanupPage(MainViewModel viewModel)
     {
+        _viewModel = viewModel;
         AnalyzeCommand = new AsyncRelayCommand(AnalyzeAsync, () => !IsBusyLocal);
         CleanupSelectedCommand = new AsyncRelayCommand(CleanupSelectedAsync, () => !IsBusyLocal && HasScanResults);
         CancelCommand = new RelayCommand(CancelCurrentOperation, () => IsBusyLocal);
 
         InitializeComponent();
-        _viewModel = viewModel;
         DataContext = this;
+
+        AttachViewModelEvents();
+        Loaded += CleanupPage_Loaded;
+        Unloaded += CleanupPage_Unloaded;
+    }
+
+
+    private void AttachViewModelEvents()
+    {
+        if (_eventsAttached)
+        {
+            return;
+        }
 
         _viewModel.CleanupLogs.CollectionChanged += CleanupLogs_CollectionChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
-        Loaded += CleanupPage_Loaded;
+        ScanResults.CollectionChanged += ScanResults_CollectionChanged;
+        _eventsAttached = true;
+    }
+
+    private void DetachViewModelEvents()
+    {
+        if (!_eventsAttached)
+        {
+            return;
+        }
+
+        _viewModel.CleanupLogs.CollectionChanged -= CleanupLogs_CollectionChanged;
+        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        ScanResults.CollectionChanged -= ScanResults_CollectionChanged;
+        _eventsAttached = false;
     }
 
     public bool IsOptionsExpanded
@@ -122,7 +150,10 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
     public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
     public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
-    public string CleanupProgressCategory => _viewModel.CleanupProgressCategory;
+    public string CleanupProgressCategory => string.IsNullOrWhiteSpace(_viewModel.CleanupProgressCategory) ? "Aguardando análise" : _viewModel.CleanupProgressCategory;
+    public int CleanupProgressPercentage => _viewModel.CleanupProgressPercentage;
+    public string TotalPotentialLabel => HasScanResults ? $"{Math.Round(ScanResults.Sum(result => result.Bytes) / 1024.0 / 1024.0, 2)} MB" : "0 MB";
+    public string SelectedScanCountLabel => HasScanResults ? $"{ScanResults.Count(result => result.IsSelected)}/{ScanResults.Count}" : "0/0";
 
     private async Task AnalyzeAsync()
     {
@@ -149,6 +180,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
                 ScanResults.Add(CreateSummaryItem(result));
 
             HasScanResults = ScanResults.Any(result => result.Items > 0);
+            RefreshScanMetrics();
 
             if (HasScanResults)
             {
@@ -204,6 +236,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
             await _viewModel.RunSelectedCleanupAsync(options, operationCts.Token);
             ScanResults.Clear();
             HasScanResults = false;
+            RefreshScanMetrics();
         }
         catch (OperationCanceledException)
         {
@@ -305,6 +338,46 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         {
             OnPropertyChanged(nameof(CleanupProgressCategory));
         }
+        else if (e.PropertyName == nameof(MainViewModel.CleanupProgressPercentage))
+        {
+            OnPropertyChanged(nameof(CleanupProgressPercentage));
+        }
+    }
+
+
+    private void ScanResults_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems != null)
+        {
+            foreach (CleanupCategorySummaryItem item in e.OldItems)
+            {
+                item.PropertyChanged -= ScanResult_PropertyChanged;
+            }
+        }
+
+        if (e.NewItems != null)
+        {
+            foreach (CleanupCategorySummaryItem item in e.NewItems)
+            {
+                item.PropertyChanged += ScanResult_PropertyChanged;
+            }
+        }
+
+        RefreshScanMetrics();
+    }
+
+    private void ScanResult_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CleanupCategorySummaryItem.IsSelected))
+        {
+            RefreshScanMetrics();
+        }
+    }
+
+    private void RefreshScanMetrics()
+    {
+        OnPropertyChanged(nameof(TotalPotentialLabel));
+        OnPropertyChanged(nameof(SelectedScanCountLabel));
     }
 
     private void CleanupLogs_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -513,9 +586,34 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     private void CleanupPage_Loaded(object sender, RoutedEventArgs e)
     {
-        AnimateCardOnLoad(OptionsCard, fromY: -10, durationMs: 220);
-        AnimateCardOnLoad(SummaryCard, fromY: 10, durationMs: 260);
-        AnimateCardOnLoad(LogsCard, fromY: 14, durationMs: 300);
+        AttachViewModelEvents();
+        AnimateCardOnLoad(HeroPanel, fromY: -18, durationMs: 420);
+        AnimateCardOnLoad(OptionsCard, fromY: 18, durationMs: 480);
+        AnimateCardOnLoad(StatusCard, fromY: 18, durationMs: 540);
+        AnimateCardOnLoad(SummaryCard, fromY: 22, durationMs: 560);
+        AnimateCardOnLoad(LogsCard, fromY: 22, durationMs: 620);
+    }
+
+    private void CleanupPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        CancelCurrentOperation();
+        DetachViewModelEvents();
+
+        foreach (var item in ScanResults)
+        {
+            item.PropertyChanged -= ScanResult_PropertyChanged;
+        }
+
+        lock (_pendingLogsLock)
+        {
+            _pendingLogs.Clear();
+        }
+
+        _logRenderCts?.Cancel();
+        _logRenderCts?.Dispose();
+        _logRenderCts = null;
+        _cleanupCts?.Dispose();
+        _cleanupCts = null;
     }
 
     private static void AnimateCardOnLoad(UIElement target, double fromY, int durationMs)

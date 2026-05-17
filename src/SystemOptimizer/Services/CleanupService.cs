@@ -127,7 +127,8 @@ public class CleanupService
             var aggregate = new CleanupResult { CategoryName = category.DisplayName };
             foreach (var target in category.Targets)
             {
-                var targetResult = await _executionEngine.ExecuteAsync(target);
+                cancellationToken.ThrowIfCancellationRequested();
+                var targetResult = await _executionEngine.ExecuteAsync(target, cancellationToken);
                 aggregate.BytesRemoved += targetResult.BytesRemoved;
                 aggregate.ItemsRemoved += targetResult.ItemsRemoved;
                 aggregate.ItemsIgnored += targetResult.ItemsIgnored;
