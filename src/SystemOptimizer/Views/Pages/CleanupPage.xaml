@@ -123,8 +123,8 @@
                                TextWrapping="Wrap" />
 
                     <WrapPanel>
-                        <ui:Button Command="{Binding AnalyzeCommand, ElementName=RootPage}"
-                                   IsEnabled="{Binding CanAnalyze, ElementName=RootPage}"
+                        <ui:Button Command="{Binding AnalyzeCommand}"
+                                   IsEnabled="{Binding CanAnalyze}"
                                    Appearance="Primary"
                                    Style="{StaticResource HeroActionButtonStyle}">
                             <StackPanel Orientation="Horizontal">
@@ -133,8 +133,8 @@
                             </StackPanel>
                         </ui:Button>
 
-                        <ui:Button Command="{Binding CleanupSelectedCommand, ElementName=RootPage}"
-                                   IsEnabled="{Binding CanCleanup, ElementName=RootPage}"
+                        <ui:Button Command="{Binding CleanupSelectedCommand}"
+                                   IsEnabled="{Binding CanCleanup}"
                                    Appearance="Primary"
                                    Style="{StaticResource HeroActionButtonStyle}">
                             <StackPanel Orientation="Horizontal">
@@ -143,8 +143,8 @@
                             </StackPanel>
                         </ui:Button>
 
-                        <ui:Button Command="{Binding CancelCommand, ElementName=RootPage}"
-                                   Visibility="{Binding CancelVisibility, ElementName=RootPage}"
+                        <ui:Button Command="{Binding CancelCommand}"
+                                   Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}"
                                    Appearance="Secondary"
                                    Style="{StaticResource HeroActionButtonStyle}">
                             <StackPanel Orientation="Horizontal">
@@ -158,9 +158,9 @@
                 <ui:Card Grid.Column="2" MinWidth="210" Padding="16" VerticalAlignment="Stretch">
                     <StackPanel>
                         <TextBlock Text="Status da sessão" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                        <TextBlock Text="{Binding CleanupProgressCategory, ElementName=RootPage}" Margin="0,7,0,10" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
-                        <ProgressBar Height="7" Minimum="0" Maximum="100" Value="{Binding CleanupProgressPercentage, ElementName=RootPage}" />
-                        <TextBlock Text="{Binding CleanupProcessedItemsLabel, ElementName=RootPage}" Margin="0,10,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="{Binding CleanupProgressCategory}" Margin="0,7,0,10" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
+                        <ProgressBar Height="7" Minimum="0" Maximum="100" Value="{Binding CleanupProgressPercentage}" />
+                        <TextBlock Text="{Binding CleanupProcessedItemsLabel}" Margin="0,10,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                     </StackPanel>
                 </ui:Card>
             </Grid>
@@ -182,7 +182,7 @@
                              Grid.Column="0"
                              Padding="0"
                              Margin="0,0,0,16"
-                             IsExpanded="{Binding IsOptionsExpanded, ElementName=RootPage, Mode=TwoWay}">
+                             IsExpanded="{Binding IsOptionsExpanded, Mode=TwoWay}">
                 <ui:CardExpander.Header>
                     <Grid Margin="2">
                         <Grid.ColumnDefinitions>
@@ -201,25 +201,25 @@
 
                 <WrapPanel Margin="4,16,0,4">
                     <Border Style="{StaticResource OptionTileStyle}">
-                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionTemp}" IsChecked="{Binding CleanTemp, ElementName=RootPage}" />
+                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionTemp}" IsChecked="{Binding CleanTemp}" />
                     </Border>
                     <Border Style="{StaticResource OptionTileStyle}">
-                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionSystemTemp}" IsChecked="{Binding CleanSystemTemp, ElementName=RootPage}" />
+                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionSystemTemp}" IsChecked="{Binding CleanSystemTemp}" />
                     </Border>
                     <Border Style="{StaticResource OptionTileStyle}">
-                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionPrefetch}" IsChecked="{Binding CleanPrefetch, ElementName=RootPage}" />
+                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionPrefetch}" IsChecked="{Binding CleanPrefetch}" />
                     </Border>
                     <Border Style="{StaticResource OptionTileStyle}">
-                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionWindowsUpdate}" IsChecked="{Binding CleanWindowsUpdate, ElementName=RootPage}" />
+                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionWindowsUpdate}" IsChecked="{Binding CleanWindowsUpdate}" />
                     </Border>
                     <Border Style="{StaticResource OptionTileStyle}">
-                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionBrowser}" IsChecked="{Binding CleanBrowser, ElementName=RootPage}" />
+                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionBrowser}" IsChecked="{Binding CleanBrowser}" />
                     </Border>
                     <Border Style="{StaticResource OptionTileStyle}">
-                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionDNS}" IsChecked="{Binding CleanDns, ElementName=RootPage}" />
+                        <CheckBox Content="{x:Static p:Resources.Cleanup_OptionDNS}" IsChecked="{Binding CleanDns}" />
                     </Border>
                     <Border Style="{StaticResource OptionTileStyle}">
-                        <CheckBox IsChecked="{Binding CleanRecycleBin, ElementName=RootPage}">
+                        <CheckBox IsChecked="{Binding CleanRecycleBin}">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="Delete20" Margin="0,0,6,0" Foreground="#D46A6A" />
                                 <TextBlock Text="{x:Static p:Resources.Cleanup_OptionRecycleBin}" />
@@ -233,7 +233,7 @@
                      Grid.Row="1"
                      Grid.Column="0"
                      Padding="0"
-                     Visibility="{Binding ShouldShowSummaryCard, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                     Visibility="{Binding ShouldShowSummaryCard, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -250,10 +250,10 @@
                                 <ui:SymbolIcon Symbol="DataHistogram20" Margin="0,0,10,0" FontSize="18" />
                                 <StackPanel>
                                     <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryTitle}" FontSize="15" FontWeight="SemiBold" />
-                                    <TextBlock Text="{Binding ScanResultCountLabel, ElementName=RootPage}" Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="{Binding ScanResultCountLabel}" Margin="0,2,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                 </StackPanel>
                             </StackPanel>
-                            <TextBlock Grid.Column="1" Text="{Binding TotalPotentialSizeLabel, ElementName=RootPage}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" Text="{Binding TotalPotentialSizeLabel}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
                         </Grid>
                     </Border>
 
@@ -261,10 +261,10 @@
                         <TextBlock Text="{x:Static p:Resources.Cleanup_ScanSummaryEmpty}"
                                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                    VerticalAlignment="Top"
-                                   Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                                   Visibility="{Binding HasScanResults, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
 
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding HasScanResults, ElementName=RootPage, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <ItemsControl ItemsSource="{Binding ScanResults, ElementName=RootPage}">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Visibility="{Binding HasScanResults, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <ItemsControl ItemsSource="{Binding ScanResults}">
                                 <ItemsControl.ItemContainerStyle>
                                     <Style TargetType="ContentPresenter">
                                         <Setter Property="Opacity" Value="0" />
@@ -353,7 +353,7 @@
                                Margin="18"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Top"
-                               Visibility="{Binding HasLogs, ElementName=RootPage, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
+                               Visibility="{Binding HasLogs, Converter={StaticResource InverseBooleanToVisibilityConverter}}" />
                 </Grid>
             </ui:Card>
         </Grid>

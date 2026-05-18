@@ -34,6 +34,7 @@ public partial class App : Application
                 // 1. ViewModels
                 services.AddSingleton<MainViewModel>();
                 services.AddSingleton<SettingsViewModel>();
+                services.AddTransient<CleanupViewModel>();
                 services.AddTransient<TweakViewModel>();
 
                 // 2. Core Services
