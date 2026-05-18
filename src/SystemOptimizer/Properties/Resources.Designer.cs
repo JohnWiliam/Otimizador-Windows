@@ -269,6 +269,24 @@ namespace SystemOptimizer.Properties {
                 return ResourceManager.GetString("Cleanup_ProgressProcessedItems", resourceCulture);
             }
         }
+
+        public static string Cleanup_ProgressReadyToAnalyze {
+            get {
+                return ResourceManager.GetString("Cleanup_ProgressReadyToAnalyze", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ScanResultAwaitingAnalysis {
+            get {
+                return ResourceManager.GetString("Cleanup_ScanResultAwaitingAnalysis", resourceCulture);
+            }
+        }
+
+        public static string Cleanup_ScanResultCountLabel {
+            get {
+                return ResourceManager.GetString("Cleanup_ScanResultCountLabel", resourceCulture);
+            }
+        }
         
         public static string Cleanup_ScanSummaryEmpty {
             get {
