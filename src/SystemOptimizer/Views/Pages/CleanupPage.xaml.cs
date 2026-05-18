@@ -1,12 +1,9 @@
 using System;
-using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using SystemOptimizer.Models;
 using SystemOptimizer.ViewModels;
 using Wpf.Ui.Controls;
@@ -52,20 +49,4 @@ public partial class CleanupPage : Page
         LogOutput.Document.Blocks.Add(paragraph);
         LogOutput.ScrollToEnd();
     }
-}
-
-public class CleanupCategorySummaryItem : INotifyPropertyChanged
-{
-    private bool _isSelected = true;
-    private bool _shouldDisplaySize = true;
-    public string Key { get; set; } = string.Empty;
-    public string DisplayName { get; set; } = string.Empty;
-    public long Bytes { get; set; }
-    public int Items { get; set; }
-    public string HumanSize => $"{Math.Round(Bytes / 1024.0 / 1024.0, 2)} MB";
-    public string ItemsLabel => string.Format(SystemOptimizer.Properties.Resources.Cleanup_SummaryItemsLabel, Items);
-    public string SizeLabel => ShouldDisplaySize ? HumanSize : "—";
-    public bool ShouldDisplaySize { get => _shouldDisplaySize; set { _shouldDisplaySize = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShouldDisplaySize))); PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(SizeLabel))); } }
-    public bool IsSelected { get => _isSelected; set { _isSelected = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected))); } }
-    public event PropertyChangedEventHandler? PropertyChanged;
 }
