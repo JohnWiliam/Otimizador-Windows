@@ -50,6 +50,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _cleanupProgressPercentage;
 
+    partial void OnCleanupProgressPercentageChanging(ref int value)
+    {
+        value = Math.Clamp(value, 0, 100);
+    }
+
     [ObservableProperty]
     private string _cleanupProgressCategory = string.Empty;
 

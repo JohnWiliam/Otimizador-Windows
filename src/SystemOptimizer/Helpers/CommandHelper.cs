@@ -151,6 +151,28 @@ public static class CommandHelper
         return argumentList == null ? arguments ?? string.Empty : string.Join(" ", argumentList);
     }
 
+    // Synchronous helpers for background threads only.
+    public static string RunCommandBackground(string fileName, string arguments, int timeoutMs = 5000)
+    {
+        var result = RunCommandDetailedBackground(fileName, arguments, timeoutMs);
+        if (result.TimedOut)
+        {
+            return string.Empty;
+        }
+
+        return result.StdOut;
+    }
+
+    public static CommandResult RunCommandDetailedBackground(string fileName, string arguments, int timeoutMs = 5000)
+    {
+        return RunCommandDetailedCore(fileName, arguments, argumentList: null, timeoutMs);
+    }
+
+    public static CommandResult RunCommandDetailedBackground(string fileName, IEnumerable<string> argumentList, int timeoutMs = 5000)
+    {
+        return RunCommandDetailedCore(fileName, arguments: null, argumentList, timeoutMs);
+    }
+
     public static void RunCommandNoWait(string fileName, string arguments)
     {
         Logger.Log($"Executing (NoWait): {fileName} {arguments}", "CMD_ASYNC");
