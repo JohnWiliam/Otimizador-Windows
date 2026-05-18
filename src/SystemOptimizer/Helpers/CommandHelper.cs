@@ -9,12 +9,13 @@ namespace SystemOptimizer.Helpers;
 
 public static class CommandHelper
 {
+    // Prefer the Async methods for all UI-driven flows to avoid blocking the dispatcher thread.
+
     public sealed record CommandResult(bool Started, bool TimedOut, int? ExitCode, string StdOut, string StdErr)
     {
         public bool IsSuccess => Started && !TimedOut && ExitCode == 0;
     }
 
-    [Obsolete("Prefer RunCommandDetailedAsync for UI flows to avoid blocking the UI thread.")]
     public static string RunCommand(string fileName, string arguments, int timeoutMs = 5000)
     {
         var result = RunCommandDetailed(fileName, arguments, timeoutMs);
@@ -43,7 +44,6 @@ public static class CommandHelper
         return result.StdOut;
     }
 
-    [Obsolete("Prefer RunCommandDetailedAsync for UI flows to avoid blocking the UI thread.")]
     public static CommandResult RunCommandDetailed(string fileName, string arguments, int timeoutMs = 5000)
     {
         return Task.Run(() => RunCommandDetailedAsync(fileName, arguments, timeoutMs)).GetAwaiter().GetResult();
@@ -59,7 +59,6 @@ public static class CommandHelper
         return RunCommandDetailedAsync(fileName, null, argumentList, timeoutMs);
     }
 
-    [Obsolete("Prefer RunCommandDetailedAsync for UI flows to avoid blocking the UI thread.")]
     public static CommandResult RunCommandDetailed(string fileName, IEnumerable<string> argumentList, int timeoutMs = 5000)
     {
         return Task.Run(() => RunCommandDetailedAsync(fileName, argumentList, timeoutMs)).GetAwaiter().GetResult();

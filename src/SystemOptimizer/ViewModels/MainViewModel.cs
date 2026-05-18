@@ -3,14 +3,12 @@ using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows;
 using SystemOptimizer.Models;
 using SystemOptimizer.Services;
 using System.Collections.Generic;
 using System;
 using System.Diagnostics;
 using System.Threading;
-using System.Windows.Threading;
 using SystemOptimizer.Helpers;
 using SystemOptimizer.Properties;
 using Wpf.Ui;
@@ -21,10 +19,7 @@ namespace SystemOptimizer.ViewModels;
 public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly TweakService _tweakService;
-    private readonly CleanupService _cleanupService;
     private readonly IDialogService _dialogService;
-    private readonly Action<CleanupLogItem> _cleanupLogHandler;
-    private readonly Action<CleanupProgressInfo> _cleanupProgressHandler;
     private IReadOnlyList<TweakViewModel> _allTweakViewModels = [];
     private bool _disposed;
 
@@ -39,55 +34,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public ObservableCollection<TweakViewModel> SearchTweaks { get; } = [];
     public ObservableCollection<TweakViewModel> TweaksPageItems { get; } = [];
 
-    public ObservableCollection<CleanupLogItem> CleanupLogs { get; } = [];
-
     [ObservableProperty]
     private bool _isBusy;
 
     [ObservableProperty]
     private bool _isInitializing = true;
 
-    [ObservableProperty]
-    private int _cleanupProgressPercentage;
 
-    [ObservableProperty]
-    private string _cleanupProgressCategory = string.Empty;
-
-    [ObservableProperty]
-    private int _cleanupProcessedItems;
-
-    public MainViewModel(TweakService tweakService, CleanupService cleanupService, IDialogService dialogService)
+    public MainViewModel(TweakService tweakService, IDialogService dialogService)
     {
         _tweakService = tweakService;
-        _cleanupService = cleanupService;
         _dialogService = dialogService;
 
-        _cleanupLogHandler = item =>
-        {
-            Application.Current.Dispatcher.InvokeAsync(
-                () => CleanupLogs.Add(item),
-                DispatcherPriority.Background);
-        };
-
-        _cleanupProgressHandler = progress =>
-        {
-            Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                CleanupProgressPercentage = progress.Percentage;
-                CleanupProgressCategory = progress.CurrentCategory;
-                CleanupProcessedItems = progress.ProcessedItems;
-            }, DispatcherPriority.Background);
-        };
-
-        _cleanupService.OnLogItem += _cleanupLogHandler;
-        _cleanupService.OnProgress += _cleanupProgressHandler;
     }
 
-    public Task<IReadOnlyList<CleanupCategoryResult>> RunCleanupScanAsync(CleanupOptions options, CancellationToken cancellationToken)
-        => _cleanupService.RunScanAsync(options, cancellationToken);
-
-    public Task RunSelectedCleanupAsync(CleanupOptions options, CancellationToken cancellationToken)
-        => _cleanupService.RunCleanupAsync(options, cancellationToken);
 
     public async Task InitializeAsync()
     {
@@ -300,28 +260,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    [RelayCommand]
-    private async Task RunCleanup()
-    {
-        if (IsBusy) return;
-        IsBusy = true;
-        try
-        {
-            CleanupLogs.Clear();
-            await _cleanupService.RunCleanupAsync();
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
 
     public void Dispose()
     {
         if (_disposed) return;
 
-        _cleanupService.OnLogItem -= _cleanupLogHandler;
-        _cleanupService.OnProgress -= _cleanupProgressHandler;
         _disposed = true;
         GC.SuppressFinalize(this);
     }

@@ -25,7 +25,7 @@ namespace SystemOptimizer.Views.Pages;
 
 public partial class CleanupPage : Page, INotifyPropertyChanged
 {
-    private readonly MainViewModel _viewModel;
+    private readonly CleanupViewModel _viewModel;
 
     private bool _isOptionsExpanded = true;
     private bool _isBusyLocal;
@@ -60,7 +60,7 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     public ObservableCollection<CleanupCategorySummaryItem> ScanResults { get; } = [];
 
-    public CleanupPage(MainViewModel viewModel)
+    public CleanupPage(CleanupViewModel viewModel)
     {
         AnalyzeCommand = new AsyncRelayCommand(AnalyzeAsync, () => !IsBusyLocal);
         CleanupSelectedCommand = new AsyncRelayCommand(CleanupSelectedAsync, () => !IsBusyLocal && HasScanResults);
@@ -119,15 +119,15 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     public bool CanAnalyze => !IsBusyLocal;
     public bool CanCleanup => !IsBusyLocal && HasScanResults;
-    public bool HasLogs => _viewModel?.CleanupLogs?.Count > 0;
+    public bool HasLogs => _viewModel.CleanupLogs.Count > 0;
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
     public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
-    public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel?.CleanupProcessedItems ?? 0);
+    public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
     public string CleanupProgressCategory
-        => string.IsNullOrWhiteSpace(_viewModel?.CleanupProgressCategory)
+        => string.IsNullOrWhiteSpace(_viewModel.CleanupProgressCategory)
             ? Res.Cleanup_ReadyToAnalyze
             : _viewModel.CleanupProgressCategory;
-    public int CleanupProgressPercentage => _viewModel?.CleanupProgressPercentage ?? 0;
+    public int CleanupProgressPercentage => _viewModel.CleanupProgressPercentage;
     public string TotalPotentialSizeLabel => FormatBytes(ScanResults.Sum(result => result.Bytes));
     public string ScanResultCountLabel => HasScanResults
         ? string.Format(Res.Cleanup_ScanResultCount, ScanResults.Count(result => result.Items > 0))
