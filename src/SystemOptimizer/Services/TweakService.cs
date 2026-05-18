@@ -16,6 +16,18 @@ namespace SystemOptimizer.Services;
 
 public class TweakService
 {
+    private static string RunCommandSafe(string fileName, string arguments, int timeoutMs = 5000)
+    {
+        var result = CommandHelper.RunCommandDetailedAsync(fileName, arguments, timeoutMs).GetAwaiter().GetResult();
+        if (!result.Started) return string.Empty;
+        if (result.TimedOut) return "[TIMEOUT CMD]";
+        if (!result.IsSuccess) return string.IsNullOrWhiteSpace(result.StdErr) ? string.Empty : $"[ERRO CMD] {result.StdErr}";
+        return result.StdOut;
+    }
+
+    private static CommandHelper.CommandResult RunCommandDetailedSafe(string fileName, string arguments, int timeoutMs = 5000)
+        => CommandHelper.RunCommandDetailedAsync(fileName, arguments, timeoutMs).GetAwaiter().GetResult();
+
     public List<ITweak> Tweaks { get; private set; } = [];
 
     public void LoadTweaks()
@@ -132,22 +144,22 @@ public class TweakService
     {
          Tweaks.Add(new CustomTweak("PF1", TweakCategory.Performance, Resources.PF1_Title, Resources.PF1_Desc,
             () => {
-                var list = CommandHelper.RunCommand("powercfg", "/list");
+                var list = RunCommandSafe("powercfg", "/list");
                 string ultimateGuid = "e9a42b02-d5df-448d-aa00-03f14749eb61";
-                if (!list.Contains(ultimateGuid)) CommandHelper.RunCommand("powercfg", $"-duplicatescheme {ultimateGuid}");
-                var activateResult = CommandHelper.RunCommandDetailed("powercfg", $"/setactive {ultimateGuid}");
+                if (!list.Contains(ultimateGuid)) RunCommandSafe("powercfg", $"-duplicatescheme {ultimateGuid}");
+                var activateResult = RunCommandDetailedSafe("powercfg", $"/setactive {ultimateGuid}");
                 Logger.Log($"Resultado powercfg/setactive(ultimate) -> Started={activateResult.Started}, TimedOut={activateResult.TimedOut}, ExitCode={activateResult.ExitCode}, StdOut='{activateResult.StdOut}', StdErr='{activateResult.StdErr}'", "CMD_POWERCFG");
 
-                var check = CommandHelper.RunCommand("powercfg", "/getactivescheme");
+                var check = RunCommandSafe("powercfg", "/getactivescheme");
                 if (!activateResult.IsSuccess || !check.Contains(ultimateGuid))
                 {
-                    var fallbackResult = CommandHelper.RunCommandDetailed("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
+                    var fallbackResult = RunCommandDetailedSafe("powercfg", "/setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c");
                     Logger.Log($"Resultado powercfg/setactive(fallback) -> Started={fallbackResult.Started}, TimedOut={fallbackResult.TimedOut}, ExitCode={fallbackResult.ExitCode}, StdOut='{fallbackResult.StdOut}', StdErr='{fallbackResult.StdErr}'", "CMD_POWERCFG");
                 }
                 return true;
             },
-            () => { CommandHelper.RunCommand("powercfg", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e"); return true; },
-            () => { var res = CommandHelper.RunCommand("powercfg", "/getactivescheme"); return res.Contains("e9a42b02") || res.Contains("8c5e7fda"); }
+            () => { RunCommandSafe("powercfg", "/setactive 381b4222-f694-41f0-9685-ff5bb260df2e"); return true; },
+            () => { var res = RunCommandSafe("powercfg", "/getactivescheme"); return res.Contains("e9a42b02") || res.Contains("8c5e7fda"); }
         ));
 
         Tweaks.Add(new CustomTweak("PF2", TweakCategory.Performance, Resources.PF2_Title, Resources.PF2_Desc,
@@ -260,8 +272,8 @@ public class TweakService
         ));
 
         Tweaks.Add(new CustomTweak("PF9", TweakCategory.Performance, Resources.PF9_Title, Resources.PF9_Desc,
-            () => { CommandHelper.RunCommand("powercfg", "/hibernate off"); return true; },
-            () => { CommandHelper.RunCommand("powercfg", "/hibernate on"); return true; },
+            () => { RunCommandSafe("powercfg", "/hibernate off"); return true; },
+            () => { RunCommandSafe("powercfg", "/hibernate on"); return true; },
             () => { var val = Registry.GetValue(@"HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power", "HibernateEnabled", -1); return val is int i && i == 0; }
         ));
     }
@@ -269,31 +281,31 @@ public class TweakService
     private void AddNetworkTweaks()
     {
         Tweaks.Add(new CustomTweak("N1", TweakCategory.Network, Resources.N1_Title, Resources.N1_Desc,
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=normal"); return true; },
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
+            () => { RunCommandSafe("netsh", "int tcp set global autotuninglevel=normal"); return true; },
+            () => { RunCommandSafe("netsh", "int tcp set global autotuninglevel=disabled"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("netsh", "int tcp show global");
+                var res = RunCommandSafe("netsh", "int tcp show global");
                 return res.Contains("normal") || res.Contains("Normal");
             }
         ));
 
         Tweaks.Add(new CustomTweak("N2", TweakCategory.Network, Resources.N2_Title, Resources.N2_Desc,
             () => {
-                var cubicResult = CommandHelper.RunCommandDetailed("netsh", "int tcp set supplementary template=internet congestionprovider=cubic");
+                var cubicResult = RunCommandDetailedSafe("netsh", "int tcp set supplementary template=internet congestionprovider=cubic");
                 Logger.Log($"Resultado netsh/cubic -> Started={cubicResult.Started}, TimedOut={cubicResult.TimedOut}, ExitCode={cubicResult.ExitCode}, StdOut='{cubicResult.StdOut}', StdErr='{cubicResult.StdErr}'", "CMD_NETSH");
 
                 if (!cubicResult.IsSuccess)
                 {
-                    var fallbackResult = CommandHelper.RunCommandDetailed("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
+                    var fallbackResult = RunCommandDetailedSafe("netsh", "int tcp set supplementary template=internet congestionprovider=ctcp");
                     Logger.Log($"Resultado netsh/ctcp(fallback) -> Started={fallbackResult.Started}, TimedOut={fallbackResult.TimedOut}, ExitCode={fallbackResult.ExitCode}, StdOut='{fallbackResult.StdOut}', StdErr='{fallbackResult.StdErr}'", "CMD_NETSH");
                 }
                 return true;
             },
-            () => { CommandHelper.RunCommand("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
+            () => { RunCommandSafe("netsh", "int tcp set supplementary template=internet congestionprovider=default"); return true; },
             () =>
             {
-                var res = CommandHelper.RunCommand("netsh", "int tcp show supplemental")
+                var res = RunCommandSafe("netsh", "int tcp show supplemental")
                     .ToUpperInvariant();
                 return res.Contains("CUBIC", StringComparison.OrdinalIgnoreCase)
                     || res.Contains("CTCP", StringComparison.OrdinalIgnoreCase);
@@ -302,11 +314,11 @@ public class TweakService
 
         Tweaks.Add(new CustomTweak("N3", TweakCategory.Network, Resources.N3_Title,
             Resources.N3_Desc + " (Avançado: ECN pode causar fallback lento ou falhas em redes/serviços que descartam ECN-SYN.)",
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=enabled"); return true; },
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global ecncapability=disabled"); return true; },
+            () => { RunCommandSafe("netsh", "int tcp set global ecncapability=enabled"); return true; },
+            () => { RunCommandSafe("netsh", "int tcp set global ecncapability=disabled"); return true; },
             () =>
             {
-                var lines = CommandHelper.RunCommand("netsh", "int tcp show global")
+                var lines = RunCommandSafe("netsh", "int tcp show global")
                     .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
                 return lines.Any(line => line.Contains("ECN", StringComparison.OrdinalIgnoreCase)
                     && (line.Contains("enabled", StringComparison.OrdinalIgnoreCase)
@@ -315,9 +327,9 @@ public class TweakService
         ));
 
         Tweaks.Add(new CustomTweak("N4", TweakCategory.Network, Resources.N4_Title, Resources.N4_Desc,
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=enabled"); return true; },
-            () => { CommandHelper.RunCommand("netsh", "int tcp set global rss=default"); return true; },
-            () => { var res = CommandHelper.RunCommand("netsh", "int tcp show global").ToLowerInvariant(); return res.Contains("rss") && (res.Contains("enabled") || res.Contains("habilitado")); }
+            () => { RunCommandSafe("netsh", "int tcp set global rss=enabled"); return true; },
+            () => { RunCommandSafe("netsh", "int tcp set global rss=default"); return true; },
+            () => { var res = RunCommandSafe("netsh", "int tcp show global").ToLowerInvariant(); return res.Contains("rss") && (res.Contains("enabled") || res.Contains("habilitado")); }
         ));
 
         Tweaks.Add(new RegistryTweak("N5", TweakCategory.Network, Resources.N5_Title, Resources.N5_Desc, @"HKLM\SOFTWARE\Policies\Microsoft\Windows\Psched", "NonBestEffortLimit", 0, RegistryTweak.DeleteValue));
@@ -356,12 +368,12 @@ public class TweakService
         // SE1: SysMain
         Tweaks.Add(new CustomTweak("SE1", TweakCategory.Tweaks, Resources.SE1_Title, Resources.SE1_Desc,
             () => {
-                CommandHelper.RunCommand("sc", "config SysMain start= disabled");
+                RunCommandSafe("sc", "config SysMain start= disabled");
                 CommandHelper.RunCommandNoWait("sc", "stop SysMain");
                 return true;
             },
             () => {
-                CommandHelper.RunCommand("sc", "config SysMain start= auto");
+                RunCommandSafe("sc", "config SysMain start= auto");
                 CommandHelper.RunCommandNoWait("sc", "start SysMain");
                 return true;
             },
