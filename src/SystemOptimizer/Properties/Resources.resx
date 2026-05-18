@@ -214,6 +214,9 @@
   <data name="Cleanup_ActionCancel" xml:space="preserve"><value>Cancelar</value></data>
   <data name="Cleanup_ScanSummaryTitle" xml:space="preserve"><value>Resumo da análise</value></data>
   <data name="Cleanup_SummaryItemsLabel" xml:space="preserve"><value>Itens: {0}</value></data>
+  <data name="Cleanup_ReadyToAnalyze" xml:space="preserve"><value>Pronto para analisar</value></data>
+  <data name="Cleanup_ScanResultCount" xml:space="preserve"><value>{0} categoria(s) com itens encontrados</value></data>
+  <data name="Cleanup_WaitingForScan" xml:space="preserve"><value>Aguardando análise para estimar o potencial</value></data>
   <data name="Cleanup_ProgressProcessedItems" xml:space="preserve"><value>Itens processados: {0}</value></data>
   <data name="Cleanup_FeedbackAnalyzeCanceled" xml:space="preserve"><value>Análise cancelada.</value></data>
   <data name="Cleanup_FeedbackAnalyzeError" xml:space="preserve"><value>Erro na análise: {0}</value></data>
