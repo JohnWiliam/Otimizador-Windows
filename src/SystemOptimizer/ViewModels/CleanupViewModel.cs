@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SystemOptimizer.Models;
 using SystemOptimizer.Properties;
+using SystemOptimizer.Services;
 
 namespace SystemOptimizer.ViewModels;
 
