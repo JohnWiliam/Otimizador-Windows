@@ -25,7 +25,7 @@ namespace SystemOptimizer.Views.Pages;
 
 public partial class CleanupPage : Page, INotifyPropertyChanged
 {
-    private readonly MainViewModel _viewModel;
+    private readonly CleanupViewModel _viewModel;
 
     private bool _isOptionsExpanded = true;
     private bool _isBusyLocal;
@@ -58,15 +58,14 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
     public ICommand CleanupSelectedCommand { get; }
     public ICommand CancelCommand { get; }
 
-    public ObservableCollection<CleanupCategorySummaryItem> ScanResults { get; } = [];
+    public ObservableCollection<CleanupCategorySummaryItem> ScanResults => _viewModel.ScanResults;
 
-    public CleanupPage(MainViewModel viewModel)
+    public CleanupPage(CleanupViewModel viewModel)
     {
-        AnalyzeCommand = new AsyncRelayCommand(AnalyzeAsync, () => !IsBusyLocal);
-        CleanupSelectedCommand = new AsyncRelayCommand(CleanupSelectedAsync, () => !IsBusyLocal && HasScanResults);
-        CancelCommand = new RelayCommand(CancelCurrentOperation, () => IsBusyLocal);
-
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
+        AnalyzeCommand = _viewModel.AnalyzeCommand;
+        CleanupSelectedCommand = _viewModel.CleanupSelectedCommand;
+        CancelCommand = _viewModel.CancelCommand;
         InitializeComponent();
         DataContext = this;
 
@@ -74,64 +73,30 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         Unloaded += CleanupPage_Unloaded;
     }
 
-    public bool IsOptionsExpanded
-    {
-        get => _isOptionsExpanded;
-        set { _isOptionsExpanded = value; OnPropertyChanged(); }
-    }
+    public bool IsOptionsExpanded { get => _viewModel.IsOptionsExpanded; set => _viewModel.IsOptionsExpanded = value; }
 
-    public bool IsBusyLocal
-    {
-        get => _isBusyLocal;
-        set
-        {
-            _isBusyLocal = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(CanAnalyze));
-            OnPropertyChanged(nameof(CanCleanup));
-            OnPropertyChanged(nameof(CancelVisibility));
-            OnPropertyChanged(nameof(ShouldShowSummaryCard));
-            RefreshCommands();
-        }
-    }
+    public bool IsBusyLocal { get => _viewModel.IsBusy; set => _viewModel.IsBusy = value; }
 
-    public bool HasScanResults
-    {
-        get => _hasScanResults;
-        set
-        {
-            _hasScanResults = value;
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(CanCleanup));
-            OnPropertyChanged(nameof(ShouldShowSummaryCard));
-            OnPropertyChanged(nameof(ScanResultCountLabel));
-            RefreshCommands();
-        }
-    }
+    public bool HasScanResults { get => _viewModel.HasScanResults; set => _viewModel.HasScanResults = value; }
 
-    public bool CleanTemp { get => _cleanTemp; set { _cleanTemp = value; OnPropertyChanged(); } }
-    public bool CleanSystemTemp { get => _cleanSystemTemp; set { _cleanSystemTemp = value; OnPropertyChanged(); } }
-    public bool CleanPrefetch { get => _cleanPrefetch; set { _cleanPrefetch = value; OnPropertyChanged(); } }
-    public bool CleanWindowsUpdate { get => _cleanWindowsUpdate; set { _cleanWindowsUpdate = value; OnPropertyChanged(); } }
-    public bool CleanBrowser { get => _cleanBrowser; set { _cleanBrowser = value; OnPropertyChanged(); } }
-    public bool CleanDns { get => _cleanDns; set { _cleanDns = value; OnPropertyChanged(); } }
-    public bool CleanRecycleBin { get => _cleanRecycleBin; set { _cleanRecycleBin = value; OnPropertyChanged(); } }
+    public bool CleanTemp { get => _viewModel.CleanTemp; set => _viewModel.CleanTemp = value; }
+    public bool CleanSystemTemp { get => _viewModel.CleanSystemTemp; set => _viewModel.CleanSystemTemp = value; }
+    public bool CleanPrefetch { get => _viewModel.CleanPrefetch; set => _viewModel.CleanPrefetch = value; }
+    public bool CleanWindowsUpdate { get => _viewModel.CleanWindowsUpdate; set => _viewModel.CleanWindowsUpdate = value; }
+    public bool CleanBrowser { get => _viewModel.CleanBrowser; set => _viewModel.CleanBrowser = value; }
+    public bool CleanDns { get => _viewModel.CleanDns; set => _viewModel.CleanDns = value; }
+    public bool CleanRecycleBin { get => _viewModel.CleanRecycleBin; set => _viewModel.CleanRecycleBin = value; }
 
-    public bool CanAnalyze => !IsBusyLocal;
-    public bool CanCleanup => !IsBusyLocal && HasScanResults;
-    public bool HasLogs => _viewModel?.CleanupLogs?.Count > 0;
-    public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
-    public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
-    public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel?.CleanupProcessedItems ?? 0);
-    public string CleanupProgressCategory
-        => string.IsNullOrWhiteSpace(_viewModel?.CleanupProgressCategory)
-            ? Res.Cleanup_ReadyToAnalyze
-            : _viewModel.CleanupProgressCategory;
-    public int CleanupProgressPercentage => _viewModel?.CleanupProgressPercentage ?? 0;
-    public string TotalPotentialSizeLabel => FormatBytes(ScanResults.Sum(result => result.Bytes));
-    public string ScanResultCountLabel => HasScanResults
-        ? string.Format(Res.Cleanup_ScanResultCount, ScanResults.Count(result => result.Items > 0))
-        : Res.Cleanup_WaitingForScan;
+    public bool CanAnalyze => _viewModel.CanAnalyze;
+    public bool CanCleanup => _viewModel.CanCleanup;
+    public bool HasLogs => _viewModel.HasLogs;
+    public Visibility CancelVisibility => _viewModel.CancelVisibility;
+    public bool ShouldShowSummaryCard => _viewModel.ShouldShowSummaryCard;
+    public string CleanupProcessedItemsLabel => _viewModel.CleanupProcessedItemsLabel;
+    public string CleanupProgressCategory => _viewModel.CurrentCleanupProgressCategory;
+    public int CleanupProgressPercentage => _viewModel.CleanupProgressPercentage;
+    public string TotalPotentialSizeLabel => _viewModel.TotalPotentialSizeLabel;
+    public string ScanResultCountLabel => _viewModel.ScanResultCountLabel;
 
     private async Task AnalyzeAsync()
     {
@@ -311,15 +276,15 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(MainViewModel.CleanupProcessedItems))
+        if (e.PropertyName == nameof(CleanupViewModel.CleanupProcessedItems))
         {
             OnPropertyChanged(nameof(CleanupProcessedItemsLabel));
         }
-        else if (e.PropertyName == nameof(MainViewModel.CleanupProgressCategory))
+        else if (e.PropertyName == nameof(CleanupViewModel.CleanupProgressCategory))
         {
             OnPropertyChanged(nameof(CleanupProgressCategory));
         }
-        else if (e.PropertyName == nameof(MainViewModel.CleanupProgressPercentage))
+        else if (e.PropertyName == nameof(CleanupViewModel.CleanupProgressPercentage))
         {
             OnPropertyChanged(nameof(CleanupProgressPercentage));
         }
