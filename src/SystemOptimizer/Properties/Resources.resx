@@ -222,4 +222,9 @@
   <data name="Cleanup_FeedbackCleanupError" xml:space="preserve"><value>Erro durante a limpeza: {0}</value></data>
   <data name="Cleanup_ScanSummaryEmpty" xml:space="preserve"><value>Execute uma análise para preencher as categorias disponíveis.</value></data>
   <data name="Cleanup_LogEmpty" xml:space="preserve"><value>O histórico de execução aparecerá aqui.</value></data>
+  <data name="Cleanup_ProgressReady" xml:space="preserve"><value>Pronto para analisar</value></data>
+  <data name="Cleanup_ScanResultCountLabel" xml:space="preserve"><value>{0} categoria(s) com itens encontrados</value></data>
+  <data name="Cleanup_ScanResultCountPending" xml:space="preserve"><value>Aguardando análise para estimar o potencial</value></data>
+  <data name="Cleanup_SessionStatus" xml:space="preserve"><value>Status da sessão</value></data>
+  <data name="Cleanup_LogSubtitle" xml:space="preserve"><value>Auditoria em tempo real, com eventos seguros e canceláveis</value></data>
 </root>

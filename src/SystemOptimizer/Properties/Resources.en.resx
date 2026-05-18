@@ -223,4 +223,9 @@
   <data name="Cleanup_FeedbackCleanupError" xml:space="preserve"><value>Cleanup error: {0}</value></data>
   <data name="Cleanup_ScanSummaryEmpty" xml:space="preserve"><value>Run an analysis to populate available categories.</value></data>
   <data name="Cleanup_LogEmpty" xml:space="preserve"><value>Execution history will appear here.</value></data>
+  <data name="Cleanup_ProgressReady" xml:space="preserve"><value>Ready to analyze</value></data>
+  <data name="Cleanup_ScanResultCountLabel" xml:space="preserve"><value>{0} category(ies) with items found</value></data>
+  <data name="Cleanup_ScanResultCountPending" xml:space="preserve"><value>Waiting for analysis to estimate potential</value></data>
+  <data name="Cleanup_SessionStatus" xml:space="preserve"><value>Session status</value></data>
+  <data name="Cleanup_LogSubtitle" xml:space="preserve"><value>Real-time audit with safe, cancelable events</value></data>
 </root>
