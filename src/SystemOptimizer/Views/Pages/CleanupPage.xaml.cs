@@ -66,8 +66,8 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
         CleanupSelectedCommand = new AsyncRelayCommand(CleanupSelectedAsync, () => !IsBusyLocal && HasScanResults);
         CancelCommand = new RelayCommand(CancelCurrentOperation, () => IsBusyLocal);
 
+        _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         InitializeComponent();
-        _viewModel = viewModel;
         DataContext = this;
 
         Loaded += CleanupPage_Loaded;
@@ -119,16 +119,23 @@ public partial class CleanupPage : Page, INotifyPropertyChanged
 
     public bool CanAnalyze => !IsBusyLocal;
     public bool CanCleanup => !IsBusyLocal && HasScanResults;
-    public bool HasLogs => _viewModel.CleanupLogs.Count > 0;
+    public bool HasLogs => _viewModel?.CleanupLogs?.Count > 0;
     public Visibility CancelVisibility => IsBusyLocal ? Visibility.Visible : Visibility.Collapsed;
     public bool ShouldShowSummaryCard => IsBusyLocal || HasScanResults;
-    public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel.CleanupProcessedItems);
-    public string CleanupProgressCategory => string.IsNullOrWhiteSpace(_viewModel.CleanupProgressCategory) ? "Pronto para analisar" : _viewModel.CleanupProgressCategory;
-    public int CleanupProgressPercentage => _viewModel.CleanupProgressPercentage;
+    public string CleanupProcessedItemsLabel => string.Format(Res.Cleanup_ProgressProcessedItems, _viewModel?.CleanupProcessedItems ?? 0);
+    public string CleanupProgressCategory
+    {
+        get
+        {
+            string? category = _viewModel?.CleanupProgressCategory;
+            return string.IsNullOrWhiteSpace(category) ? Res.Cleanup_ProgressReadyToAnalyze : category;
+        }
+    }
+    public int CleanupProgressPercentage => _viewModel?.CleanupProgressPercentage ?? 0;
     public string TotalPotentialSizeLabel => FormatBytes(ScanResults.Sum(result => result.Bytes));
     public string ScanResultCountLabel => HasScanResults
-        ? $"{ScanResults.Count(result => result.Items > 0)} categoria(s) com itens encontrados"
-        : "Aguardando análise para estimar o potencial";
+        ? string.Format(Res.Cleanup_ScanResultCountLabel, ScanResults.Count(result => result.Items > 0))
+        : Res.Cleanup_WaitingAnalysis;
 
     private async Task AnalyzeAsync()
     {

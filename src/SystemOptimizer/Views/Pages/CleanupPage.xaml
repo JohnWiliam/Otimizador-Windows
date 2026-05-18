@@ -157,7 +157,7 @@
 
                 <ui:Card Grid.Column="2" MinWidth="210" Padding="16" VerticalAlignment="Stretch">
                     <StackPanel>
-                        <TextBlock Text="Status da sessão" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        <TextBlock Text="{x:Static p:Resources.Cleanup_SessionStatus}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <TextBlock Text="{Binding CleanupProgressCategory, ElementName=RootPage}" Margin="0,7,0,10" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap" />
                         <ProgressBar Height="7" Minimum="0" Maximum="100" Value="{Binding CleanupProgressPercentage, ElementName=RootPage}" />
                         <TextBlock Text="{Binding CleanupProcessedItemsLabel, ElementName=RootPage}" Margin="0,10,0,0" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
